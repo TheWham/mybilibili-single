@@ -39,6 +39,7 @@
         <lombok.version>1.18.22</lombok.version>
         <captcha.verion>1.6.2</captcha.verion>
         <es.version>3.3.2</es.version>
+        <hutool.version>5.8.22</hutool.version>
     </properties>
 
     <dependencyManagement>
@@ -134,7 +135,11 @@
                 <artifactId>easy-captcha</artifactId>
                 <version>${captcha.verion}</version>
             </dependency>
-
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-all</artifactId>
+                <version>${hutool.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>

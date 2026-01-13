@@ -12,7 +12,7 @@ spring:
   datasource:
     url: jdbc:mysql://127.0.0.1:3306/easylive?serverTimezone=GMT%2B8&useUnicode=true&characterEncoding=utf8&autoReconnect=true&allowMultiQueries=true&useSSL=false
     username: root
-    password: root
+    password: Xu13937698718
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       pool-name: HikariCPDatasource
@@ -40,7 +40,7 @@ mybatis:
     map-underscore-to-camel-case: true
 
 project:
-  folder: c:/webser/easylive/
+  folder: d:/webser/easylive/
 log:
   root:
     level: debug
