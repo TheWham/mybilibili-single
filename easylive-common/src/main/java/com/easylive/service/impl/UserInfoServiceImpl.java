@@ -2,10 +2,10 @@ package com.easylive.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.easylive.component.RedisComponent;
-import com.easylive.entity.constants.Constants;
-import com.easylive.entity.dto.LoginDTO;
+import com.easylive.constants.Constants;
 import com.easylive.entity.dto.RegisterDTO;
 import com.easylive.entity.dto.TokenUserInfoDTO;
+import com.easylive.entity.dto.WebLoginDTO;
 import com.easylive.entity.po.UserInfo;
 import com.easylive.entity.query.SimplePage;
 import com.easylive.entity.query.UserInfoQuery;
@@ -197,24 +197,23 @@ public class UserInfoServiceImpl implements UserInfoService {
 		//TODO 设置硬币数量
 		aUserInfo.setCurrentCoinCount(Constants.DEFAULT_COIN_COUNT);
 		aUserInfo.setTotalCoinCount(Constants.DEFAULT_COIN_COUNT);
-
 		this.userInfoMapper.insert(aUserInfo);
 
 	}
 
 	@Override
-	public TokenUserInfoDTO login(LoginDTO loginDTO) {
-		String email = loginDTO.getEmail();
+	public TokenUserInfoDTO login(WebLoginDTO webLoginDTO) {
+		String email = webLoginDTO.getEmail();
 		UserInfo userInfo = this.userInfoMapper.selectByEmail(email);
 		//前端以作MD5校验
-		if (userInfo == null ||!userInfo.getPassword().equals(loginDTO.getPassword()))
+		if (userInfo == null ||!userInfo.getPassword().equals(webLoginDTO.getPassword()))
 			throw new BusinessException("账号或密码错误");
 
 		if (StatusEnum.DISABLE.getStatus().equals(userInfo.getStatus())){
 			throw new BusinessException("用户已被禁用");
 		}
 
-		userInfo.setLastLoginIp(loginDTO.getLastLoginIp());
+		userInfo.setLastLoginIp(webLoginDTO.getLastLoginIp());
 		userInfo.setLastLoginTime(new Date());
 		//更新登录信息
 		this.userInfoMapper.updateByUserId(userInfo, userInfo.getUserId());
@@ -223,6 +222,14 @@ public class UserInfoServiceImpl implements UserInfoService {
 
 		// 将登录信息存放到redis,并返回前端可以存取tokenId并获得userInfo
 		redisComponent.saveTokenUserInfo(tokenUserInfoDTO);
+		String userId = userInfo.getUserId();
+		String tokenId = redisComponent.getTokenIdByUserId(userId);
+
+		if (tokenId != null) {
+			redisComponent.cleanExistToken(userId);
+		}
+
+		redisComponent.saveTokenIdByUserId(userInfo.getUserId(), tokenUserInfoDTO.getTokenId());
 
 		return tokenUserInfoDTO;
 	}

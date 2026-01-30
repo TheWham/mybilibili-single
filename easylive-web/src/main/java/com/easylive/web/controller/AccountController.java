@@ -2,10 +2,10 @@ package com.easylive.web.controller;
 
 
 import com.easylive.component.RedisComponent;
-import com.easylive.entity.constants.Constants;
-import com.easylive.entity.dto.LoginDTO;
+import com.easylive.constants.Constants;
 import com.easylive.entity.dto.RegisterDTO;
 import com.easylive.entity.dto.TokenUserInfoDTO;
+import com.easylive.entity.dto.WebLoginDTO;
 import com.easylive.entity.vo.ResponseVO;
 import com.easylive.exception.BusinessException;
 import com.easylive.service.UserInfoService;
@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.HashMap;
@@ -92,38 +91,27 @@ public class AccountController extends ABaseController{
     public ResponseVO login(
             HttpServletResponse response,
             HttpServletRequest request,
-            @Validated LoginDTO loginDTO) {
+            @Validated WebLoginDTO webLoginDTO) {
         // 获取用户输入的验证码
-        String checkCode = loginDTO.getCheckCode();
+        String checkCode = webLoginDTO.getCheckCode();
         // 从 redis中获取存储的验证码
-        String redisCode = redisComponent.getCode(loginDTO.getCheckCodeKey());
+        String redisCode = redisComponent.getCode(webLoginDTO.getCheckCodeKey());
         String lastLoginIp = getIpAddr();
-        loginDTO.setLastLoginIp(lastLoginIp);
+        webLoginDTO.setLastLoginIp(lastLoginIp);
 
         boolean check = checkCode.equalsIgnoreCase(redisCode);
         try {
             if (!check) {
                 throw new BusinessException("图形验证码不正确");
             }
-            TokenUserInfoDTO tokenInfo = userInfoService.login(loginDTO);
+            TokenUserInfoDTO tokenInfo = userInfoService.login(webLoginDTO);
             //为了方便直接将token信息到session中, 正常来说只需要提供tokenID给前端即可, 然后每次请求带着tokenID从redis中取出数据
             saveToken2Session(response, tokenInfo.getTokenId());
             //TODO 设置粉丝数, 关注数, 硬币数
             return getSuccessResponseVO(tokenInfo);
 
         }finally {
-       //     执行完之后删除redis中存放的token, 等到下次请求之后再次刷新
-            Cookie[] cookies = request.getCookies();
-            redisComponent.cleanCheckCode(loginDTO.getCheckCodeKey());
-            if (cookies != null) {
-                for (Cookie cookie : cookies) {
-                    if (cookie.getName().equals(Constants.WEB_TOKEN_KEY)) {
-                        String tokenID = cookie.getValue();
-                        redisComponent.cleanWebToken(tokenID);
-                    }
-                }
-                redisComponent.cleanCheckCode(loginDTO.getCheckCodeKey());
-            }
+            redisComponent.cleanCheckCode(webLoginDTO.getCheckCodeKey());
         }
     }
 
@@ -135,10 +123,14 @@ public class AccountController extends ABaseController{
         if (tokenUserInfo == null)
             return getSuccessResponseVO(null);
 
+        // 判断是否在其他浏览器中登录, 如果登录则挤掉旧账号
+        if (!redisComponent.getTokenIdByUserId(tokenUserInfo.getUserId()).equals(tokenUserInfo.getTokenId()))
+            return getSuccessResponseVO(null);
+
         if (tokenUserInfo.getExpireAt() - System.currentTimeMillis() < Constants.REDIS_EXPIRE_TIME_ONE_DAY){
             redisComponent.saveTokenUserInfo(tokenUserInfo);
-            saveToken2Session(response, tokenUserInfo.getTokenId());
         }
+
         saveToken2Session(response, tokenUserInfo.getTokenId());
         //TODO 设置粉丝数, 关注数, 硬币数
         return getSuccessResponseVO(tokenUserInfo);

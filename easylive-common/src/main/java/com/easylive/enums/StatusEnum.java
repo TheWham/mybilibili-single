@@ -1,6 +1,6 @@
 package com.easylive.enums;
 
-import com.easylive.entity.constants.Constants;
+import com.easylive.constants.Constants;
 
 /**
  * @version 2026.1.8

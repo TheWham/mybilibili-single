@@ -1,6 +1,6 @@
 package com.easylive.component;
 
-import com.easylive.entity.constants.Constants;
+import com.easylive.constants.Constants;
 import com.easylive.entity.dto.TokenUserInfoDTO;
 import com.easylive.exception.BusinessException;
 import com.easylive.redis.RedisUtils;
@@ -10,7 +10,7 @@ import javax.annotation.Resource;
 import java.util.Objects;
 import java.util.UUID;
 
-import static com.easylive.entity.constants.Constants.REDIS_EXPIRE_TIME_DAY_COUNT;
+import static com.easylive.constants.Constants.REDIS_EXPIRE_TIME_DAY_COUNT;
 
 @Component("redisComponent")
 public class RedisComponent {
@@ -49,9 +49,23 @@ public class RedisComponent {
         redisUtils.setex(Constants.REDIS_WEB_TOKEN_KEY + tokenId, tokenUserInfoDTO, Constants.REDIS_EXPIRE_TIME_ONE_DAY * REDIS_EXPIRE_TIME_DAY_COUNT);
     }
 
+    public String saveToken4Admin(String account) {
+        // 存放登录信息
+        String tokenId = UUID.randomUUID().toString();
+        redisUtils.setex(Constants.REDIS_ADMIN_TOKEN_KEY + tokenId, account, Constants.REDIS_EXPIRE_TIME_ONE_DAY);
+        return tokenId;
+    }
+
+
     public void cleanWebToken(String tokenId) {
         // 清除web端token信息
         String webTokenKey = Constants.REDIS_WEB_TOKEN_KEY + tokenId;
+        redisUtils.delete(webTokenKey);
+    }
+
+    public void cleanAdminToken(String tokenId) {
+        // 清除admin端token信息
+        String webTokenKey = Constants.REDIS_ADMIN_TOKEN_KEY + tokenId;
         redisUtils.delete(webTokenKey);
     }
 
@@ -59,4 +73,29 @@ public class RedisComponent {
         String tokenKey = Constants.REDIS_WEB_TOKEN_KEY + tokenId;
         return (TokenUserInfoDTO) redisUtils.get(tokenKey);
     }
-}
+
+    //清除已经登录token实现单点登录
+    public void cleanExistToken(String userId)
+    {
+        String userTokenKey = Constants.REDIS_USER_TOKEN_KEY + userId;
+        redisUtils.delete(userTokenKey);
+    }
+
+    public String getTokenIdByUserId(String userId)
+    {
+        String userTokenKey = Constants.REDIS_USER_TOKEN_KEY + userId;
+        Object value = redisUtils.get(userTokenKey);
+        if (Objects.isNull(value))
+            return null;
+        return value.toString();
+    }
+
+    public void saveTokenIdByUserId(String userId, String token) {
+        // 通过userId存放token
+        redisUtils.setex(Constants.REDIS_USER_TOKEN_KEY + userId, token, Constants.REDIS_EXPIRE_TIME_ONE_DAY * REDIS_EXPIRE_TIME_DAY_COUNT);
+    }
+
+    public Object getTokenInfo4Admin(String tokenId) {
+        String tokenKey = Constants.REDIS_ADMIN_TOKEN_KEY + tokenId;
+        return redisUtils.get(tokenKey);
+    }}

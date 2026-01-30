@@ -1,8 +1,8 @@
 package com.easylive.service;
 
-import com.easylive.entity.dto.LoginDTO;
 import com.easylive.entity.dto.RegisterDTO;
 import com.easylive.entity.dto.TokenUserInfoDTO;
+import com.easylive.entity.dto.WebLoginDTO;
 import com.easylive.entity.po.UserInfo;
 import com.easylive.entity.query.UserInfoQuery;
 import com.easylive.entity.vo.PaginationResultVO;
@@ -106,7 +106,7 @@ public interface UserInfoService {
 
 	/**
 	 * 用户登录方法
-	 * @param loginDTO 登录数据传输对象，包含用户登录所需的信息
+	 * @param webLoginDTO 登录数据传输对象，包含用户登录所需的信息
 	 */
-	TokenUserInfoDTO login(LoginDTO loginDTO);
+	TokenUserInfoDTO login(WebLoginDTO webLoginDTO);
 }

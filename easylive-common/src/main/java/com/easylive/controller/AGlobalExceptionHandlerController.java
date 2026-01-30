@@ -1,4 +1,4 @@
-package com.easylive.web.controller;
+package com.easylive.controller;
 
 import com.easylive.entity.vo.ResponseVO;
 import com.easylive.enums.ResponseCodeEnum;
@@ -9,11 +9,14 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.ConstraintViolationException;
 import java.net.BindException;
 @RestControllerAdvice
-public class AGlobalExceptionHandlerController extends ABaseController{
+public class AGlobalExceptionHandlerController {
+
+    private static final String STATUS_ERROR = "error";
 
     private static final Logger logger = LoggerFactory.getLogger(AGlobalExceptionHandlerController.class);
 
@@ -25,31 +28,31 @@ public class AGlobalExceptionHandlerController extends ABaseController{
         if (e instanceof NoHandlerFoundException){
             ajaxResponse.setCode(ResponseCodeEnum.CODE_404.getCode());
             ajaxResponse.setInfo(ResponseCodeEnum.CODE_404.getMsg());
-            ajaxResponse.setStatus(ABaseController.STATUS_ERROR);
+            ajaxResponse.setStatus(STATUS_ERROR);
         }
         else if (e instanceof BusinessException){
         // 业务错误
             BusinessException biz = (BusinessException) e;
             ajaxResponse.setCode(biz.getCode());
             ajaxResponse.setInfo(biz.getMessage());
-            ajaxResponse.setStatus(ABaseController.STATUS_ERROR);
+            ajaxResponse.setStatus(STATUS_ERROR);
         }
         else if (e instanceof BindException || e instanceof ConstraintViolationException){
         // 参数错误
             ajaxResponse.setCode(ResponseCodeEnum.CODE_600.getCode());
             ajaxResponse.setInfo(ResponseCodeEnum.CODE_600.getMsg());
-            ajaxResponse.setStatus(ABaseController.STATUS_ERROR);
+            ajaxResponse.setStatus(STATUS_ERROR);
         }
         else if (e instanceof DuplicateKeyException){
         // 主键冲突
             ajaxResponse.setCode(ResponseCodeEnum.CODE_601.getCode());
             ajaxResponse.setInfo(ResponseCodeEnum.CODE_601.getMsg());
-            ajaxResponse.setStatus(ABaseController.STATUS_ERROR);
+            ajaxResponse.setStatus(STATUS_ERROR);
         }
         else{
             ajaxResponse.setCode(ResponseCodeEnum.CODE_500.getCode());
             ajaxResponse.setInfo(ResponseCodeEnum.CODE_500.getMsg());
-            ajaxResponse.setStatus(ABaseController.STATUS_ERROR);
+            ajaxResponse.setStatus(STATUS_ERROR);
         }
         return ajaxResponse;
     }

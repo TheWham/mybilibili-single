@@ -1,6 +1,6 @@
 package com.easylive.enums;
 
-import com.easylive.entity.constants.Constants;
+import com.easylive.constants.Constants;
 
 public enum SexEnum {
     MALE(Constants.ONE,"男性"),

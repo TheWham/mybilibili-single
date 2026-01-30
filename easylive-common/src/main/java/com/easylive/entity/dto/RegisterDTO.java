@@ -1,7 +1,7 @@
 package com.easylive.entity.dto;
 
 
-import com.easylive.entity.constants.Constants;
+import com.easylive.constants.Constants;
 import lombok.Data;
 
 import javax.validation.constraints.NotEmpty;
