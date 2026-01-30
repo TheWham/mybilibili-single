@@ -1,17 +1,18 @@
 package com.easylive.web.controller;
 
-import java.util.List;
 import com.easylive.entity.po.UserInfo;
-import com.easylive.entity.query.UserInfoQuery;
-import javax.annotation.Resource;
-import com.easylive.service.UserInfoService;
 import com.easylive.entity.query.SimplePage;
+import com.easylive.entity.query.UserInfoQuery;
+import com.easylive.entity.vo.PaginationResultVO;
+import com.easylive.entity.vo.ResponseVO;
 import com.easylive.enums.PageSize;
+import com.easylive.service.UserInfoService;
+import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.easylive.entity.vo.ResponseVO;
-import com.easylive.entity.vo.PaginationResultVO;
+
+import java.util.List;
 /**
  * @author amani
  * @date 2026/01/07

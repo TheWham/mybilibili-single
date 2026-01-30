@@ -4,9 +4,9 @@ import com.easylive.constants.Constants;
 import com.easylive.entity.dto.TokenUserInfoDTO;
 import com.easylive.exception.BusinessException;
 import com.easylive.redis.RedisUtils;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.util.Objects;
 import java.util.UUID;
 

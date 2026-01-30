@@ -5,13 +5,13 @@ import com.easylive.component.RedisComponent;
 import com.easylive.entity.dto.AdminLoginDTO;
 import com.easylive.entity.vo.ResponseVO;
 import com.wf.captcha.ArithmeticCaptcha;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletResponse;
 import java.util.HashMap;
 import java.util.Map;
 

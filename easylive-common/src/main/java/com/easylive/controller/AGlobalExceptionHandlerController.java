@@ -3,6 +3,8 @@ package com.easylive.controller;
 import com.easylive.entity.vo.ResponseVO;
 import com.easylive.enums.ResponseCodeEnum;
 import com.easylive.exception.BusinessException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
@@ -10,8 +12,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.validation.ConstraintViolationException;
 import java.net.BindException;
 @RestControllerAdvice
 public class AGlobalExceptionHandlerController {

@@ -2,11 +2,10 @@ package com.easylive.entity.dto;
 
 
 import com.easylive.constants.Constants;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
-
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
 
 /**
  * 注册数据传输对象(DTO)类

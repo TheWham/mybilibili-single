@@ -7,9 +7,9 @@ import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.enums.PageSize;
 import com.easylive.mappers.CategoryInfoMapper;
 import com.easylive.service.CategoryInfoService;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
 import java.util.List;
 
 

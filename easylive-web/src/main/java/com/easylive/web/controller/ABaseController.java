@@ -6,13 +6,12 @@ import com.easylive.entity.dto.TokenUserInfoDTO;
 import com.easylive.entity.vo.ResponseVO;
 import com.easylive.enums.ResponseCodeEnum;
 import com.easylive.exception.BusinessException;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-
-import javax.annotation.Resource;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 public class ABaseController {
 
