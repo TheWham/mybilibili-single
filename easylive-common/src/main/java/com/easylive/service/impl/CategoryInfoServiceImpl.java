@@ -1,15 +1,19 @@
 package com.easylive.service.impl;
 
+import com.easylive.constants.Constants;
 import com.easylive.entity.po.CategoryInfo;
 import com.easylive.entity.query.CategoryInfoQuery;
 import com.easylive.entity.query.SimplePage;
 import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.enums.PageSize;
+import com.easylive.exception.BusinessException;
 import com.easylive.mappers.CategoryInfoMapper;
 import com.easylive.service.CategoryInfoService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -30,7 +34,30 @@ public class CategoryInfoServiceImpl implements CategoryInfoService {
 	 */
 	@Override
 	public List<CategoryInfo> findListByParam(CategoryInfoQuery param) {
-		return this.categoryInfoMapper.selectList(param);
+		List<CategoryInfo> categoryList = this.categoryInfoMapper.selectList(param);
+
+		if(categoryList.isEmpty())
+			return Collections.emptyList();
+
+		if (param != null && param.isConvert2Tree())
+		{
+			categoryList = addChildren(categoryList, Constants.ZERO);
+		}
+		return categoryList;
+	}
+
+	private List<CategoryInfo> addChildren(List<CategoryInfo> categoryList, Integer pCategoryId)
+	{
+		List<CategoryInfo> children = new ArrayList<>();
+		for (var category : categoryList)
+		{
+			if (category.getCategoryId() != null && category.getPCategoryId() != null && category.getPCategoryId().equals(pCategoryId))
+			{
+				category.setChildren(addChildren(categoryList, category.getCategoryId()));
+				children.add(category);
+			}
+		}
+		return children;
 	}
 
 	/**
@@ -91,7 +118,7 @@ public class CategoryInfoServiceImpl implements CategoryInfoService {
 	 * @description 根据 CategoryId查询
 	 */
 	@Override
-	public CategoryInfo getCategoryInfoByCategoryId(String categoryId) {
+	public CategoryInfo getCategoryInfoByCategoryId(Integer categoryId) {
 		return this.categoryInfoMapper.selectByCategoryId(categoryId);
 	}
 
@@ -99,7 +126,7 @@ public class CategoryInfoServiceImpl implements CategoryInfoService {
 	 * @description 根据 CategoryId更新
 	 */
 	@Override
-	public Integer updateCategoryInfoByCategoryId(CategoryInfo bean, String categoryId) {
+	public Integer updateCategoryInfoByCategoryId(CategoryInfo bean, Integer categoryId) {
 		return this.categoryInfoMapper.updateByCategoryId(bean, categoryId);
 	}
 
@@ -107,8 +134,16 @@ public class CategoryInfoServiceImpl implements CategoryInfoService {
 	 * @description 根据 CategoryId删除
 	 */
 	@Override
-	public Integer deleteCategoryInfoByCategoryId(String categoryId) {
+	public Integer deleteCategoryInfoByCategoryId(Integer categoryId) {
 		return this.categoryInfoMapper.deleteByCategoryId(categoryId);
+	}
+
+	/**
+	 * @description 根据categoryId递归删除
+	 */
+	@Override
+	public void deleteCategory(Integer categoryId) {
+		this.categoryInfoMapper.delCategoryRecursion(categoryId);
 	}
 
 
@@ -134,6 +169,39 @@ public class CategoryInfoServiceImpl implements CategoryInfoService {
 	@Override
 	public Integer deleteCategoryInfoByCategoryCode(String categoryCode) {
 		return this.categoryInfoMapper.deleteByCategoryCode(categoryCode);
+	}
+
+	@Override
+	public void saveCategory(CategoryInfo categoryInfo) {
+		CategoryInfo category = this.categoryInfoMapper.selectByCategoryCode(categoryInfo.getCategoryCode());
+
+		if (category != null && category.getCategoryId() == null
+		|| category != null && category.getCategoryId() != null && !category.getCategoryId().equals(categoryInfo.getCategoryId()))
+			throw new BusinessException("分类编码已存在");
+
+		if (categoryInfo.getCategoryId() == null) {
+			Integer maxSort = categoryInfoMapper.getMaxSort(categoryInfo.getPCategoryId());
+			categoryInfo.setSort(maxSort + 1);
+			categoryInfoMapper.insert(categoryInfo);
+		}else {
+			categoryInfoMapper.updateByCategoryId(categoryInfo, categoryInfo.getCategoryId());
+		}
+
+	}
+
+	@Override
+	public void changeSort(Integer pCategoryId, List<Integer> categoryIds) {
+		Integer sort = 0;
+		List<CategoryInfo> updateCategoryList = new ArrayList<>();
+		for (var categoryId : categoryIds)
+		{
+			CategoryInfo categoryInfo = new CategoryInfo();
+			categoryInfo.setCategoryId(categoryId);
+			categoryInfo.setPCategoryId(pCategoryId);
+			categoryInfo.setSort(++sort);
+			updateCategoryList.add(categoryInfo);
+		}
+		this.categoryInfoMapper.updateSortBatch(updateCategoryList);
 	}
 
 }

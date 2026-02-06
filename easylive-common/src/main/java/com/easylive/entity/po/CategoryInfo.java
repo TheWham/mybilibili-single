@@ -1,6 +1,7 @@
 package com.easylive.entity.po;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * @author amani
@@ -12,7 +13,7 @@ public class CategoryInfo implements Serializable {
 	/**
 	 * @description 自增分类id
 	 */
-    private String categoryId;
+    private Integer categoryId;
 
 	/**
 	 * @description 分类名称
@@ -28,7 +29,7 @@ public class CategoryInfo implements Serializable {
 	 * @description 父级分类id
 
 	 */
-    private String pCategoryId;
+    private Integer pCategoryId;
 
 	/**
 	 * @description 分类背景图
@@ -45,10 +46,45 @@ public class CategoryInfo implements Serializable {
 	 */
     private Integer sort;
 
-	public void setCategoryId(String categoryId) {
+	/**
+	 * @description 子分类
+	 */
+
+	private List<CategoryInfo> children;
+
+	/**
+	 * @description 删除子分类
+	 */
+	private Integer categoryIdOrPCategoryId;
+
+	public Integer getCategoryIdOrPCategoryId() {
+		return categoryIdOrPCategoryId;
+	}
+
+	public void setCategoryIdOrPCategoryId(Integer categoryIdOrPCategoryId) {
+		this.categoryIdOrPCategoryId = categoryIdOrPCategoryId;
+	}
+
+	public Integer getpCategoryId() {
+		return pCategoryId;
+	}
+
+	public void setpCategoryId(Integer pCategoryId) {
+		this.pCategoryId = pCategoryId;
+	}
+
+	public List<CategoryInfo> getChildren() {
+		return children;
+	}
+
+	public void setChildren(List<CategoryInfo> children) {
+		this.children = children;
+	}
+
+	public void setCategoryId(Integer categoryId) {
 		this.categoryId = categoryId;
 	}
-	public String getCategoryId() {
+	public Integer getCategoryId() {
 		return this.categoryId;
 	}
 	public void setCategoryName(String categoryName) {
@@ -63,10 +99,10 @@ public class CategoryInfo implements Serializable {
 	public String getCategoryCode() {
 		return this.categoryCode;
 	}
-	public void setPCategoryId(String pCategoryId) {
+	public void setPCategoryId(Integer pCategoryId) {
 		this.pCategoryId = pCategoryId;
 	}
-	public String getPCategoryId() {
+	public Integer getPCategoryId() {
 		return this.pCategoryId;
 	}
 	public void setBackground(String background) {

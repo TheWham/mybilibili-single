@@ -2,6 +2,8 @@ package com.easylive.mappers;
 
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
+
 /**
  * @author amani
  * @date 2026/01/19
@@ -13,17 +15,17 @@ public interface CategoryInfoMapper<T, R> extends BaseMapper {
 	/**
 	 * @description 根据 CategoryId查询
 	 */
-	T selectByCategoryId(@Param("categoryId") String categoryId);
+	T selectByCategoryId(@Param("categoryId") Integer categoryId);
 
 	/**
 	 * @description 根据 CategoryId更新
 	 */
-	Integer updateByCategoryId(@Param("bean") T t, @Param("categoryId") String categoryId);
+	Integer updateByCategoryId(@Param("bean") T t, @Param("categoryId") Integer categoryId);
 
 	/**
 	 * @description 根据 CategoryId删除
 	 */
-	Integer deleteByCategoryId(@Param("categoryId") String categoryId);
+	Integer deleteByCategoryId(@Param("categoryId") Integer categoryId);
 
 
 	/**
@@ -40,5 +42,15 @@ public interface CategoryInfoMapper<T, R> extends BaseMapper {
 	 * @description 根据 CategoryCode删除
 	 */
 	Integer deleteByCategoryCode(@Param("categoryCode") String categoryCode);
+
+	/**
+	 * @description 获取最大排序数值
+	 */
+
+	Integer getMaxSort(@Param("pCategoryId") Integer pCategoryId);
+
+	void delCategoryRecursion(@Param("categoryIdOrPCategoryId") Integer categoryIdOrPcategoryId);
+
+	void updateSortBatch(@Param("categoryList") List<T> categoryList);
 
 }

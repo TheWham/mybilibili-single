@@ -15,6 +15,13 @@ public class AdminConfig {
     @Value("${admin.password:}")
     private String password;
 
+    @Value("${showFFmpegLog:true}")
+    private Boolean showFFmpegLog;
+
+    public Boolean getShowFFmpegLog() {
+        return showFFmpegLog;
+    }
+
     public String getAccount() {
         return account;
     }

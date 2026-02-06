@@ -22,4 +22,24 @@ public class StringTools {
     public static String generateRandomStr(int length5) {
         return RandomStringUtils.random(length5, true, true);
     }
+
+    public static boolean pathIsOk(String path){
+        if (StringTools.isEmpty(path))
+            return false;
+        if (path.contains("../") || path.contains("..\\"))
+            return false;
+        return true;
+
+    }
+
+    public static String getFileSuffix(String fileName)
+    {
+        if (StringTools.isEmpty(fileName) || !fileName.contains("."))
+            return null;
+
+        String suffix = fileName.substring(fileName.lastIndexOf("."));
+        return suffix;
+    }
+
+
 }

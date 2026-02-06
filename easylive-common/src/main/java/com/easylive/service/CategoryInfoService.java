@@ -49,18 +49,22 @@ public interface CategoryInfoService {
 	/**
 	 * @description 根据 CategoryId查询
 	 */
-	CategoryInfo getCategoryInfoByCategoryId(String categoryId);
+	CategoryInfo getCategoryInfoByCategoryId(Integer categoryId);
 
 	/**
 	 * @description 根据 CategoryId更新
 	 */
-	Integer updateCategoryInfoByCategoryId(CategoryInfo bean, String categoryId);
+	Integer updateCategoryInfoByCategoryId(CategoryInfo bean, Integer categoryId);
 
 	/**
 	 * @description 根据 CategoryId删除
 	 */
-	Integer deleteCategoryInfoByCategoryId(String categoryId);
+	Integer deleteCategoryInfoByCategoryId(Integer categoryId);
 
+	/**
+	 * @description 根据 CategoryId删除
+	 */
+	void deleteCategory(Integer categoryId);
 
 	/**
 	 * @description 根据 CategoryCode查询
@@ -77,4 +81,7 @@ public interface CategoryInfoService {
 	 */
 	Integer deleteCategoryInfoByCategoryCode(String categoryCode);
 
+	void saveCategory(CategoryInfo categoryInfo);
+
+	void changeSort(Integer pCategoryId, List<Integer> categoryIds);
 }

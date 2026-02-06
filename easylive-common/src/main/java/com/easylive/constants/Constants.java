@@ -28,4 +28,11 @@ public class Constants {
     public static final String REDIS_ADMIN_TOKEN_KEY = REDIS_PREFIX + "admin:redisToken:";
     public static final String ADMIN_TOKEN_KEY = "adminToken";
     public static final String REDIS_USER_TOKEN_KEY = REDIS_PREFIX + "web:redisUserToken:";
+
+    public static final String REDIS_ADMIN_CATEGORY_KEY = REDIS_PREFIX  + "admin:category:list:";
+    public static final String FILE_PATH_FOLDER = "file/";
+    public static final int LENGTH_30 = 30;
+    public static final String FILE_PATH_FOLDER_TEMP = "temp/";
+    public static final String FILE_PATH_FOLDER_COVER = "cover/";
+    public static final String IMAGE_THUMBNAIL_SUFFIX = "_thumbnail.jpg";
 }

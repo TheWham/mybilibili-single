@@ -11,3 +11,10 @@
 ../easylive-admin/target/
 ../easylive-web/target/
 ../easylive-common/target/
+# IDEA 和编译文件
+*.class
+/out/
+/target/
+*.iml
+../file
+

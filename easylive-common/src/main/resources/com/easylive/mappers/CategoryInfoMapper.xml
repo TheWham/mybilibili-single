@@ -73,7 +73,11 @@
 		<if test="query.iconFuzzy != null and query.iconFuzzy != ''" >
 			and icon like concat('%', #{query.iconFuzzy}, '%')
 		</if>
+		<if test="query.categoryIdOrPCategoryId != null">
+			and category_id = #{categoryIdOrPCategoryId} or p_category_id = #{categoryIdOrPCategoryId}
+		</if>
 	</sql>
+
 
 	<!--通用查询列表 -->
 	<select id="selectList" resultMap="base_result_map">
@@ -246,6 +250,10 @@
 		delete from category_info where category_id=#{categoryId}
 	</delete>
 
+	<!--根据CategoryIdOrPCategoryId删除 -->
+	<delete id="delCategoryRecursion">
+		delete from category_info where category_id=#{categoryIdOrPCategoryId} or p_category_id=#{categoryIdOrPCategoryId}
+	</delete>
 	<!--根据CategoryId更新 -->
 	<update id="updateByCategoryId" parameterType="com.easylive.entity.po.CategoryInfo">
 		update category_info
@@ -273,6 +281,18 @@
 			</if>
 		</set>
 		where category_id=#{categoryId}
+	</update>
+
+	<update id="updateSortBatch" parameterType="list">
+		<foreach collection="categoryList" separator=";" item="category">
+			update category_info
+			<set>
+				<if test="category.sort != null">
+					sort = #{category.sort},
+				</if>
+			</set>
+			where category_id = #{category.categoryId} and p_category_id = #{category.pCategoryId}
+		</foreach>
 	</update>
 
 	<!--根据CategoryCode查询 -->
@@ -316,5 +336,10 @@
 	</update>
 
 
+
+	<!--获取最大sort值 -->
+	<select id="getMaxSort" resultType="java.lang.Integer">
+		select ifnull(max(sort), 0) from category_info where p_category_id = #{pCategoryId}
+	</select>
 
 </mapper>

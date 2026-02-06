@@ -1,12 +1,16 @@
 package com.easylive.component;
 
+import com.alibaba.fastjson2.JSON;
 import com.easylive.constants.Constants;
 import com.easylive.entity.dto.TokenUserInfoDTO;
+import com.easylive.entity.po.CategoryInfo;
 import com.easylive.exception.BusinessException;
 import com.easylive.redis.RedisUtils;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -98,4 +102,28 @@ public class RedisComponent {
     public Object getTokenInfo4Admin(String tokenId) {
         String tokenKey = Constants.REDIS_ADMIN_TOKEN_KEY + tokenId;
         return redisUtils.get(tokenKey);
-    }}
+    }
+
+    public void saveCategoryList2Redis(List<CategoryInfo> categoryList) {
+        String categoryListKey = Constants.REDIS_ADMIN_CATEGORY_KEY;
+        redisUtils.set(categoryListKey, categoryList);
+    }
+
+    public List<CategoryInfo> getCategoryList()
+    {
+
+        Object value = redisUtils.get(Constants.REDIS_ADMIN_CATEGORY_KEY);
+        if (Objects.isNull(value)) {
+            return Collections.emptyList();
+        }
+        if (value instanceof List) {
+            List<?> list = (List<?>) value;
+            if (list.isEmpty() || list.get(0) instanceof CategoryInfo) {
+                @SuppressWarnings("unchecked")
+                List<CategoryInfo> result = (List<CategoryInfo>) list;
+                return result;
+            }
+        }
+        return JSON.parseArray(JSON.toJSONString(value), CategoryInfo.class);
+    }
+}

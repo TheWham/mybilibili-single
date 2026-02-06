@@ -43,6 +43,19 @@ public class CategoryInfoQuery extends BaseQuery {
 	 */
 	private Integer sort;
 
+	/**
+	 * @description 批量删除分类
+	 */
+
+	private Integer categoryIdOrPCategoryId;
+
+	/**
+	 * @description 是否将线性查询转换成树形
+	 */
+	private boolean convert2Tree;
+
+
+
 	public void setCategoryId(String categoryId) {
 		this.categoryId = categoryId;
 	}
@@ -122,4 +135,35 @@ public class CategoryInfoQuery extends BaseQuery {
 		return this.iconFuzzy;
 	}
 
+	public String getpCategoryId() {
+		return pCategoryId;
+	}
+
+	public void setpCategoryId(String pCategoryId) {
+		this.pCategoryId = pCategoryId;
+	}
+
+	public String getpCategoryIdFuzzy() {
+		return pCategoryIdFuzzy;
+	}
+
+	public void setpCategoryIdFuzzy(String pCategoryIdFuzzy) {
+		this.pCategoryIdFuzzy = pCategoryIdFuzzy;
+	}
+
+	public Integer getCategoryIdOrPCategoryId() {
+		return categoryIdOrPCategoryId;
+	}
+
+	public void setCategoryIdOrPCategoryId(Integer categoryIdOrPCategoryId) {
+		this.categoryIdOrPCategoryId = categoryIdOrPCategoryId;
+	}
+
+	public boolean isConvert2Tree() {
+		return convert2Tree;
+	}
+
+	public void setConvert2Tree(boolean convert2Tree) {
+		this.convert2Tree = convert2Tree;
+	}
 }
