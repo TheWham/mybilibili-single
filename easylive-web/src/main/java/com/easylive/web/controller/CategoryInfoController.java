@@ -1,4 +1,4 @@
-package com.easylive.admin.controller;
+package com.easylive.web.controller;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.easylive.component.RedisComponent;
@@ -153,8 +153,8 @@ public class CategoryInfoController extends ABaseController {
 	}
 
 
-	@RequestMapping("/loadCategory")
-	public ResponseVO loadCategory()
+	@RequestMapping("/loadAllCategory")
+	public ResponseVO loadAllCategory()
 	{
 		List<CategoryInfo> redisList = redisComponent.getCategoryList();
 		if (!redisList.isEmpty()) {

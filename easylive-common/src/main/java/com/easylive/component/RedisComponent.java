@@ -2,7 +2,9 @@ package com.easylive.component;
 
 import com.alibaba.fastjson2.JSON;
 import com.easylive.constants.Constants;
+import com.easylive.entity.dto.SysSettingDto;
 import com.easylive.entity.dto.TokenUserInfoDTO;
+import com.easylive.entity.dto.UploadingFileDto;
 import com.easylive.entity.po.CategoryInfo;
 import com.easylive.exception.BusinessException;
 import com.easylive.redis.RedisUtils;
@@ -125,5 +127,22 @@ public class RedisComponent {
             }
         }
         return JSON.parseArray(JSON.toJSONString(value), CategoryInfo.class);
+    }
+
+    public void saveFileInfo(String userId, UploadingFileDto uploadingFileDto) {
+        String redisUploadFileKey = Constants.REDIS_WEB_UPLOADING_FILE_INFO_KEY + userId + uploadingFileDto.getUploadId();
+        redisUtils.setex(redisUploadFileKey, uploadingFileDto, Constants.REDIS_EXPIRE_TIME_ONE_DAY);
+    }
+    public UploadingFileDto getUploadFileInfo(String key)
+    {
+       return (UploadingFileDto) redisUtils.get(Constants.REDIS_WEB_UPLOADING_FILE_INFO_KEY+ key);
+    }
+
+    public SysSettingDto getSysSetting()
+    {
+        Object sysSetting = redisUtils.get(Constants.REDIS_SYS_SETTING_KEY);
+        if (sysSetting == null)
+            sysSetting = new SysSettingDto();
+        return (SysSettingDto) sysSetting;
     }
 }

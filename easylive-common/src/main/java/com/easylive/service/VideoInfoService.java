@@ -1,0 +1,63 @@
+package com.easylive.service;
+
+import com.easylive.entity.po.VideoInfo;
+import com.easylive.entity.query.VideoInfoQuery;
+import com.easylive.entity.vo.PaginationResultVO;
+
+import java.util.List;
+
+
+/**
+ * @author amani
+ * @date 2026/02/09
+ * @description 视频信息Service
+ */
+public interface VideoInfoService {
+
+	/**
+	 * @description 根据条件查询
+	 */
+	List<VideoInfo> findListByParam(VideoInfoQuery param);
+
+	/**
+	 * @description 根据条件查询数量
+	 */
+	Integer findCountByParam(VideoInfoQuery param);
+
+	/**
+	 * @description 分页查询
+	 */
+	PaginationResultVO<VideoInfo> findListByPage(VideoInfoQuery param);
+
+	/**
+	 * @description 新增
+	 */
+	Integer add(VideoInfo bean);
+
+	/**
+	 * @description 批量新增
+	 */
+	Integer addBatch(List<VideoInfo>  listBean);
+
+	/**
+	 * @description 批量新增/修改
+	 */
+	Integer addOrUpdateBatch(List<VideoInfo> listBean);
+
+
+	/**
+	 * @description 根据 VideoId查询
+	 */
+	VideoInfo getVideoInfoByVideoId(String videoId);
+
+	/**
+	 * @description 根据 VideoId更新
+	 */
+	Integer updateVideoInfoByVideoId(VideoInfo bean, String videoId);
+
+	/**
+	 * @description 根据 VideoId删除
+	 */
+	Integer deleteVideoInfoByVideoId(String videoId);
+
+}

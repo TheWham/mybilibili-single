@@ -42,7 +42,7 @@ mybatis:
     map-underscore-to-camel-case: true
 
 project:
-  folder: d:/webser/easylive/
+  folder: d:/springbootworkspace/easylive-java/
 log:
   root:
     level: debug
