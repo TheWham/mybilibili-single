@@ -1,15 +1,25 @@
 package com.easylive.service.impl;
 
+import com.easylive.component.RedisComponent;
+import com.easylive.config.AdminConfig;
+import com.easylive.constants.Constants;
+import com.easylive.entity.dto.UploadingFileDto;
 import com.easylive.entity.po.VideoInfoFilePost;
 import com.easylive.entity.query.SimplePage;
 import com.easylive.entity.query.VideoInfoFilePostQuery;
 import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.enums.PageSize;
+import com.easylive.exception.BusinessException;
 import com.easylive.mappers.VideoInfoFilePostMapper;
 import com.easylive.service.VideoInfoFilePostService;
+import com.easylive.utils.FFmpegUtils;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.io.RandomAccessFile;
 import java.util.List;
 
 
@@ -19,11 +29,17 @@ import java.util.List;
  * @description 视频文件信息Service
  */
 
+@Slf4j
 @Service("VideoInfoFilePostService")
 public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 	@Resource
 	private VideoInfoFilePostMapper<VideoInfoFilePost, VideoInfoFilePostQuery> videoInfoFilePostMapper;
-
+	@Resource
+	private RedisComponent redisComponent;
+	@Resource
+	private AdminConfig adminConfig;
+	@Resource
+	private FFmpegUtils fFmpegUtils;
 	/**
 	 * @description 根据条件查询
 	 */
@@ -133,6 +149,94 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 	@Override
 	public Integer deleteVideoInfoFilePostByUploadIdAndUserId(String uploadId, String userId) {
 		return this.videoInfoFilePostMapper.deleteByUploadIdAndUserId(uploadId, userId);
+	}
+
+	@Override
+	public void transferVideo(VideoInfoFilePost transferVideo){
+		VideoInfoFilePost updateFilePost = new VideoInfoFilePost();
+		try {
+			String key = Constants.REDIS_WEB_UPLOADING_FILE_INFO_KEY + transferVideo.getUserId() + transferVideo.getUploadId();
+			UploadingFileDto uploadFileInfo = redisComponent.getUploadFileInfo(key);
+			String tempFilePath = adminConfig.getProjectFolder() + Constants.FILE_PATH_FOLDER + Constants.FILE_PATH_FOLDER_TEMP + uploadFileInfo.getFilePath();
+			String targetFilePath = adminConfig.getProjectFolder() + Constants.FILE_PATH_FOLDER + Constants.FILE_PATH_FOLDER_COVER + uploadFileInfo.getFilePath();
+			File targetFile = new File(targetFilePath);
+			File tempFile = new File(tempFilePath);
+
+			FileUtils.copyDirectory(tempFile, targetFile);
+			//删除临时目录
+			FileUtils.forceDelete(tempFile);
+			redisComponent.delUploadVideoInfo(transferVideo.getUserId(), transferVideo.getUploadId());
+
+			String completeFilePath = targetFilePath + Constants.FILE_TEMP_MP4;
+			//合并文件
+			union(targetFilePath, completeFilePath, true);
+			//设置合成文件路径,大小信息
+			Integer videoInfoDuration = fFmpegUtils.getVideoInfoDuration(completeFilePath);
+			updateFilePost.setDuration(videoInfoDuration);
+			updateFilePost.setFileSize(new File(completeFilePath).length());
+			updateFilePost.setFilePath(Constants.FILE_PATH_FOLDER_COVER + uploadFileInfo.getFilePath());
+			// 生成Ts
+			convert2Ts(completeFilePath);
+
+		}catch (Exception e) {
+			log.error("文件转码失败", e);
+		}
+
+	}
+	private void convert2Ts(String completeFilePath)
+	{
+		File videoFile = new File(completeFilePath);
+		File videoFolder = videoFile.getParentFile();
+		String videoCodec = fFmpegUtils.getVideoCodec(completeFilePath);
+		if (Constants.VIDEO_CODEC_HEVC.equals(videoCodec))
+		{
+			String tempFileName = completeFilePath + Constants.FILE_VIDEO_TEMP_SUFFIX;
+			new File(completeFilePath).renameTo(new File(tempFileName));
+			fFmpegUtils.convertHevc2Mp4(tempFileName, completeFilePath);
+			//TODO 转TS
+		}
+	}
+
+	private void union(String dirPath, String toFilePath, Boolean isDelSource)
+	{
+		File dir = new File(dirPath);
+		if (!dir.exists())
+			throw new BusinessException("目录不存在");
+		File fileList[] = dir.listFiles();
+		File targetFile = new File(toFilePath);
+		try (RandomAccessFile wf = new RandomAccessFile(targetFile, "rw")){
+			byte[] b = new byte[1024 * 10];
+			for (int i = 0; i < fileList.length; i ++)
+			{
+				int len = -1;
+				File chunckFile = new File(dirPath  + File.separator + i);
+				RandomAccessFile readFile = null;
+				try {
+					readFile = new RandomAccessFile(chunckFile, "r");
+					while ((len = readFile.read(b) )!= -1)
+					{
+						wf.write(b,0, len);
+					}
+				}catch (Exception e)
+				{
+					log.error("合并分片失败", e);
+					throw new BusinessException("合并文件失败");
+				}finally {
+					readFile.close();
+				}
+			}
+		}catch (Exception e)
+		{
+			throw new BusinessException("合并文件" + dirPath + "出错了");
+		}finally {
+			if (isDelSource)
+			{
+				for (int i = 0;i < fileList.length; i ++)
+				{
+					fileList[i].delete();
+				}
+			}
+		}
 	}
 
 }

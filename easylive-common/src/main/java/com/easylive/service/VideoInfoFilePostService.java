@@ -76,4 +76,5 @@ public interface VideoInfoFilePostService {
 	 */
 	Integer deleteVideoInfoFilePostByUploadIdAndUserId(String uploadId, String userId);
 
+    void transferVideo(VideoInfoFilePost transferVideo);
 }

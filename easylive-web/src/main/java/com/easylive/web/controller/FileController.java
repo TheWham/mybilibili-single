@@ -18,6 +18,7 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.validation.annotation.Validated;
@@ -50,10 +51,10 @@ public class FileController extends ABaseController{
     @RequestMapping("/uploadImage")
     public ResponseVO uploadFile(@NotNull MultipartFile file, @NotNull boolean isCreateThumbnail) throws IOException {
         //创建上传文件保存路径
-        String mouth = DateUtils.format(new Date(), DateTimePatternEnum.YYYYMM.getPattern());
+        String day = DateUtils.format(new Date(), DateTimePatternEnum.YYYYMMDD.getPattern());
         String folderPath = adminConfig.getProjectFolder()
                 + Constants.FILE_PATH_FOLDER + Constants.FILE_PATH_FOLDER_COVER
-                + mouth;
+                + day;
 
         //获取文件后缀".xxx"
         String originalFilename = file.getOriginalFilename();
@@ -76,7 +77,7 @@ public class FileController extends ABaseController{
             fFmpegUtils.createImageThumbnail(filePath);
         }
         //返回图片路径
-        return getSuccessResponseVO(Constants.FILE_PATH_FOLDER_COVER + mouth + "/" + fileRealName);
+        return getSuccessResponseVO(Constants.FILE_PATH_FOLDER_COVER + day + "/" + fileRealName);
     }
 
     /**
@@ -146,7 +147,7 @@ public class FileController extends ABaseController{
     public ResponseVO uploadVideo(@NotNull MultipartFile chunkFile, @NotNull Integer chunkIndex, @NotEmpty String uploadId) throws IOException {
 
         TokenUserInfoDTO tokenUserInfo = getTokenUserInfo();
-        UploadingFileDto uploadFileInfo = redisComponent.getUploadFileInfo( tokenUserInfo.getUserId() + uploadId);
+        UploadingFileDto uploadFileInfo = redisComponent.getUploadFileInfo( Constants.REDIS_WEB_UPLOADING_FILE_INFO_KEY + tokenUserInfo.getUserId() + uploadId);
 
 
         if (uploadFileInfo == null)
@@ -173,6 +174,25 @@ public class FileController extends ABaseController{
         return getSuccessResponseVO(null);
     }
 
+    @RequestMapping("/delUploadVideo")
+    public ResponseVO delUploadVideo(@NotEmpty String uploadId) throws IOException {
+        TokenUserInfoDTO tokenUserInfo = getTokenUserInfo();
+        String userId = tokenUserInfo.getUserId();
+        UploadingFileDto uploadFileInfo = redisComponent.getUploadFileInfo(Constants.REDIS_WEB_UPLOADING_FILE_INFO_KEY + userId + uploadId);
 
+        if (uploadFileInfo == null)
+            throw new BusinessException("文件失效请重新上传");
+
+        //删除文件
+        String folderPath = uploadFileInfo.getFilePath();
+        String folderAbsolutePath = adminConfig.getProjectFolder() + Constants.FILE_PATH_FOLDER + Constants.FILE_PATH_FOLDER_TEMP+ folderPath;
+
+        FileUtils.deleteDirectory(new File(folderAbsolutePath));
+        // 删除缓存
+        redisComponent.delUploadVideoInfo(userId, uploadId);
+
+
+        return getSuccessResponseVO(null);
+    }
 
 }

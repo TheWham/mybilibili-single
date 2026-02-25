@@ -6,9 +6,11 @@ import com.easylive.entity.dto.SysSettingDto;
 import com.easylive.entity.dto.TokenUserInfoDTO;
 import com.easylive.entity.dto.UploadingFileDto;
 import com.easylive.entity.po.CategoryInfo;
+import com.easylive.entity.po.VideoInfoFilePost;
 import com.easylive.exception.BusinessException;
 import com.easylive.redis.RedisUtils;
 import jakarta.annotation.Resource;
+import jakarta.validation.constraints.NotEmpty;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -135,7 +137,7 @@ public class RedisComponent {
     }
     public UploadingFileDto getUploadFileInfo(String key)
     {
-       return (UploadingFileDto) redisUtils.get(Constants.REDIS_WEB_UPLOADING_FILE_INFO_KEY+ key);
+       return (UploadingFileDto) redisUtils.get(key);
     }
 
     public SysSettingDto getSysSetting()
@@ -144,5 +146,25 @@ public class RedisComponent {
         if (sysSetting == null)
             sysSetting = new SysSettingDto();
         return (SysSettingDto) sysSetting;
+    }
+
+    public void delUploadVideoInfo(String userId, @NotEmpty String uploadId) {
+        String key = Constants.REDIS_WEB_UPLOADING_FILE_INFO_KEY + userId + uploadId;
+        redisUtils.delete(key);
+    }
+
+    public void addFileList2DelQueue(String videoId, List<String> filePathList) {
+        String key = Constants.REDIS_WEB_ADD_DEL_QUEUE_KEY + videoId;
+        redisUtils.lpushAll(key, filePathList, Constants.REDIS_EXPIRE_TIME_ONE_DAY*7);
+    }
+
+    public void addFileList2TransferQueue(List<VideoInfoFilePost> addList) {
+        String key = Constants.REDIS_WEB_ADD_TRANSFER_QUEUE_KEY;
+        redisUtils.lpushAll(key, addList, 0);
+    }
+
+    public VideoInfoFilePost getTransferVideoInfo4Queue() {
+        String key = Constants.REDIS_WEB_ADD_TRANSFER_QUEUE_KEY;
+        return (VideoInfoFilePost)redisUtils.rpop(key);
     }
 }

@@ -32,13 +32,23 @@ public class Constants {
 
 
     public static final String FILE_PATH_FOLDER = "file/";
+    public static final String FILE_PATH_FOLDER_VIDEO = "video/";
     public static final Integer LENGTH_30 = 30;
     public static final String FILE_PATH_FOLDER_TEMP = "temp/";
     public static final String FILE_PATH_FOLDER_COVER = "cover/";
     public static final String IMAGE_THUMBNAIL_SUFFIX = "_thumbnail.jpg";
     public static final Integer LENGTH_15 = 15;
+    public static final Integer LENGTH_10 = 10;
     public static final String REDIS_WEB_UPLOADING_FILE_INFO_KEY = REDIS_PREFIX + "uploadFileInfo:";
     public static final Long MB_SIZE = 1024 * 1024L;
     public static final String REDIS_SYS_SETTING_KEY = REDIS_PREFIX + "sysSetting:";
 
+    public static final String REDIS_WEB_ADD_DEL_QUEUE_KEY = REDIS_PREFIX + "queue:del:file:list:";
+    public static final Integer LENGTH_20 = 20;
+    public static final String REDIS_WEB_ADD_TRANSFER_QUEUE_KEY = REDIS_PREFIX + "queue:transfer:file:list:";
+    public static final Integer LENGTH_2 = 2;
+    public static final String FILE_TEMP_MP4 = "/temp.mp4";
+    public static final String VIDEO_CODEC_HEVC = "hevc";
+    public static final String FILE_VIDEO_TEMP_SUFFIX = "_temp";
 }
+
