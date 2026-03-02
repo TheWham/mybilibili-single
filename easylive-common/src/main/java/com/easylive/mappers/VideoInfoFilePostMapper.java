@@ -40,4 +40,5 @@ public interface VideoInfoFilePostMapper<T, R> extends BaseMapper {
 	 */
 	Integer deleteByUploadIdAndUserId(@Param("uploadId") String uploadId, @Param("userId") String userId);
 
+    Integer getSumDuration(@Param("videoId") String videoId);
 }

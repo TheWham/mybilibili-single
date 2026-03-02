@@ -5,12 +5,16 @@ import com.easylive.config.AdminConfig;
 import com.easylive.constants.Constants;
 import com.easylive.entity.dto.UploadingFileDto;
 import com.easylive.entity.po.VideoInfoFilePost;
+import com.easylive.entity.po.VideoInfoPost;
 import com.easylive.entity.query.SimplePage;
 import com.easylive.entity.query.VideoInfoFilePostQuery;
 import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.enums.PageSize;
+import com.easylive.enums.VideoFileTransferResultEnum;
+import com.easylive.enums.VideoStatusEnum;
 import com.easylive.exception.BusinessException;
 import com.easylive.mappers.VideoInfoFilePostMapper;
+import com.easylive.mappers.VideoInfoPostMapper;
 import com.easylive.service.VideoInfoFilePostService;
 import com.easylive.utils.FFmpegUtils;
 import jakarta.annotation.Resource;
@@ -38,6 +42,8 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 	private RedisComponent redisComponent;
 	@Resource
 	private AdminConfig adminConfig;
+	@Resource
+	private VideoInfoPostMapper videoInfoPostMapper;
 	@Resource
 	private FFmpegUtils fFmpegUtils;
 	/**
@@ -158,7 +164,7 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 			String key = Constants.REDIS_WEB_UPLOADING_FILE_INFO_KEY + transferVideo.getUserId() + transferVideo.getUploadId();
 			UploadingFileDto uploadFileInfo = redisComponent.getUploadFileInfo(key);
 			String tempFilePath = adminConfig.getProjectFolder() + Constants.FILE_PATH_FOLDER + Constants.FILE_PATH_FOLDER_TEMP + uploadFileInfo.getFilePath();
-			String targetFilePath = adminConfig.getProjectFolder() + Constants.FILE_PATH_FOLDER + Constants.FILE_PATH_FOLDER_COVER + uploadFileInfo.getFilePath();
+			String targetFilePath = adminConfig.getProjectFolder() + Constants.FILE_PATH_FOLDER + Constants.FILE_PATH_FOLDER_VIDEO + uploadFileInfo.getFilePath();
 			File targetFile = new File(targetFilePath);
 			File tempFile = new File(tempFilePath);
 
@@ -174,27 +180,59 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 			Integer videoInfoDuration = fFmpegUtils.getVideoInfoDuration(completeFilePath);
 			updateFilePost.setDuration(videoInfoDuration);
 			updateFilePost.setFileSize(new File(completeFilePath).length());
-			updateFilePost.setFilePath(Constants.FILE_PATH_FOLDER_COVER + uploadFileInfo.getFilePath());
+			updateFilePost.setFilePath(Constants.FILE_PATH_FOLDER_VIDEO + uploadFileInfo.getFilePath());
+			updateFilePost.setTransferResult(VideoFileTransferResultEnum.SUCCESS.getStatus());
 			// 生成Ts
 			convert2Ts(completeFilePath);
-
 		}catch (Exception e) {
+			//转码失败更新状态
+			updateFilePost.setTransferResult(VideoFileTransferResultEnum.FAILED.getStatus());
 			log.error("文件转码失败", e);
+		}finally {
+			videoInfoFilePostMapper.updateByUploadIdAndUserId(updateFilePost, transferVideo.getUploadId(), transferVideo.getUserId());
+			//检查是否全部转码完毕,设置文件持续时间总和
+			VideoInfoFilePostQuery videoInfoFilePostQuery = new VideoInfoFilePostQuery();
+			videoInfoFilePostQuery.setVideoId(transferVideo.getVideoId());
+			videoInfoFilePostQuery.setUserId(transferVideo.getUserId());
+			videoInfoFilePostQuery.setTransferResult(VideoFileTransferResultEnum.FAILED.getStatus());
+			Integer isFailedCounts = this.findCountByParam(videoInfoFilePostQuery);
+			//如果有没有转换完成的,设置转换失败
+			if (isFailedCounts > 0)
+			{
+				VideoInfoPost updateInfoPost = new VideoInfoPost();
+				updateInfoPost.setStatus(VideoStatusEnum.STATUS_1.getStatus());
+				videoInfoPostMapper.updateByVideoId(updateInfoPost,transferVideo.getVideoId());
+				return;
+			}
+			videoInfoFilePostQuery.setTransferResult(VideoFileTransferResultEnum.TRANSFER.getStatus());
+			Integer transferCount = this.findCountByParam(videoInfoFilePostQuery);
+			//转码成功
+			if (transferCount == 0)
+			{
+				//设置待审核状态
+				Integer duration = videoInfoFilePostMapper.getSumDuration(transferVideo.getVideoId());
+				VideoInfoPost videoInfoPost = new VideoInfoPost();
+				videoInfoPost.setDuration(duration);
+				videoInfoPost.setStatus(VideoStatusEnum.STATUS_2.getStatus());
+				videoInfoPostMapper.updateByVideoId(videoInfoPost,transferVideo.getVideoId());
+			}
 		}
 
 	}
 	private void convert2Ts(String completeFilePath)
 	{
 		File videoFile = new File(completeFilePath);
-		File videoFolder = videoFile.getParentFile();
+		File tsFolder = videoFile.getParentFile();
 		String videoCodec = fFmpegUtils.getVideoCodec(completeFilePath);
 		if (Constants.VIDEO_CODEC_HEVC.equals(videoCodec))
 		{
 			String tempFileName = completeFilePath + Constants.FILE_VIDEO_TEMP_SUFFIX;
 			new File(completeFilePath).renameTo(new File(tempFileName));
 			fFmpegUtils.convertHevc2Mp4(tempFileName, completeFilePath);
-			//TODO 转TS
+			new File(tempFileName).delete();
 		}
+		fFmpegUtils.convertVideo2Ts(tsFolder, completeFilePath);
+		videoFile.delete();
 	}
 
 	private void union(String dirPath, String toFilePath, Boolean isDelSource)

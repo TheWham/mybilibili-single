@@ -85,6 +85,43 @@ public class VideoInfoPostQuery extends BaseQuery {
 	 */
 	private Integer duration;
 
+	/**
+	 * @description 排除其他状态
+	 * @param excludeStatusArray
+	 */
+
+	private Integer [] excludeStatusArray;
+
+	/**
+	 * @description 是否查询数量
+	 * @param isQueryCountInfo
+	 */
+	private Boolean isQueryCountInfo;
+
+	public Boolean getQueryCountInfo() {
+		return isQueryCountInfo;
+	}
+
+	public void setQueryCountInfo(Boolean queryCountInfo) {
+		isQueryCountInfo = queryCountInfo;
+	}
+
+	public Integer getpCategoryId() {
+		return pCategoryId;
+	}
+
+	public void setpCategoryId(Integer pCategoryId) {
+		this.pCategoryId = pCategoryId;
+	}
+
+	public Integer[] getExcludeStatusArray() {
+		return excludeStatusArray;
+	}
+
+	public void setExcludeStatusArray(Integer[] excludeStatusArray) {
+		this.excludeStatusArray = excludeStatusArray;
+	}
+
 	public void setVideoId(String videoId) {
 		this.videoId = videoId;
 	}

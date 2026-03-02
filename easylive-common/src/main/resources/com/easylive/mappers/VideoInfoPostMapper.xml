@@ -38,55 +38,55 @@
 
 	<!--通用查询结果列 -->
 	<sql id="base_column_list">
-		video_id,video_cover,video_name,user_id,create_time,last_update_time,p_category_id,category_id,status,post_type,origin_info,tags,introduction,interaction,duration
+		v.video_id,v.video_cover,v.video_name,v.user_id,v.create_time,v.last_update_time,v.p_category_id,v.category_id,v.status,v.post_type,v.origin_info,v.tags,v.introduction,v.interaction,v.duration
 	</sql>
 
 	<!--基础查询条件 -->
 	<sql id="base_query_condition">
 		<if test="query.videoId != null and query.videoId != ''" >
-			and video_id = #{query.videoId}
+			and v.video_id = #{query.videoId}
 		</if>
 		<if test="query.videoCover != null and query.videoCover != ''" >
-			and video_cover = #{query.videoCover}
+			and v.video_cover = #{query.videoCover}
 		</if>
 		<if test="query.videoName != null and query.videoName != ''" >
-			and video_name = #{query.videoName}
+			and v.video_name = #{query.videoName}
 		</if>
 		<if test="query.userId != null and query.userId != ''" >
-			and user_id = #{query.userId}
+			and v.user_id = #{query.userId}
 		</if>
 		<if test="query.createTime != null and query.createTime != ''" >
-			<![CDATA[ and create_time=str_to_date(#{query.createTime}, '%Y-%m-%d') ]]>
+			<![CDATA[ and v.create_time=str_to_date(#{query.createTime}, '%Y-%m-%d') ]]>
 		</if>
 		<if test="query.lastUpdateTime != null and query.lastUpdateTime != ''" >
-			<![CDATA[ and last_update_time=str_to_date(#{query.lastUpdateTime}, '%Y-%m-%d') ]]>
+			<![CDATA[ and v.last_update_time=str_to_date(#{query.lastUpdateTime}, '%Y-%m-%d') ]]>
 		</if>
 		<if test="query.pCategoryId != null" >
-			and p_category_id = #{query.pCategoryId}
+			and v.p_category_id = #{query.pCategoryId}
 		</if>
 		<if test="query.categoryId != null" >
-			and category_id = #{query.categoryId}
+			and v.category_id = #{query.categoryId}
 		</if>
 		<if test="query.status != null" >
-			and status = #{query.status}
+			and v.status = #{query.status}
 		</if>
 		<if test="query.postType != null" >
-			and post_type = #{query.postType}
+			and v.post_type = #{query.postType}
 		</if>
 		<if test="query.originInfo != null and query.originInfo != ''" >
-			and origin_info = #{query.originInfo}
+			and v.origin_info = #{query.originInfo}
 		</if>
 		<if test="query.tags != null and query.tags != ''" >
-			and tags = #{query.tags}
+			and v.tags = #{query.tags}
 		</if>
 		<if test="query.introduction != null and query.introduction != ''" >
-			and introduction = #{query.introduction}
+			and v.introduction = #{query.introduction}
 		</if>
 		<if test="query.interaction != null and query.interaction != ''" >
-			and interaction = #{query.interaction}
+			and v.interaction = #{query.interaction}
 		</if>
 		<if test="query.duration != null" >
-			and duration = #{query.duration}
+			and v.duration = #{query.duration}
 		</if>
 	</sql>
 
@@ -101,40 +101,46 @@
 	<!--拓展查询条件 -->
 	<sql id="base_query_condition_extend">
 		<if test="query.videoIdFuzzy != null and query.videoIdFuzzy != ''" >
-			and video_id like concat('%', #{query.videoIdFuzzy}, '%')
+			and v.video_id like concat('%', #{query.videoIdFuzzy}, '%')
 		</if>
 		<if test="query.videoCoverFuzzy != null and query.videoCoverFuzzy != ''" >
-			and video_cover like concat('%', #{query.videoCoverFuzzy}, '%')
+			and v.video_cover like concat('%', #{query.videoCoverFuzzy}, '%')
 		</if>
 		<if test="query.videoNameFuzzy != null and query.videoNameFuzzy != ''" >
-			and video_name like concat('%', #{query.videoNameFuzzy}, '%')
+			and v.video_name like concat('%', #{query.videoNameFuzzy}, '%')
 		</if>
 		<if test="query.userIdFuzzy != null and query.userIdFuzzy != ''" >
-			and user_id like concat('%', #{query.userIdFuzzy}, '%')
+			and v.user_id like concat('%', #{query.userIdFuzzy}, '%')
 		</if>
 		<if test="query.createTimeStart != null and query.createTimeStart != ''" >
-			<![CDATA[ and create_time >= str_to_date(#{query.createTimeStart}, '%Y-%m-%d')]]>
+			<![CDATA[ and v.create_time >= str_to_date(#{query.createTimeStart}, '%Y-%m-%d')]]>
 		</if>
 		<if test="query.createTimeEnd != null and query.createTimeEnd != ''" >
-			<![CDATA[ and create_time <= DATE_SUB(str_to_date(#{query.createTimeEnd}, '%Y-%m-%d'), INTERVAL 1 DAY)]]>
+			<![CDATA[ and v.create_time <= DATE_SUB(str_to_date(#{query.createTimeEnd}, '%Y-%m-%d'), INTERVAL 1 DAY)]]>
 		</if>
 		<if test="query.lastUpdateTimeStart != null and query.lastUpdateTimeStart != ''" >
-			<![CDATA[ and last_update_time >= str_to_date(#{query.lastUpdateTimeStart}, '%Y-%m-%d')]]>
+			<![CDATA[ and v.last_update_time >= str_to_date(#{query.lastUpdateTimeStart}, '%Y-%m-%d')]]>
 		</if>
 		<if test="query.lastUpdateTimeEnd != null and query.lastUpdateTimeEnd != ''" >
-			<![CDATA[ and last_update_time <= DATE_SUB(str_to_date(#{query.lastUpdateTimeEnd}, '%Y-%m-%d'), INTERVAL 1 DAY)]]>
+			<![CDATA[ and v.last_update_time <= DATE_SUB(str_to_date(#{query.lastUpdateTimeEnd}, '%Y-%m-%d'), INTERVAL 1 DAY)]]>
 		</if>
 		<if test="query.originInfoFuzzy != null and query.originInfoFuzzy != ''" >
-			and origin_info like concat('%', #{query.originInfoFuzzy}, '%')
+			and v.origin_info like concat('%', #{query.originInfoFuzzy}, '%')
 		</if>
 		<if test="query.tagsFuzzy != null and query.tagsFuzzy != ''" >
-			and tags like concat('%', #{query.tagsFuzzy}, '%')
+			and v.tags like concat('%', #{query.tagsFuzzy}, '%')
 		</if>
 		<if test="query.introductionFuzzy != null and query.introductionFuzzy != ''" >
-			and introduction like concat('%', #{query.introductionFuzzy}, '%')
+			and v.introduction like concat('%', #{query.introductionFuzzy}, '%')
 		</if>
 		<if test="query.interactionFuzzy != null and query.interactionFuzzy != ''" >
-			and interaction like concat('%', #{query.interactionFuzzy}, '%')
+			and v.interaction like concat('%', #{query.interactionFuzzy}, '%')
+		</if>
+		<if test="query.excludeStatusArray != null and query.excludeStatusArray.length > 0">
+			and v.status not in
+			<foreach collection="query.excludeStatusArray" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
 		</if>
 	</sql>
 
@@ -142,7 +148,13 @@
 	<select id="selectList" resultMap="base_result_map">
 		SELECT
 		<include refid="base_column_list"/>
-		FROM video_info_post
+		<if test="query.isQueryCountInfo">
+		 ,c.play_count, c.like_count, c.coin_count, c.danmu_count, c.comment_count, c.collect_count,c.recommend_type
+		</if>
+		FROM video_info_post v
+		<if test="query.isQueryCountInfo">
+			left join video_info c on c.video_id = v.video_id
+		</if>
 		<include refid="query_condition"/>
 		<if test="query.orderBy!=null">
 			order by ${query.orderBy}
@@ -154,7 +166,7 @@
 
 	<!--查询数量 -->
 	<select id="selectCount" resultType="java.lang.Integer">
-		SELECT count(1) FROM video_info_post
+		SELECT count(1) FROM video_info_post v
 		<include refid="query_condition"/>
 	</select>
 
@@ -427,7 +439,7 @@
 	<!--根据VideoId查询 -->
 	<select id="selectByVideoId" resultMap="base_result_map">
 		select <include refid="base_column_list"/>
-		from video_info_post where video_id=#{videoId}
+		from video_info_post v where v.video_id=#{videoId}
 	</select>
 
 	<!--根据VideoId删除 -->

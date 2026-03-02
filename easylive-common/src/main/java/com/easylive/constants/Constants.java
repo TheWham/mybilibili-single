@@ -50,5 +50,7 @@ public class Constants {
     public static final String FILE_TEMP_MP4 = "/temp.mp4";
     public static final String VIDEO_CODEC_HEVC = "hevc";
     public static final String FILE_VIDEO_TEMP_SUFFIX = "_temp";
+    public static final String TS_NAME = "index.ts";
+    public static final String M3U8_NAME = "index.m3u8";
 }
 

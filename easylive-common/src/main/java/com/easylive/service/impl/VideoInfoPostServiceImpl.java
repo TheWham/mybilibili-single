@@ -14,7 +14,6 @@ import com.easylive.enums.*;
 import com.easylive.exception.BusinessException;
 import com.easylive.mappers.VideoInfoPostMapper;
 import com.easylive.service.VideoInfoFilePostService;
-import com.easylive.service.VideoInfoFileService;
 import com.easylive.service.VideoInfoPostService;
 import com.easylive.utils.JsonUtils;
 import com.easylive.utils.StringTools;
@@ -46,8 +45,6 @@ public class VideoInfoPostServiceImpl implements VideoInfoPostService {
 
 	@Resource
 	private VideoInfoFilePostService videoInfoFilePostService;
-	@Resource
-	private VideoInfoFileService videoInfoFileService;
 
 	/**
 	 * @description 根据条件查询
@@ -148,7 +145,7 @@ public class VideoInfoPostServiceImpl implements VideoInfoPostService {
 		//删除列表
 		List<VideoInfoFilePost> deleteList = new ArrayList<>();
 		//新增列表
-		List<VideoInfoFilePost> addList = null;
+		List<VideoInfoFilePost> addList = uploadFilesInfo;
 		// 根据前端是否传过来videoId来判断是添加还是修改操作
 		if (!StringTools.isEmpty(videoInfoPostDTO.getVideoId()))
 		{
@@ -207,7 +204,7 @@ public class VideoInfoPostServiceImpl implements VideoInfoPostService {
 			videoInfoPost.setCreateTime(new Date());
 			videoInfoPost.setLastUpdateTime(new Date());
 			videoInfoPost.setStatus(VideoStatusEnum.STATUS_0.getStatus());
-			videoInfoPost.setVideoId(StringTools.generateRandomNumber(Constants.LENGTH_10));
+			videoInfoPost.setVideoId(videoID);
 			videoInfoPostMapper.insert(videoInfoPost);
 		}
 

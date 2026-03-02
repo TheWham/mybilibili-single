@@ -6,6 +6,7 @@ import com.easylive.constants.Constants;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.math.BigDecimal;
 
 @Component
@@ -36,8 +37,9 @@ public class FFmpegUtils {
         String cmd = String.format(CMD_GET_CODE, videoFilePath);
         String result = ProcessUtils.executeCommand(cmd, adminConfig.getShowFFmpegLog());
         result = result.replace("\n", "");
-        result = result.substring(0,result.indexOf("=") + 1);
-        String codec = result.substring(0, result.indexOf("["));
+        int start = result.indexOf("codec_name=") + "codec_name=".length();
+        int end = result.indexOf("[/STREAM]");
+        String codec = result.substring(start, end);
         return codec;
     }
 
@@ -46,5 +48,20 @@ public class FFmpegUtils {
         String CMD_HEVC_264 = "ffmpeg -i \"%s\" -c:v libx264 -crf 20 \"%s\" -y";
         String cmd = String.format(CMD_HEVC_264, newFileName, videoFilePath);
         ProcessUtils.executeCommand(cmd, adminConfig.getShowFFmpegLog());
+    }
+
+    public void convertVideo2Ts(File tsFolder, String videoFilePath)
+    {
+      //  final String CMD_TRANSFER_2TS ="ffmpeg -y -i \"%s\" -c:v copy -c:a copy -bsf:v hevc_mp4toannexb \"%s\"";
+        final String CMD_TRANSFER_2TS = "ffmpeg -y -i \"%s\" -c:v copy -c:a copy -bsf:v h264_mp4toannexb \"%s\"";
+        final String CMD_CUT_TS = "ffmpeg -i \"%s\" -c copy -map 0 -f segment -segment_list \"%s\" -segment_time 10 %s/%%4d.ts";
+        String tsPath = tsFolder.getPath() + "\\" + Constants.TS_NAME;
+        //生成.ts
+        String cmd = String.format(CMD_TRANSFER_2TS, videoFilePath, tsPath);
+        ProcessUtils.executeCommand(cmd, adminConfig.getShowFFmpegLog());
+        //生成索引文件.m3u8 和切片.ts
+        cmd = String.format(CMD_CUT_TS, tsPath, tsFolder.getPath() + "\\" + Constants.M3U8_NAME, tsFolder.getPath());
+        ProcessUtils.executeCommand(cmd, adminConfig.getShowFFmpegLog());
+        new File(tsPath).delete();
     }
 }

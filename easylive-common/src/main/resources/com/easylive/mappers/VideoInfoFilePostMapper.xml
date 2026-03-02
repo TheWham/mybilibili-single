@@ -120,6 +120,11 @@
 		<include refid="query_condition"/>
 	</select>
 
+	<!--查询视频总时间-->
+	<select id="getSumDuration" resultType="java.lang.Integer">
+		select ifnull(sum(duration), 0) from video_info_file_post where video_id = #{videoId}
+	</select>
+
 	<!--插入 -->
 	<insert id="insert" parameterType="com.easylive.entity.po.VideoInfoFilePost">
 		INSERT INTO video_info_file_post
