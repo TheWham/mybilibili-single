@@ -110,4 +110,9 @@ public class VideoInfoFileServiceImpl implements VideoInfoFileService {
 		return this.videoInfoFileMapper.deleteByFileId(fileId);
 	}
 
+	@Override
+	public Integer deleteByCondition(VideoInfoFileQuery videoInfoFileQuery) {
+		return this.videoInfoFileMapper.deleteByCondition(videoInfoFileQuery);
+	}
+
 }

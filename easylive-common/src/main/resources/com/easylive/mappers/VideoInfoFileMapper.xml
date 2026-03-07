@@ -274,6 +274,11 @@
 		delete from video_info_file where file_id=#{fileId}
 	</delete>
 
+	<!--根据条件删除-->
+	<delete id="deleteByCondition">
+		delete from video_info_file <include refid="query_condition"/>
+	</delete>
+
 	<!--根据FileId更新 -->
 	<update id="updateByFileId" parameterType="com.easylive.entity.po.VideoInfoFile">
 		update video_info_file

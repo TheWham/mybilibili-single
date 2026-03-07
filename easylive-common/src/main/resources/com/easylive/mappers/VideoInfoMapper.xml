@@ -580,6 +580,80 @@
 	<delete id="deleteByVideoId">
 		delete from video_info where video_id=#{videoId}
 	</delete>
+	<!--条件更新-->
+	<update id="updateByCondition">
+		update video_info
+		<set>
+			<if test="bean.videoId != null">
+				video_id = #{bean.videoId},
+			</if>
+			<if test="bean.videoName != null">
+				video_name = #{bean.videoName},
+			</if>
+			<if test="bean.videoCover != null">
+				video_cover = #{bean.videoCover},
+			</if>
+			<if test="bean.userId != null">
+				user_id = #{bean.userId},
+			</if>
+			<if test="bean.createTime != null">
+				create_time = #{bean.createTime},
+			</if>
+			<if test="bean.lastUpdateTime != null">
+				last_update_time = #{bean.lastUpdateTime},
+			</if>
+			<if test="bean.pCategoryId != null">
+				p_category_id = #{bean.pCategoryId},
+			</if>
+			<if test="bean.categoryId != null">
+				category_id = #{bean.categoryId},
+			</if>
+			<if test="bean.postType != null">
+				post_type = #{bean.postType},
+			</if>
+			<if test="bean.originInfo != null">
+				origin_info = #{bean.originInfo},
+			</if>
+			<if test="bean.tags != null">
+				tags = #{bean.tags},
+			</if>
+			<if test="bean.introduction != null">
+				introduction = #{bean.introduction},
+			</if>
+			<if test="bean.duration != null">
+				duration = #{bean.duration},
+			</if>
+			<if test="bean.interaction != null">
+				interaction = #{bean.interaction},
+			</if>
+			<if test="bean.playCount != null">
+				play_count = #{bean.playCount},
+			</if>
+			<if test="bean.likeCount != null">
+				like_count = #{bean.likeCount},
+			</if>
+			<if test="bean.coinCount != null">
+				coin_count = #{bean.coinCount},
+			</if>
+			<if test="bean.danmuCount != null">
+				danmu_count = #{bean.danmuCount},
+			</if>
+			<if test="bean.commentCount != null">
+				comment_count = #{bean.commentCount},
+			</if>
+			<if test="bean.collectCount != null">
+				collect_count = #{bean.collectCount},
+			</if>
+			<if test="bean.recommendType != null">
+				recommend_type = #{bean.recommendType},
+			</if>
+			<if test="bean.lastPlayTime != null">
+				last_play_time = #{bean.lastPlayTime},
+			</if>
+		</set>
+		<include refid="query_condition"/>
+
+	</update>
 
 	<!--根据VideoId更新 -->
 	<update id="updateByVideoId" parameterType="com.easylive.entity.po.VideoInfo">

@@ -60,4 +60,8 @@ public interface VideoInfoService {
 	 */
 	Integer deleteVideoInfoByVideoId(String videoId);
 
+    Integer updateByCondition(VideoInfo videoInfo, VideoInfoQuery videoInfoQuery);
+	Integer addOrUpdate(VideoInfo videoInfo);
+
+	void auditVideo(String videoId, Integer status, String reason);
 }

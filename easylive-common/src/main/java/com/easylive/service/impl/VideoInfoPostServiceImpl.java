@@ -243,6 +243,12 @@ public class VideoInfoPostServiceImpl implements VideoInfoPostService {
 		}
 
 	}
+
+	@Override
+	public Integer updateByCondition(VideoInfoPost updateInfoPost, VideoInfoPostQuery postQuery) {
+		return videoInfoPostMapper.updateByCondition(updateInfoPost, postQuery);
+	}
+
 	private Boolean isChangeVideoInfoPost(VideoInfoPostDTO videoInfoPost)
 	{
 		VideoInfoPost currentVideoInfo = videoInfoPostMapper.selectByVideoId(videoInfoPost.getVideoId());

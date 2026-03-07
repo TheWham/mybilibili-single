@@ -98,6 +98,19 @@ public class VideoInfoPostQuery extends BaseQuery {
 	 */
 	private Boolean isQueryCountInfo;
 
+	/**
+	 * @description 是否查询用户信息
+	 */
+	private Boolean isQueryUserInfo;
+
+	public Boolean getQueryUserInfo() {
+		return isQueryUserInfo;
+	}
+
+	public void setQueryUserInfo(Boolean queryUserInfo) {
+		isQueryUserInfo = queryUserInfo;
+	}
+
 	public Boolean getQueryCountInfo() {
 		return isQueryCountInfo;
 	}

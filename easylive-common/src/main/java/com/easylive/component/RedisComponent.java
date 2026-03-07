@@ -167,4 +167,16 @@ public class RedisComponent {
         String key = Constants.REDIS_WEB_ADD_TRANSFER_QUEUE_KEY;
         return (VideoInfoFilePost)redisUtils.rpop(key);
     }
+
+    public List<String> getDelFilePathsQueue(String videoId) {
+        String key = Constants.REDIS_WEB_ADD_DEL_QUEUE_KEY + videoId;
+        List list = redisUtils.getQueueList(key);
+        return list;
+    }
+
+    public void cleanDelFilePaths(String videoId){
+        String key = Constants.REDIS_WEB_ADD_DEL_QUEUE_KEY + videoId;
+        redisUtils.delete(key);
+    }
+
 }

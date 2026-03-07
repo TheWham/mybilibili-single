@@ -37,11 +37,13 @@
 		<result column="current_coin_count" property="currentCoinCount"/>
 		<!-- 主题-->
 		<result column="theme" property="theme"/>
+		<!-- 主题-->
+		<result column="avatar" property="avatar"/>
 	</resultMap>
 
 	<!--通用查询结果列 -->
 	<sql id="base_column_list">
-		user_id,nick_name,birthday,sex,email,password,school,person_introduction,join_time,last_login_time,last_login_ip,status,notice_info,total_coin_count,current_coin_count,theme
+		user_id,nick_name,birthday,sex,email,password,school,person_introduction,join_time,last_login_time,last_login_ip,status,notice_info,total_coin_count,current_coin_count,theme,avatar
 	</sql>
 
 	<!--基础查询条件 -->
@@ -93,6 +95,9 @@
 		</if>
 		<if test="query.theme != null" >
 			and theme = #{query.theme}
+		</if>
+		<if test="query.avatar != null" >
+			and theme = #{query.avatar}
 		</if>
 	</sql>
 
@@ -147,6 +152,9 @@
 		</if>
 		<if test="query.noticeInfoFuzzy != null and query.noticeInfoFuzzy != ''" >
 			and notice_info like concat('%', #{query.noticeInfoFuzzy}, '%')
+		</if>
+		<if test="query.avatarFuzzy != null and query.avatarFuzzy != ''" >
+			and notice_info like concat('%', #{query.avatarFuzzy}, '%')
 		</if>
 	</sql>
 

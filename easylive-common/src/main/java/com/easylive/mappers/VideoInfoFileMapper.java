@@ -1,5 +1,6 @@
 package com.easylive.mappers;
 
+import com.easylive.entity.query.VideoInfoFileQuery;
 import org.apache.ibatis.annotations.Param;
 
 /**
@@ -24,4 +25,5 @@ public interface VideoInfoFileMapper<T, R> extends BaseMapper {
 	 */
 	Integer deleteByFileId(@Param("fileId") String fileId);
 
+    Integer deleteByCondition(@Param("query") VideoInfoFileQuery videoInfoFileQuery);
 }

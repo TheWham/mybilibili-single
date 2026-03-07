@@ -5,7 +5,6 @@ import com.easylive.component.RedisComponent;
 import com.easylive.constants.Constants;
 import com.easylive.entity.po.VideoInfoFilePost;
 import com.easylive.service.VideoInfoFilePostService;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +23,7 @@ public class ExecuteTransferQueueTask {
     @Resource
     private VideoInfoFilePostService videoInfoFilePostService;
 
-    @PostConstruct
+    //@PostConstruct
     public void executeTransferQueue()
     {
         executorService.execute(()->{

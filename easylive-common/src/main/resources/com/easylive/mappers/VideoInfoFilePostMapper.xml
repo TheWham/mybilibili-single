@@ -124,7 +124,6 @@
 	<select id="getSumDuration" resultType="java.lang.Integer">
 		select ifnull(sum(duration), 0) from video_info_file_post where video_id = #{videoId}
 	</select>
-
 	<!--插入 -->
 	<insert id="insert" parameterType="com.easylive.entity.po.VideoInfoFilePost">
 		INSERT INTO video_info_file_post
@@ -375,6 +374,46 @@
 			</if>
 		</set>
 		where file_id=#{fileId}
+	</update>
+	<!--根据条件更新-->
+	<update id="updateByCondition">
+		update video_info_file_post v
+		<set>
+			<if test="bean.fileId != null">
+				v.file_id = #{bean.fileId},
+			</if>
+			<if test="bean.uploadId != null">
+				v.upload_id = #{bean.uploadId},
+			</if>
+			<if test="bean.userId != null">
+				v.user_id = #{bean.userId},
+			</if>
+			<if test="bean.videoId != null">
+				v.video_id = #{bean.videoId},
+			</if>
+			<if test="bean.fileName != null">
+				v.file_name = #{bean.fileName},
+			</if>
+			<if test="bean.fileIndex != null">
+				v.file_index = #{bean.fileIndex},
+			</if>
+			<if test="bean.fileSize != null">
+				v.file_size = #{bean.fileSize},
+			</if>
+			<if test="bean.filePath != null">
+				v.file_path = #{bean.filePath},
+			</if>
+			<if test="bean.transferResult != null">
+				v.transfer_result = #{bean.transferResult},
+			</if>
+			<if test="bean.updateType != null">
+				v.update_type = #{bean.updateType},
+			</if>
+			<if test="bean.duration != null">
+				v.duration = #{bean.duration},
+			</if>
+		</set>
+		<include refid="query_condition"/>
 	</update>
 
 	<!--根据UploadIdAndUserIdAnd查询 -->

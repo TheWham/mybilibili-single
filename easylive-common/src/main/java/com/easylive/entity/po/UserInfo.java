@@ -102,6 +102,19 @@ public class UserInfo implements Serializable {
 	 */
     private Integer theme;
 
+	/**
+	 * @description 头像
+	 */
+	private Integer avatar;
+
+	public Integer getAvatar() {
+		return avatar;
+	}
+
+	public void setAvatar(Integer avatar) {
+		this.avatar = avatar;
+	}
+
 	public void setUserId(String userId) {
 		this.userId = userId;
 	}

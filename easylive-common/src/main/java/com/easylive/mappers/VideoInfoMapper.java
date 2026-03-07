@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Param;
  * @date 2026/02/09
  * @description 视频信息
  */
+
 public interface VideoInfoMapper<T, R> extends BaseMapper {
 
 	/**
@@ -24,4 +25,11 @@ public interface VideoInfoMapper<T, R> extends BaseMapper {
 	 */
 	Integer deleteByVideoId(@Param("videoId") String videoId);
 
+	/**
+	 * @param videoInfo
+	 * @param videoInfoQuery
+	 * @return
+	 */
+
+    Integer updateByCondition(@Param("bean") T videoInfo,@Param("query") R videoInfoQuery);
 }

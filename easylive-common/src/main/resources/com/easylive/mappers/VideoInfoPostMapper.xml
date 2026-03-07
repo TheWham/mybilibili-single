@@ -34,6 +34,8 @@
 		<result column="interaction" property="interaction"/>
 		<!-- 持续时间(秒)-->
 		<result column="duration" property="duration"/>
+		<!-- 昵称 -->
+		<result column="nick_name" property="nickName"/>
 	</resultMap>
 
 	<!--通用查询结果列 -->
@@ -148,12 +150,18 @@
 	<select id="selectList" resultMap="base_result_map">
 		SELECT
 		<include refid="base_column_list"/>
-		<if test="query.isQueryCountInfo">
+		<if test="query.queryCountInfo">
 		 ,c.play_count, c.like_count, c.coin_count, c.danmu_count, c.comment_count, c.collect_count,c.recommend_type
 		</if>
+		<if test="query.queryUserInfo">
+			,u.nick_name,u.avatar
+		</if>
 		FROM video_info_post v
-		<if test="query.isQueryCountInfo">
+		<if test="query.queryCountInfo">
 			left join video_info c on c.video_id = v.video_id
+		</if>
+		<if test="query.queryUserInfo">
+			left join user_info u on u.user_id = v.user_id
 		</if>
 		<include refid="query_condition"/>
 		<if test="query.orderBy!=null">
@@ -506,6 +514,56 @@
 		where video_id=#{videoId}
 	</update>
 
-
+	<update id="updateByCondition">
+		update video_info_post v
+		<set>
+			<if test="bean.videoId != null">
+				v.video_id = #{bean.videoId},
+			</if>
+			<if test="bean.videoCover != null">
+				v.video_cover = #{bean.videoCover},
+			</if>
+			<if test="bean.videoName != null">
+				v.video_name = #{bean.videoName},
+			</if>
+			<if test="bean.userId != null">
+				v.user_id = #{bean.userId},
+			</if>
+			<if test="bean.createTime != null">
+				v.create_time = #{bean.createTime},
+			</if>
+			<if test="bean.lastUpdateTime != null">
+				v.last_update_time = #{bean.lastUpdateTime},
+			</if>
+			<if test="bean.pCategoryId != null">
+				v.p_category_id = #{bean.pCategoryId},
+			</if>
+			<if test="bean.categoryId != null">
+				v.category_id = #{bean.categoryId},
+			</if>
+			<if test="bean.status != null">
+				v.status = #{bean.status},
+			</if>
+			<if test="bean.postType != null">
+				v.post_type = #{bean.postType},
+			</if>
+			<if test="bean.originInfo != null">
+				v.origin_info = #{bean.originInfo},
+			</if>
+			<if test="bean.tags != null">
+				v.tags = #{bean.tags},
+			</if>
+			<if test="bean.introduction != null">
+				v.introduction = #{bean.introduction},
+			</if>
+			<if test="bean.interaction != null">
+				v.interaction = #{bean.interaction},
+			</if>
+			<if test="bean.duration != null">
+				v.duration = #{bean.duration},
+			</if>
+		</set>
+		<include refid="query_condition"/>
+	</update>
 
 </mapper>

@@ -1,12 +1,10 @@
 package com.easylive.entity.query;
 
-import java.io.Serializable;
 import java.util.Date;
-import java.time.LocalDateTime;
 
 /**
  * @author amani
- * @date 2026/01/07
+ * @version  2026/01/07
  * @description 
  */
 public class UserInfoQuery extends BaseQuery {
@@ -93,6 +91,15 @@ public class UserInfoQuery extends BaseQuery {
 	 * @description 主题
 	 */
 	private Integer theme;
+	private String avatar;
+
+	public String getAvatar() {
+		return avatar;
+	}
+
+	public void setAvatar(String avatar) {
+		this.avatar = avatar;
+	}
 
 	public void setUserId(String userId) {
 		this.userId = userId;

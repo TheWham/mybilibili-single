@@ -27,4 +27,6 @@ public interface VideoInfoPostMapper<T, R> extends BaseMapper {
 	Integer deleteByVideoId(@Param("videoId") String videoId);
 
 	void delBatchByIds(@Param("fileIds") List<String> deleteList,@Param("userId") String userId);
+
+    Integer updateByCondition(@Param("bean")T updateInfoPost,@Param("query") R postQuery);
 }

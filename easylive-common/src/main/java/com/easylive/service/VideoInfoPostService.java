@@ -62,4 +62,6 @@ public interface VideoInfoPostService {
 	Integer deleteVideoInfoPostByVideoId(String videoId);
 
 	void savePostVideoInfo(VideoInfoPostDTO videoInfoPostDTO);
+
+    Integer updateByCondition(VideoInfoPost updateInfoPost, VideoInfoPostQuery postQuery);
 }

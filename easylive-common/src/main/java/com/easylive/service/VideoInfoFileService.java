@@ -60,4 +60,5 @@ public interface VideoInfoFileService {
 	 */
 	Integer deleteVideoInfoFileByFileId(String fileId);
 
+    Integer deleteByCondition(VideoInfoFileQuery videoInfoFileQuery);
 }

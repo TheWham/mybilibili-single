@@ -59,6 +59,7 @@ public class UCenterVideoController extends ABaseController{
         videoAuditCountVO.setAuditPassCount(auditPassCount);
         return getSuccessResponseVO(videoAuditCountVO);
     }
+    
 }
 
 
