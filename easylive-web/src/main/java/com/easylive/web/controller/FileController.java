@@ -2,6 +2,7 @@ package com.easylive.web.controller;
 
 
 import com.easylive.component.RedisComponent;
+import com.easylive.component.VideoPlayerComponent;
 import com.easylive.config.AdminConfig;
 import com.easylive.constants.Constants;
 import com.easylive.entity.dto.SysSettingDto;
@@ -21,7 +22,10 @@ import jakarta.validation.constraints.NotNull;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,6 +36,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.BindException;
+import java.net.MalformedURLException;
 import java.util.Date;
 
 @RestController
@@ -47,6 +52,9 @@ public class FileController extends ABaseController{
 
     @Resource
     private RedisComponent redisComponent;
+
+    @Resource
+    private VideoPlayerComponent videoPlayerComponent;
 
     @RequestMapping("/uploadImage")
     public ResponseVO uploadFile(@NotNull MultipartFile file, @NotNull boolean isCreateThumbnail) throws IOException {
@@ -194,5 +202,16 @@ public class FileController extends ABaseController{
 
         return getSuccessResponseVO(null);
     }
+
+    @RequestMapping("/videoResource/{fileId}/")
+    public ResponseEntity<UrlResource> videoResource(@PathVariable String fileId) throws MalformedURLException {
+        return videoPlayerComponent.videoResource(fileId, adminConfig.getProjectFolder());
+    }
+
+    @RequestMapping("/videoResource/{fileId}/{name}")
+    public ResponseEntity<UrlResource> videoResource(@PathVariable String fileId, @PathVariable String name) throws MalformedURLException {
+        return videoPlayerComponent.videoResource(fileId, name, adminConfig.getProjectFolder());
+    }
+
 
 }

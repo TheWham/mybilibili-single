@@ -121,6 +121,8 @@ public class VideoInfoQuery extends BaseQuery {
 	private Date lastPlayTime;
 	private String lastPlayTimeStart;
 	private String lastPlayTimeEnd;
+	private boolean isQueryUserInfo;
+
 	public void setVideoId(String videoId) {
 		this.videoId = videoId;
 	}
@@ -338,4 +340,11 @@ public class VideoInfoQuery extends BaseQuery {
 		return this.lastPlayTimeEnd;
 	}
 
+    public void setQueryUserInfo(boolean queryUserInfo) {
+        this.isQueryUserInfo = queryUserInfo;
+    }
+
+    public boolean isQueryUserInfo() {
+        return isQueryUserInfo;
+    }
 }
