@@ -6,7 +6,7 @@ import java.io.Serial;
 import java.io.Serializable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SysSettingDto implements Serializable {
+public class SysSettingDTO implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;

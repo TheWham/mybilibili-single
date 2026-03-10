@@ -32,4 +32,8 @@ public interface VideoInfoMapper<T, R> extends BaseMapper {
 	 */
 
     Integer updateByCondition(@Param("bean") T videoInfo,@Param("query") R videoInfoQuery);
+
+    Integer updateCount(@Param("videoId") String videoId,@Param("field") String field, @Param("count")Integer count);
+
+	String selectUserIdByVideoId(@Param("videoId") String videoId);
 }

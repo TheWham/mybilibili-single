@@ -4,7 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import com.easylive.component.RedisComponent;
 import com.easylive.config.AdminConfig;
 import com.easylive.constants.Constants;
-import com.easylive.entity.dto.SysSettingDto;
+import com.easylive.entity.dto.SysSettingDTO;
 import com.easylive.entity.po.VideoInfo;
 import com.easylive.entity.po.VideoInfoFile;
 import com.easylive.entity.po.VideoInfoFilePost;
@@ -164,7 +164,7 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 		//如果是第一次同步需要先初始化硬币数等值
 		if (videoInfo == null)
 		{
-			SysSettingDto sysSetting = redisComponent.getSysSetting();
+			SysSettingDTO sysSetting = redisComponent.getSysSetting();
 			//TODO设置初始值
 
 		}

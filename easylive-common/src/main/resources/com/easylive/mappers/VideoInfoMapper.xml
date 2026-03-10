@@ -205,6 +205,10 @@
 		<include refid="query_condition"/>
 	</select>
 
+	<select id="selectUserIdByVideoId" resultType="java.lang.String">
+		SELECT user_id from video_info where video_id = #{videoId}
+	</select>
+
 	<!--插入 -->
 	<insert id="insert" parameterType="com.easylive.entity.po.VideoInfo">
 		INSERT INTO video_info
@@ -735,6 +739,14 @@
 		where video_id=#{videoId}
 	</update>
 
+	<!--更新弹幕数量-->
+	<update id="updateCount">
+		update video_info set ${field} = ${field} + #{count}
+		<if test="field=='play_count'">
+			,last_play_time = now()
+		</if>
+		where video_id=#{videoId}
+	</update>
 
 
 </mapper>

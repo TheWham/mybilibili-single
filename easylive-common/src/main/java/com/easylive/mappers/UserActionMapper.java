@@ -1,0 +1,44 @@
+package com.easylive.mappers;
+
+import org.apache.ibatis.annotations.Param;
+
+/**
+ * @author amani
+ * @date 2026/03/09
+ * @description 用户行为  点赞,评论
+ */
+public interface UserActionMapper<T, R> extends BaseMapper {
+
+	/**
+	 * @description 根据 ActionId查询
+	 */
+	T selectByActionId(@Param("actionId") Integer actionId);
+
+	/**
+	 * @description 根据 ActionId更新
+	 */
+	Integer updateByActionId(@Param("bean") T t, @Param("actionId") Integer actionId);
+
+	/**
+	 * @description 根据 ActionId删除
+	 */
+	Integer deleteByActionId(@Param("actionId") Integer actionId);
+
+
+	/**
+	 * @description 根据 VideoIdAndCommentIdAndActionTypeAndUserId查询
+	 */
+	T selectByVideoIdAndCommentIdAndActionTypeAndUserId(@Param("videoId") String videoId, @Param("commentId") Integer commentId, @Param("actionType") Integer actionType, @Param("userId") String userId);
+
+	/**
+	 * @description 根据 VideoIdAndCommentIdAndActionTypeAndUserId更新
+	 */
+	Integer updateByVideoIdAndCommentIdAndActionTypeAndUserId(@Param("bean") T t, @Param("videoId") String videoId, @Param("commentId") Integer commentId, @Param("actionType") Integer actionType, @Param("userId") String userId);
+
+	/**
+	 * @description 根据 VideoIdAndCommentIdAndActionTypeAndUserId删除
+	 */
+	Integer deleteByVideoIdAndCommentIdAndActionTypeAndUserId(@Param("videoId") String videoId, @Param("commentId") Integer commentId, @Param("actionType") Integer actionType, @Param("userId") String userId);
+
+    Integer selectSingleAction(@Param("query") R actionQuery);
+}

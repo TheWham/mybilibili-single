@@ -5,9 +5,9 @@ import com.easylive.component.RedisComponent;
 import com.easylive.component.VideoPlayerComponent;
 import com.easylive.config.AdminConfig;
 import com.easylive.constants.Constants;
-import com.easylive.entity.dto.SysSettingDto;
+import com.easylive.entity.dto.SysSettingDTO;
 import com.easylive.entity.dto.TokenUserInfoDTO;
-import com.easylive.entity.dto.UploadingFileDto;
+import com.easylive.entity.dto.UploadingFileDTO;
 import com.easylive.entity.vo.ResponseVO;
 import com.easylive.enums.DateTimePatternEnum;
 import com.easylive.enums.ResponseCodeEnum;
@@ -131,7 +131,7 @@ public class FileController extends ABaseController{
         TokenUserInfoDTO userInfo = getTokenUserInfo();
         String uploadingId = StringTools.generateRandomStr(Constants.LENGTH_15);
 
-        UploadingFileDto uploadingFileDto = new UploadingFileDto();
+        UploadingFileDTO uploadingFileDto = new UploadingFileDTO();
         uploadingFileDto.setFileName(fileName);
         uploadingFileDto.setChunks(chunks);
         uploadingFileDto.setChunkIndex(0);
@@ -155,14 +155,14 @@ public class FileController extends ABaseController{
     public ResponseVO uploadVideo(@NotNull MultipartFile chunkFile, @NotNull Integer chunkIndex, @NotEmpty String uploadId) throws IOException {
 
         TokenUserInfoDTO tokenUserInfo = getTokenUserInfo();
-        UploadingFileDto uploadFileInfo = redisComponent.getUploadFileInfo( Constants.REDIS_WEB_UPLOADING_FILE_INFO_KEY + tokenUserInfo.getUserId() + uploadId);
+        UploadingFileDTO uploadFileInfo = redisComponent.getUploadFileInfo( Constants.REDIS_WEB_UPLOADING_FILE_INFO_KEY + tokenUserInfo.getUserId() + uploadId);
 
 
         if (uploadFileInfo == null)
             throw new BindException("文件不存在请重新上传");
 
         //判断是否符合文件大小限制
-        SysSettingDto sysSettingDto = redisComponent.getSysSetting();
+        SysSettingDTO sysSettingDto = redisComponent.getSysSetting();
         if (uploadFileInfo.getFileSize() > sysSettingDto.getVideoSize() * Constants.MB_SIZE)
             throw new BusinessException("超过文件上传大小限制");
 
@@ -186,7 +186,7 @@ public class FileController extends ABaseController{
     public ResponseVO delUploadVideo(@NotEmpty String uploadId) throws IOException {
         TokenUserInfoDTO tokenUserInfo = getTokenUserInfo();
         String userId = tokenUserInfo.getUserId();
-        UploadingFileDto uploadFileInfo = redisComponent.getUploadFileInfo(Constants.REDIS_WEB_UPLOADING_FILE_INFO_KEY + userId + uploadId);
+        UploadingFileDTO uploadFileInfo = redisComponent.getUploadFileInfo(Constants.REDIS_WEB_UPLOADING_FILE_INFO_KEY + userId + uploadId);
 
         if (uploadFileInfo == null)
             throw new BusinessException("文件失效请重新上传");

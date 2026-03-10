@@ -2,9 +2,9 @@ package com.easylive.component;
 
 import com.alibaba.fastjson2.JSON;
 import com.easylive.constants.Constants;
-import com.easylive.entity.dto.SysSettingDto;
+import com.easylive.entity.dto.SysSettingDTO;
 import com.easylive.entity.dto.TokenUserInfoDTO;
-import com.easylive.entity.dto.UploadingFileDto;
+import com.easylive.entity.dto.UploadingFileDTO;
 import com.easylive.entity.po.CategoryInfo;
 import com.easylive.entity.po.VideoInfoFilePost;
 import com.easylive.exception.BusinessException;
@@ -131,21 +131,21 @@ public class RedisComponent {
         return JSON.parseArray(JSON.toJSONString(value), CategoryInfo.class);
     }
 
-    public void saveFileInfo(String userId, UploadingFileDto uploadingFileDto) {
+    public void saveFileInfo(String userId, UploadingFileDTO uploadingFileDto) {
         String redisUploadFileKey = Constants.REDIS_WEB_UPLOADING_FILE_INFO_KEY + userId + uploadingFileDto.getUploadId();
         redisUtils.setex(redisUploadFileKey, uploadingFileDto, Constants.REDIS_EXPIRE_TIME_ONE_DAY);
     }
-    public UploadingFileDto getUploadFileInfo(String key)
+    public UploadingFileDTO getUploadFileInfo(String key)
     {
-       return (UploadingFileDto) redisUtils.get(key);
+       return (UploadingFileDTO) redisUtils.get(key);
     }
 
-    public SysSettingDto getSysSetting()
+    public SysSettingDTO getSysSetting()
     {
         Object sysSetting = redisUtils.get(Constants.REDIS_SYS_SETTING_KEY);
         if (sysSetting == null)
-            sysSetting = new SysSettingDto();
-        return (SysSettingDto) sysSetting;
+            sysSetting = new SysSettingDTO();
+        return (SysSettingDTO) sysSetting;
     }
 
     public void delUploadVideoInfo(String userId, @NotEmpty String uploadId) {

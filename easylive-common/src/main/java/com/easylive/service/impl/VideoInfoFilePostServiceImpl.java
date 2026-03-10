@@ -3,7 +3,7 @@ package com.easylive.service.impl;
 import com.easylive.component.RedisComponent;
 import com.easylive.config.AdminConfig;
 import com.easylive.constants.Constants;
-import com.easylive.entity.dto.UploadingFileDto;
+import com.easylive.entity.dto.UploadingFileDTO;
 import com.easylive.entity.po.VideoInfoFilePost;
 import com.easylive.entity.po.VideoInfoPost;
 import com.easylive.entity.query.SimplePage;
@@ -162,7 +162,7 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 		VideoInfoFilePost updateFilePost = new VideoInfoFilePost();
 		try {
 			String key = Constants.REDIS_WEB_UPLOADING_FILE_INFO_KEY + transferVideo.getUserId() + transferVideo.getUploadId();
-			UploadingFileDto uploadFileInfo = redisComponent.getUploadFileInfo(key);
+			UploadingFileDTO uploadFileInfo = redisComponent.getUploadFileInfo(key);
 			String tempFilePath = adminConfig.getProjectFolder() + Constants.FILE_PATH_FOLDER + Constants.FILE_PATH_FOLDER_TEMP + uploadFileInfo.getFilePath();
 			String targetFilePath = adminConfig.getProjectFolder() + Constants.FILE_PATH_FOLDER + Constants.FILE_PATH_FOLDER_VIDEO + uploadFileInfo.getFilePath();
 			File targetFile = new File(targetFilePath);
