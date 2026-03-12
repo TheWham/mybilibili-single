@@ -277,4 +277,31 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 		}
 	}
 
+    public void deleVideo(List<VideoInfoPost> needDeleteVideos, String videoId, String userId) {
+		if (needDeleteVideos == null || needDeleteVideos.isEmpty())
+			return;
+
+		if (needDeleteVideos.getFirst().getStatus().equals(VideoStatusEnum.STATUS_3.getStatus()))
+		{
+			videoInfoPostMapper.deleteByVideoId(videoId);
+		}else{
+			//删除videoInfoPost信息
+			videoInfoPostMapper.deleteByVideoId(videoId);
+			//删除videoInfoFile信息
+			VideoInfoFilePostQuery filePostQuery = new VideoInfoFilePostQuery();
+			filePostQuery.setVideoId(videoId);
+			filePostQuery.setUserId(userId);
+			List<VideoInfoFilePost> videoList = this.findListByParam(filePostQuery);
+			List<String> fileIds = videoList.stream().map(VideoInfoFilePost::getFileId).toList();
+			//TODO 批量删除videoInfoFile信息
+			//    videoInfoFilePostService.deleteBatchByIds(fileIds);
+			//删除redis信息
+			videoList.forEach(videoFile->{
+				String completePath = adminConfig.getProjectFolder() + Constants.FILE_PATH_FOLDER + videoFile.getFilePath();
+				//占用io可以放到消息队列
+				new File(completePath).delete();
+				redisComponent.delUploadVideoInfo(userId, videoFile.getUploadId());
+			});
+		}
+    }
 }

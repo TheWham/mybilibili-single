@@ -3,19 +3,22 @@ package com.easylive.web.controller;
 
 import com.easylive.entity.po.VideoInfo;
 import com.easylive.entity.po.VideoInfoFile;
+import com.easylive.entity.query.UserActionQuery;
 import com.easylive.entity.query.VideoInfoFileQuery;
 import com.easylive.entity.query.VideoInfoQuery;
 import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.entity.vo.ResponseVO;
+import com.easylive.entity.vo.UserActionVO;
 import com.easylive.entity.vo.VideoInfoResultVO;
 import com.easylive.enums.ResponseCodeEnum;
+import com.easylive.enums.UserActionTypeEnum;
 import com.easylive.enums.VideoRecommendEnum;
 import com.easylive.exception.BusinessException;
+import com.easylive.service.UserActionService;
 import com.easylive.service.VideoInfoFileService;
 import com.easylive.service.VideoInfoService;
 import jakarta.annotation.Resource;
 import jakarta.validation.constraints.NotEmpty;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,10 +30,12 @@ public class VideoShowController extends ABaseController{
 
     @Resource
     private VideoInfoService videoInfoService;
+
     @Resource
-    private VideoInfoFileService videoInfoResultVO;
-    @Autowired
     private VideoInfoFileService videoInfoFileService;
+
+    @Resource
+    private UserActionService userActionService;
 
     @RequestMapping("/loadVideo")
     public ResponseVO loadVideo(Integer pageNo, Integer pCategoryId, Integer categoryId)
@@ -62,7 +67,14 @@ public class VideoShowController extends ABaseController{
         if (videoInfo == null)
             throw new BusinessException(ResponseCodeEnum.CODE_404);
         VideoInfoResultVO videoInfoResultVO = new VideoInfoResultVO(videoInfo);
-        //TODO 设置投币数量, 收藏量...
+        //查询是否投币,点赞,收藏
+        String userId = getTokenUserInfo().getUserId();
+        UserActionQuery actionQuery = new UserActionQuery();
+        actionQuery.setUserId(userId);
+        actionQuery.setVideoId(videoId);
+        actionQuery.setUserActionTypeList(new Integer[]{UserActionTypeEnum.VIDEO_LIKE.getType(), UserActionTypeEnum.VIDEO_COIN.getType(), UserActionTypeEnum.VIDEO_COLLECT.getType()});
+        List<UserActionVO> userActionTypeList = userActionService.getUserActionTypeList(actionQuery);
+        videoInfoResultVO.setUserActionList(userActionTypeList);
         return getSuccessResponseVO(videoInfoResultVO);
     }
 
@@ -77,6 +89,13 @@ public class VideoShowController extends ABaseController{
         fileQuery.setOrderBy("file_index asc");
         List<VideoInfoFile> pList = videoInfoFileService.findListByParam(fileQuery);
         return getSuccessResponseVO(pList);
+    }
+
+    //TODO getSearchKeywordTop
+    @RequestMapping("/getSearchKeywordTop")
+    public ResponseVO getSearchKeywordTop()
+    {
+        return getSuccessResponseVO(null);
     }
 
 }

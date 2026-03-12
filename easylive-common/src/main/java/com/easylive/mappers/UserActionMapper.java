@@ -1,6 +1,9 @@
 package com.easylive.mappers;
 
+import com.easylive.entity.vo.UserActionVO;
 import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * @author amani
@@ -31,14 +34,13 @@ public interface UserActionMapper<T, R> extends BaseMapper {
 	T selectByVideoIdAndCommentIdAndActionTypeAndUserId(@Param("videoId") String videoId, @Param("commentId") Integer commentId, @Param("actionType") Integer actionType, @Param("userId") String userId);
 
 	/**
-	 * @description 根据 VideoIdAndCommentIdAndActionTypeAndUserId更新
-	 */
-	Integer updateByVideoIdAndCommentIdAndActionTypeAndUserId(@Param("bean") T t, @Param("videoId") String videoId, @Param("commentId") Integer commentId, @Param("actionType") Integer actionType, @Param("userId") String userId);
-
-	/**
 	 * @description 根据 VideoIdAndCommentIdAndActionTypeAndUserId删除
 	 */
-	Integer deleteByVideoIdAndCommentIdAndActionTypeAndUserId(@Param("videoId") String videoId, @Param("commentId") Integer commentId, @Param("actionType") Integer actionType, @Param("userId") String userId);
+	Integer deleteByVideoIdAndCommentIdAndActionTypeAndUserId(@Param("videoId") String videoId,@Param("commentId") Integer commentId, @Param("actionType") Integer actionType, @Param("userId") String userId);
 
     Integer selectSingleAction(@Param("query") R actionQuery);
+
+	Integer insertIgnore(@Param("bean") T t);
+
+	List<UserActionVO> selectActionTypeList(@Param("query") R actionQuery);
 }

@@ -136,6 +136,8 @@ public class VideoDanmuServiceImpl implements VideoDanmuService {
 		if (videoInfo.getInteraction() != null && videoInfo.getInteraction().contains(Constants.ONE.toString())){
 			throw new BusinessException("up主已经关闭弹幕");
 		}
+
+		//借助原子更新解决弹幕发送高并发问题
 		videoInfoMapper.updateCount(videoDanmu.getVideoId(), UserActionTypeEnum.VIDEO_DNAMU.getField(), 1);
 		this.add(videoDanmu);
 		//TODO 添加弹幕es

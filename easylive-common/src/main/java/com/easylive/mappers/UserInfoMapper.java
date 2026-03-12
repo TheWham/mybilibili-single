@@ -1,7 +1,5 @@
 package com.easylive.mappers;
 
-import java.io.Serializable;
-import com.easylive.mappers.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
@@ -58,4 +56,6 @@ public interface UserInfoMapper<T, R> extends BaseMapper {
 	 */
 	Integer deleteByNickName(@Param("nickName") String nickName);
 
+
+	Integer updateUserCoin(@Param("userId") String userId, @Param("coinCount") Integer actionCount);
 }

@@ -56,6 +56,8 @@ public class UserAction implements Serializable {
 	@DateTimeFormat (pattern = "yyyy-MM-dd HH:mm:ss")
     private Date actionTime;
 
+
+
 	public void setActionId(Integer actionId) {
 		this.actionId = actionId;
 	}

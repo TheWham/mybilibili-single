@@ -4,6 +4,7 @@ import com.easylive.entity.dto.VideoInfoPostDTO;
 import com.easylive.entity.po.VideoInfoPost;
 import com.easylive.entity.query.VideoInfoPostQuery;
 import com.easylive.entity.vo.PaginationResultVO;
+import com.easylive.entity.vo.VideoAuditCountVO;
 
 import java.util.List;
 
@@ -64,4 +65,6 @@ public interface VideoInfoPostService {
 	void savePostVideoInfo(VideoInfoPostDTO videoInfoPostDTO);
 
     Integer updateByCondition(VideoInfoPost updateInfoPost, VideoInfoPostQuery postQuery);
+
+    VideoAuditCountVO getVideoCountInfo(String userId);
 }

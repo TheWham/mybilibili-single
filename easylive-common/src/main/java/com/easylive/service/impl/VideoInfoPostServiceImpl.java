@@ -10,6 +10,7 @@ import com.easylive.entity.query.SimplePage;
 import com.easylive.entity.query.VideoInfoFilePostQuery;
 import com.easylive.entity.query.VideoInfoPostQuery;
 import com.easylive.entity.vo.PaginationResultVO;
+import com.easylive.entity.vo.VideoAuditCountVO;
 import com.easylive.enums.*;
 import com.easylive.exception.BusinessException;
 import com.easylive.mappers.VideoInfoPostMapper;
@@ -247,6 +248,28 @@ public class VideoInfoPostServiceImpl implements VideoInfoPostService {
 	@Override
 	public Integer updateByCondition(VideoInfoPost updateInfoPost, VideoInfoPostQuery postQuery) {
 		return videoInfoPostMapper.updateByCondition(updateInfoPost, postQuery);
+	}
+
+	@Override
+	public VideoAuditCountVO getVideoCountInfo(String userId) {
+		VideoInfoPostQuery videoInfoPostQuery = new VideoInfoPostQuery();
+		videoInfoPostQuery.setUserId(userId);
+		Integer status = VideoStatusEnum.STATUS_3.getStatus();
+		videoInfoPostQuery.setStatus(status);
+		Integer auditPassCount = this.findCountByParam(videoInfoPostQuery);
+
+		status = VideoStatusEnum.STATUS_4.getStatus();
+		videoInfoPostQuery.setStatus(status);
+		Integer auditFailCount = this.findCountByParam(videoInfoPostQuery);
+
+		videoInfoPostQuery.setExcludeStatusArray(new Integer[]{VideoStatusEnum.STATUS_3.getStatus(), VideoStatusEnum.STATUS_4.getStatus()});
+		videoInfoPostQuery.setStatus(null);
+		Integer inProgress = this.findCountByParam(videoInfoPostQuery);
+		VideoAuditCountVO videoAuditCountVO = new VideoAuditCountVO();
+		videoAuditCountVO.setAuditFailCount(auditFailCount);
+		videoAuditCountVO.setInProgress(inProgress);
+		videoAuditCountVO.setAuditPassCount(auditPassCount);
+		return videoAuditCountVO;
 	}
 
 	private Boolean isChangeVideoInfoPost(VideoInfoPostDTO videoInfoPost)

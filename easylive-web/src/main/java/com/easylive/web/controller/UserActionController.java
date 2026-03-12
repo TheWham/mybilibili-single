@@ -1,6 +1,7 @@
 package com.easylive.web.controller;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.easylive.constants.Constants;
 import com.easylive.entity.dto.UserActionDTO;
 import com.easylive.entity.po.UserAction;
 import com.easylive.entity.vo.ResponseVO;
@@ -31,7 +32,8 @@ public class UserActionController extends ABaseController {
 		UserAction userAction = BeanUtil.toBean(userActionDTO, UserAction.class);
 		userAction.setUserId(getTokenUserInfo().getUserId());
 		userAction.setActionTime(new Date());
-		userAction.setActionCount(userActionDTO.getActionCount() == null ? 1: userActionDTO.getActionCount());
+
+		userAction.setActionCount(userActionDTO.getActionCount() == null ? Constants.ONE : userActionDTO.getActionCount());
 		userActionService.doAction(userAction);
 		return getSuccessResponseVO(null);
 	}

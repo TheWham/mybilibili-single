@@ -22,6 +22,13 @@
 		<result column="action_time" property="actionTime"/>
 	</resultMap>
 
+	<!--实体映射 -->
+	<resultMap id="action_type_map" type="com.easylive.entity.vo.UserActionVO">
+		<!-- 0:评论喜欢点赞 1:讨厌评论 2:视频点赞 3:视频收藏 4:视频投币-->
+		<result column="action_type" property="actionType"/>
+	</resultMap>
+
+
 	<!--通用查询结果列 -->
 	<sql id="base_column_list">
 		v.action_id,v.video_id,v.video_user_id,v.comment_id,v.action_type,v.action_count,v.user_id,v.action_time
@@ -52,6 +59,10 @@
 		</if>
 		<if test="query.actionTime != null and query.actionTime != ''" >
 			<![CDATA[ and v.action_time=str_to_date(#{query.actionTime}, '%Y-%m-%d') ]]>
+		</if>
+		<if test="query.userActionTypeList != null and query.userActionTypeList.length > 0">
+			and v.action_type in
+            (<foreach collection="query.userActionTypeList" separator="," item="action">#{action}</foreach>)
 		</if>
 	</sql>
 
@@ -155,6 +166,12 @@
 			</if>
 		</trim>
 
+	</insert>
+
+	<!--插入(忽略唯一冲突) -->
+	<insert id="insertIgnore" parameterType="com.easylive.entity.po.UserAction">
+		INSERT IGNORE INTO user_action(video_id,video_user_id,comment_id,action_type,action_count,user_id,action_time)
+		values(#{bean.videoId},#{bean.videoUserId},#{bean.commentId},#{bean.actionType},#{bean.actionCount},#{bean.userId},#{bean.actionTime})
 	</insert>
 
 	<!--insertOrUpdate 过滤掉了唯一索引字段-->
@@ -300,43 +317,28 @@
 		select v.action_id from user_action v <include refid="query_condition"/>
 	</select>
 
+	<select id="selectActionTypeList" resultMap="action_type_map">
+		select v.action_type from user_action v <include refid="query_condition"/>
+	</select>
+
 	<!--根据VideoIdAndCommentIdAndActionTypeAndUserIdAnd删除 -->
 	<delete id="deleteByVideoIdAndCommentIdAndActionTypeAndUserId">
-		delete from user_action where video_id=#{videoId} and comment_id=#{commentId} and action_type=#{actionType} and user_id=#{userId}
+		delete from user_action v
+		<where>
+			<if test="videoId != null and videoId != ''" >
+				and v.video_id = #{videoId}
+			</if>
+			<if test="commentId != null" >
+				and v.comment_id = #{commentId}
+			</if>
+			<if test="actionType != null" >
+				and v.action_type = #{actionType}
+			</if>
+			<if test="userId != null and userId != ''" >
+				and v.user_id = #{userId}
+			</if>
+		</where>
 	</delete>
-
-	<!--根据VideoIdAndCommentIdAndActionTypeAndUserIdAnd更新 -->
-	<update id="updateByVideoIdAndCommentIdAndActionTypeAndUserId" parameterType="com.easylive.entity.po.UserAction">
-		update user_action
-		<set>
-			<if test="bean.actionId != null">
-				action_id = #{bean.actionId},
-			</if>
-			<if test="bean.videoId != null">
-				video_id = #{bean.videoId},
-			</if>
-			<if test="bean.videoUserId != null">
-				video_user_id = #{bean.videoUserId},
-			</if>
-			<if test="bean.commentId != null">
-				comment_id = #{bean.commentId},
-			</if>
-			<if test="bean.actionType != null">
-				action_type = #{bean.actionType},
-			</if>
-			<if test="bean.actionCount != null">
-				action_count = #{bean.actionCount},
-			</if>
-			<if test="bean.userId != null">
-				user_id = #{bean.userId},
-			</if>
-			<if test="bean.actionTime != null">
-				action_time = #{bean.actionTime},
-			</if>
-		</set>
-		where video_id=#{videoId} and comment_id=#{commentId} and action_type=#{actionType} and user_id=#{userId}
-	</update>
-
 
 
 </mapper>

@@ -3,6 +3,7 @@ package com.easylive.service;
 import com.easylive.entity.po.UserAction;
 import com.easylive.entity.query.UserActionQuery;
 import com.easylive.entity.vo.PaginationResultVO;
+import com.easylive.entity.vo.UserActionVO;
 
 import java.util.List;
 
@@ -60,21 +61,25 @@ public interface UserActionService {
 	 */
 	Integer deleteUserActionByActionId(Integer actionId);
 
-
 	/**
 	 * @description 根据 VideoIdAndCommentIdAndActionTypeAndUserId查询
 	 */
 	UserAction getUserActionByVideoIdAndCommentIdAndActionTypeAndUserId(String videoId, Integer commentId, Integer actionType, String userId);
 
 	/**
-	 * @description 根据 VideoIdAndCommentIdAndActionTypeAndUserId更新
-	 */
-	Integer updateUserActionByVideoIdAndCommentIdAndActionTypeAndUserId(UserAction bean, String videoId, Integer commentId, Integer actionType, String userId);
-
-	/**
 	 * @description 根据 VideoIdAndCommentIdAndActionTypeAndUserId删除
 	 */
 	Integer deleteUserActionByVideoIdAndCommentIdAndActionTypeAndUserId(String videoId, Integer commentId, Integer actionType, String userId);
 
+	/*
+	 * 对视频进行操作(投币,点赞,收藏)
+	 */
     void doAction(UserAction userAction);
+
+	/**
+	 * 得到用户对该视频做的action
+	 * @param actionQuery 查询action条件
+	 * @return 符合所有action类型
+	 */
+	List<UserActionVO> getUserActionTypeList(UserActionQuery actionQuery);
 }

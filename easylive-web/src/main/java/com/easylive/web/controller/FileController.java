@@ -58,6 +58,7 @@ public class FileController extends ABaseController{
 
     @RequestMapping("/uploadImage")
     public ResponseVO uploadFile(@NotNull MultipartFile file, @NotNull boolean isCreateThumbnail) throws IOException {
+
         //创建上传文件保存路径
         String day = DateUtils.format(new Date(), DateTimePatternEnum.YYYYMMDD.getPattern());
         String folderPath = adminConfig.getProjectFolder()

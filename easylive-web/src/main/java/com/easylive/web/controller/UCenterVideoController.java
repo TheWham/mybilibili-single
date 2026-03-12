@@ -36,27 +36,16 @@ public class UCenterVideoController extends ABaseController{
         return getSuccessResponseVO(videoInfoPostService.findListByPage(videoInfoPostQuery));
     }
 
+
+    /**
+     * 获取视频所处各自状态的数量
+     * @return
+     */
+
     @RequestMapping("getVideoCountInfo")
     public ResponseVO getVideoCountInfo()
     {
-        TokenUserInfoDTO tokenUserInfoDTO = getTokenUserInfo();
-        VideoInfoPostQuery videoInfoPostQuery = new VideoInfoPostQuery();
-        videoInfoPostQuery.setUserId(tokenUserInfoDTO.getUserId());
-        Integer status = VideoStatusEnum.STATUS_3.getStatus();
-        videoInfoPostQuery.setStatus(status);
-        Integer auditPassCount = videoInfoPostService.findCountByParam(videoInfoPostQuery);
-
-        status = VideoStatusEnum.STATUS_4.getStatus();
-        videoInfoPostQuery.setStatus(status);
-        Integer auditFailCount = videoInfoPostService.findCountByParam(videoInfoPostQuery);
-
-        videoInfoPostQuery.setExcludeStatusArray(new Integer[]{VideoStatusEnum.STATUS_3.getStatus(), VideoStatusEnum.STATUS_4.getStatus()});
-        videoInfoPostQuery.setStatus(null);
-        Integer inProgress = videoInfoPostService.findCountByParam(videoInfoPostQuery);
-        VideoAuditCountVO videoAuditCountVO = new VideoAuditCountVO();
-        videoAuditCountVO.setAuditFailCount(auditFailCount);
-        videoAuditCountVO.setInProgress(inProgress);
-        videoAuditCountVO.setAuditPassCount(auditPassCount);
+        VideoAuditCountVO videoAuditCountVO = videoInfoPostService.getVideoCountInfo(getTokenUserInfo().getUserId());
         return getSuccessResponseVO(videoAuditCountVO);
     }
     

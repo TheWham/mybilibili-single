@@ -49,6 +49,20 @@ public class UserActionQuery extends BaseQuery {
 	private Date actionTime;
 	private String actionTimeStart;
 	private String actionTimeEnd;
+
+	/**
+	 * 用户操作类型(点赞,投币,收藏)
+	 */
+	private Integer[] userActionTypeList;
+
+	public Integer[] getUserActionTypeList() {
+		return userActionTypeList;
+	}
+
+	public void setUserActionTypeList(Integer[] userActionTypeList) {
+		this.userActionTypeList = userActionTypeList;
+	}
+
 	public void setActionId(Integer actionId) {
 		this.actionId = actionId;
 	}
