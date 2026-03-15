@@ -36,7 +36,7 @@ public class Constants {
     public static final Integer LENGTH_30 = 30;
     public static final String FILE_PATH_FOLDER_TEMP = "temp/";
     public static final String FILE_PATH_FOLDER_COVER = "cover/";
-    public static final String IMAGE_THUMBNAIL_SUFFIX = "_thumbnail.jpg";
+    public static final String IMAGE_THUMBNAIL_SUFFIX = "_thumbnail";
     public static final Integer LENGTH_15 = 15;
     public static final Integer LENGTH_10 = 10;
     public static final String REDIS_WEB_UPLOADING_FILE_INFO_KEY = REDIS_PREFIX + "uploadFileInfo:";

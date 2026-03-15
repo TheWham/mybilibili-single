@@ -98,4 +98,10 @@ public class VideoShowController extends ABaseController{
         return getSuccessResponseVO(null);
     }
 
+    @RequestMapping("/reportVideoPlayOnline")
+    public ResponseVO reportVideoPlayOnline()
+    {
+        return getSuccessResponseVO(null);
+    }
 }
+

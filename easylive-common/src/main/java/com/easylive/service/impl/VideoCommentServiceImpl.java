@@ -1,16 +1,31 @@
 package com.easylive.service.impl;
 
+import com.easylive.constants.Constants;
+import com.easylive.entity.dto.TokenUserInfoDTO;
+import com.easylive.entity.po.UserAction;
+import com.easylive.entity.po.UserInfo;
 import com.easylive.entity.po.VideoComment;
-import com.easylive.entity.query.SimplePage;
-import com.easylive.entity.query.VideoCommentQuery;
+import com.easylive.entity.po.VideoInfo;
+import com.easylive.entity.query.*;
 import com.easylive.entity.vo.PaginationResultVO;
+import com.easylive.entity.vo.UserActionVO;
+import com.easylive.entity.vo.VideoCommentVO;
 import com.easylive.enums.PageSize;
+import com.easylive.enums.ResponseCodeEnum;
+import com.easylive.enums.UserActionTypeEnum;
+import com.easylive.enums.VideoCommentTypeEnum;
+import com.easylive.exception.BusinessException;
+import com.easylive.mappers.UserActionMapper;
+import com.easylive.mappers.UserInfoMapper;
 import com.easylive.mappers.VideoCommentMapper;
+import com.easylive.mappers.VideoInfoMapper;
 import com.easylive.service.VideoCommentService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 /**
@@ -23,13 +38,25 @@ import java.util.List;
 public class VideoCommentServiceImpl implements VideoCommentService {
 	@Resource
 	private VideoCommentMapper<VideoComment, VideoCommentQuery> videoCommentMapper;
+	@Resource
+	private VideoInfoMapper<VideoInfo, VideoInfoQuery> videoInfoMapper;
+	@Resource
+	private UserInfoMapper<UserInfo, UserInfoQuery> userInfoMapper;
+	@Resource
+	private UserActionMapper<UserAction, UserActionQuery> userActionMapper;
 
 	/**
 	 * @description 根据条件查询
 	 */
 	@Override
 	public List<VideoComment> findListByParam(VideoCommentQuery param) {
-		return this.videoCommentMapper.selectList(param);
+		List<VideoComment> list = null;
+
+		if (param.getQueryChildren())
+			list = this.selectListWithChildren(param);
+		else
+			list = this.findListByParam(param);
+		return list;
 	}
 
 	/**
@@ -50,7 +77,13 @@ public class VideoCommentServiceImpl implements VideoCommentService {
 
 		SimplePage page = new SimplePage(param.getPageNo(), count, pageSize);
 		param.setSimplePage(page);
-		List<VideoComment> list = this.findListByParam(param);
+		List<VideoComment> list = null;
+
+		if (param.getQueryChildren())
+			list = this.selectListWithChildren(param);
+		else
+			list = this.findListByParam(param);
+
 		PaginationResultVO<VideoComment> result = new PaginationResultVO(count, page.getPageSize(), page.getPageNo(), page.getPageTotal(), list);
 		return result;
 	}
@@ -87,27 +120,113 @@ public class VideoCommentServiceImpl implements VideoCommentService {
 
 
 	/**
-	 * @description 根据 CommentId查询
+	 * 回复人 评论信息, pCommentId 是要回复别人发布评论的commentID
+	 * @param videoComment
 	 */
 	@Override
-	public VideoComment getVideoCommentByCommentId(Integer commentId) {
-		return this.videoCommentMapper.selectByCommentId(commentId);
+	@Transactional(rollbackFor = Exception.class)
+	public void postComment(VideoComment videoComment) {
+
+		//表示回复评论 此时pCommentId表示要回复评论的id
+		UserInfo replyUserInfo = userInfoMapper.selectByUserId(videoComment.getUserId());
+
+		//表示回复视频评论而不是回复评论
+		Integer replyCommentId = videoComment.getReplyCommentId();
+		videoComment.setAvatar(replyUserInfo.getAvatar());
+		if (replyCommentId == null) {
+			videoComment.setPCommentId(Constants.ZERO);
+		} else {
+			VideoComment originalComment = videoCommentMapper.selectByCommentId(replyCommentId);
+
+			if (originalComment == null || !originalComment.getVideoId().equals(videoComment.getVideoId())) {
+				throw new BusinessException(ResponseCodeEnum.CODE_600);
+			}
+
+			if (originalComment.getPCommentId() == Constants.ZERO.intValue())
+			{
+				videoComment.setPCommentId(replyCommentId);
+			}else {
+				videoComment.setPCommentId(originalComment.getPCommentId());
+				//获取被回复人评论信息
+				videoComment.setReplyUserId(originalComment.getUserId());
+			}
+			videoComment.setReplyNickName(videoComment.getNickName());
+		}
+		videoComment.setNickName(replyUserInfo.getNickName());
+		//获取回复评论人信息
+		videoCommentMapper.insert(videoComment);
+
+		//只统计一级评论的数量
+		if (videoComment.getPCommentId() == Constants.ZERO.intValue())
+		{
+			videoInfoMapper.updateCount(videoComment.getVideoId(), UserActionTypeEnum.VIDEO_COMMENT.getField(), 1);
+		}
+
 	}
 
-	/**
-	 * @description 根据 CommentId更新
-	 */
 	@Override
-	public Integer updateVideoCommentByCommentId(VideoComment bean, Integer commentId) {
-		return this.videoCommentMapper.updateByCommentId(bean, commentId);
+	public List<VideoComment> selectListWithChildren(VideoCommentQuery param) {
+		return this.videoCommentMapper.selectListWithChildren(param);
 	}
 
-	/**
-	 * @description 根据 CommentId删除
-	 */
 	@Override
-	public Integer deleteVideoCommentByCommentId(Integer commentId) {
-		return this.videoCommentMapper.deleteByCommentId(commentId);
+	public VideoCommentVO loadComment(String videoId, Integer pageNo, Integer orderType, TokenUserInfoDTO tokenUserInfo) {
+		VideoInfo videoInfo = this.videoInfoMapper.selectByVideoId(videoId);
+
+		if (videoInfo == null)
+			throw new BusinessException(ResponseCodeEnum.CODE_600);
+
+		if (videoInfo.getInteraction() != null && videoInfo.getInteraction().contains(Constants.ZERO.toString())){
+			return new VideoCommentVO();
+		}
+
+		VideoCommentVO videoCommentVO = new VideoCommentVO();
+
+		VideoCommentQuery commentQuery = new VideoCommentQuery();
+		commentQuery.setPCommentId(Constants.ZERO);
+		commentQuery.setVideoId(videoId);
+		commentQuery.setPageNo(pageNo);
+		commentQuery.setQueryChildren(true);
+		String orderBy = orderType == null || orderType == 0 ? "like_count desc, comment_id desc" : "comment_id desc";
+		commentQuery.setOrderBy(orderBy);
+		PaginationResultVO<VideoComment> commentData = this.findListByPage(commentQuery);
+		List<VideoComment> allCommentData = commentData.getList();
+
+		List<VideoComment> topComment = getTopComment(videoId);
+		if (allCommentData != null && !allCommentData.isEmpty() && topComment != null && !topComment.isEmpty())
+		{
+			List<VideoComment> finalList = allCommentData.stream()
+					.filter(item -> !item.getCommentId().equals(topComment.getFirst().getCommentId()))
+					.collect(Collectors.toList());;
+			finalList.addAll(0, topComment);
+			commentData.setList(finalList);
+		}
+		videoCommentVO.setCommentData(commentData);
+		videoCommentVO.setUserActionList(List.of());
+
+		if (tokenUserInfo != null)
+		{
+			UserActionQuery actionQuery = new UserActionQuery();
+			actionQuery.setUserActionTypeList(new Integer[]{UserActionTypeEnum.COMMENT_LIKE.getType(),UserActionTypeEnum.COMMENT_HATE.getType()});
+			actionQuery.setUserId(tokenUserInfo.getUserId());
+			actionQuery.setVideoId(videoId);
+			List<UserActionVO> actionVOList = userActionMapper.selectActionTypeList(actionQuery);
+			videoCommentVO.setUserActionList(actionVOList);
+		}
+
+		return videoCommentVO;
 	}
+
+	private List<VideoComment> getTopComment(String videoId)
+	{
+		VideoCommentQuery commentQuery = new VideoCommentQuery();
+		commentQuery.setTopType(VideoCommentTypeEnum.TOP.getType());
+		commentQuery.setVideoId(videoId);
+		commentQuery.setQueryChildren(true);
+		List<VideoComment> topComment = findListByParam(commentQuery);
+		return topComment;
+	}
+
+
 
 }

@@ -30,6 +30,32 @@
 		<result column="hate_count" property="hateCount"/>
 	</resultMap>
 
+	<resultMap id="base_result_map_children" extends="base_result_map" type="com.easylive.entity.po.VideoComment">
+		<collection property="children" column="comment_id" select="com.easylive.mappers.VideoCommentMapper.selectChildrenComment"/>
+	</resultMap>
+
+	<select id="selectChildrenComment" resultMap="base_result_map">
+		select <include refid="base_column_list"/>,u.nick_name nickName, u.avatar avatar, u2.nick_name replyNickName
+		from video_comment v
+		inner join user_info u on u.user_id = v.user_id
+		left join user_info u2 on u2.user_id = v.reply_user_id
+		where p_comment_id = #{comment_id} order by comment_id asc
+	</select>
+
+	<!--进行一级评论查询-->
+	<select id="selectListWithChildren" resultMap="base_result_map_children">
+		select <include refid="base_column_list"/>, u.nick_name, u.avatar
+		from video_comment v
+		left join user_info u on u.user_id = v.user_id
+		<include refid="query_condition"/>
+		<if test="query.orderBy!=null">
+			order by ${query.orderBy}
+		</if>
+		<if test="query.simplePage!=null">
+			limit #{query.simplePage.start}, #{query.simplePage.end}
+		</if>
+	</select>
+
 	<!--通用查询结果列 -->
 	<sql id="base_column_list">
 		v.comment_id,v.p_comment_id,v.video_id,v.video_user_id,v.content,v.img_path,v.user_id,v.reply_user_id,v.top_type,v.post_time,v.like_count,v.hate_count
@@ -115,7 +141,7 @@
 	<select id="selectList" resultMap="base_result_map">
 		SELECT
 		<include refid="base_column_list"/>
-		FROM video_comment v 
+		FROM video_comment v
 		<include refid="query_condition"/>
 		<if test="query.orderBy!=null">
 			order by ${query.orderBy}
@@ -127,7 +153,7 @@
 
 	<!--查询数量 -->
 	<select id="selectCount" resultType="java.lang.Integer">
-		SELECT count(1) FROM video_comment
+		SELECT count(1) FROM video_comment v
 		<include refid="query_condition"/>
 	</select>
 
@@ -352,8 +378,11 @@
 	<!--根据CommentId查询 -->
 	<select id="selectByCommentId" resultMap="base_result_map">
 		select <include refid="base_column_list"/>
-		from video_comment where comment_id=#{commentId}
+		from video_comment v where comment_id=#{commentId}
 	</select>
+
+
+
 
 	<!--根据CommentId删除 -->
 	<delete id="deleteByCommentId">

@@ -3,16 +3,19 @@ package com.easylive.entity.po;
 import com.easylive.enums.DateTimePatternEnum;
 import com.easylive.utils.DateUtils;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author amani
  * @date 2026/03/09
  * @description 评论
  */
+
 public class VideoComment implements Serializable {
 	/**
 	 * @description 评论id
@@ -22,6 +25,7 @@ public class VideoComment implements Serializable {
 	/**
 	 * @description 父级评论id
 	 */
+	@JsonProperty("pCommentId")
     private Integer pCommentId;
 
 	/**
@@ -75,6 +79,58 @@ public class VideoComment implements Serializable {
 	 * @description 讨厌数量
 	 */
     private Integer hateCount;
+
+	/**
+	 * 用户头像
+	 */
+	private String avatar;
+
+	private String nickName;
+	private String replyNickName;
+
+	private Integer replyCommentId;
+
+	private List<VideoComment> children;
+
+	public List<VideoComment> getChildren() {
+		return children;
+	}
+
+	public void setChildren(List<VideoComment> children) {
+		this.children = children;
+	}
+
+	public Integer getReplyCommentId() {
+		return replyCommentId;
+	}
+
+	public void setReplyCommentId(Integer replyCommentId) {
+		this.replyCommentId = replyCommentId;
+	}
+
+	public String getReplyNickName() {
+		return replyNickName;
+	}
+
+	public void setReplyNickName(String replyNickName) {
+		this.replyNickName = replyNickName;
+	}
+
+	public String getNickName() {
+		return nickName;
+	}
+
+	public void setNickName(String nickName) {
+		this.nickName = nickName;
+	}
+
+	public String getAvatar() {
+		return avatar;
+	}
+
+	public void setAvatar(String avatar) {
+		this.avatar = avatar;
+	}
 
 	public void setCommentId(Integer commentId) {
 		this.commentId = commentId;

@@ -1,8 +1,10 @@
 package com.easylive.service;
 
+import com.easylive.entity.dto.TokenUserInfoDTO;
 import com.easylive.entity.po.VideoComment;
 import com.easylive.entity.query.VideoCommentQuery;
 import com.easylive.entity.vo.PaginationResultVO;
+import com.easylive.entity.vo.VideoCommentVO;
 
 import java.util.List;
 
@@ -44,20 +46,15 @@ public interface VideoCommentService {
 	 */
 	Integer addOrUpdateBatch(List<VideoComment> listBean);
 
+	/**
+	 * 发布评论
+	 */
+    void postComment(VideoComment videoComment);
 
 	/**
-	 * @description 根据 CommentId查询
+	 * 级联查询子集合
 	 */
-	VideoComment getVideoCommentByCommentId(Integer commentId);
+	List<VideoComment> selectListWithChildren(VideoCommentQuery param);
 
-	/**
-	 * @description 根据 CommentId更新
-	 */
-	Integer updateVideoCommentByCommentId(VideoComment bean, Integer commentId);
-
-	/**
-	 * @description 根据 CommentId删除
-	 */
-	Integer deleteVideoCommentByCommentId(Integer commentId);
-
+	VideoCommentVO loadComment(String videoId, Integer pageNo, Integer orderType, TokenUserInfoDTO tokenUserInfoDTO);
 }

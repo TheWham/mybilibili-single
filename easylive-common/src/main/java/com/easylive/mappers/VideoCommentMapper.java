@@ -2,6 +2,8 @@ package com.easylive.mappers;
 
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
+
 /**
  * @author amani
  * @date 2026/03/09
@@ -24,4 +26,5 @@ public interface VideoCommentMapper<T, R> extends BaseMapper {
 	 */
 	Integer deleteByCommentId(@Param("commentId") Integer commentId);
 
+    List<T> selectListWithChildren(@Param("query") R query);
 }

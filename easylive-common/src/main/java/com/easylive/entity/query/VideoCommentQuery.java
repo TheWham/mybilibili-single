@@ -69,6 +69,28 @@ public class VideoCommentQuery extends BaseQuery {
 	 */
 	private Integer hateCount;
 
+	/**
+	 * isQueryChildren 是否查询子评论
+	 */
+	private Boolean isQueryChildren;
+
+
+	public Integer getpCommentId() {
+		return pCommentId;
+	}
+
+	public void setpCommentId(Integer pCommentId) {
+		this.pCommentId = pCommentId;
+	}
+
+	public Boolean getQueryChildren() {
+		return isQueryChildren;
+	}
+
+	public void setQueryChildren(Boolean queryChildren) {
+		isQueryChildren = queryChildren;
+	}
+
 	public void setCommentId(Integer commentId) {
 		this.commentId = commentId;
 	}

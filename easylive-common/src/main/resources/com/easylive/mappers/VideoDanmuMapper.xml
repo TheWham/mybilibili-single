@@ -109,7 +109,7 @@
 
 	<!--查询数量 -->
 	<select id="selectCount" resultType="java.lang.Integer">
-		SELECT count(1) FROM video_danmu
+		SELECT count(1) FROM video_danmu v
 		<include refid="query_condition"/>
 	</select>
 

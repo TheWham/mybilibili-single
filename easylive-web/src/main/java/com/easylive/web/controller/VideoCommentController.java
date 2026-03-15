@@ -1,18 +1,25 @@
 package com.easylive.web.controller;
 
+import cn.hutool.core.bean.BeanUtil;
+import com.easylive.constants.Constants;
+import com.easylive.entity.dto.VideoCommentDTO;
 import com.easylive.entity.po.VideoComment;
-import com.easylive.entity.query.SimplePage;
-import com.easylive.entity.query.VideoCommentQuery;
-import com.easylive.entity.vo.PaginationResultVO;
+import com.easylive.entity.po.VideoInfo;
 import com.easylive.entity.vo.ResponseVO;
-import com.easylive.enums.PageSize;
+import com.easylive.entity.vo.VideoCommentVO;
+import com.easylive.enums.ResponseCodeEnum;
+import com.easylive.exception.BusinessException;
 import com.easylive.service.VideoCommentService;
+import com.easylive.service.VideoInfoService;
 import jakarta.annotation.Resource;
-import org.springframework.web.bind.annotation.RequestBody;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import java.util.Date;
+
 /**
  * @author amani
  * @date 2026/03/09
@@ -20,94 +27,49 @@ import java.util.List;
  */
 
 @RestController
-@RequestMapping("videoComment")
+@RequestMapping("comment")
 public class VideoCommentController extends ABaseController {
 	@Resource
 	private VideoCommentService videoCommentService;
+	@Resource
+	private VideoInfoService videoInfoService;
 
 	/**
-	 * @description 根据条件分页查询
+	 *
+	 * @param videoId 视频id
+	 * @param pageNo 页码
+	 * @param orderType 优先显示置顶 其次按照0表示按照点赞数量, 1:表示评论发出时间 排序
+	 * @return
 	 */
-	@RequestMapping("loadDataList")
-	public ResponseVO loadDataList (VideoCommentQuery query) {
-		return getSuccessResponseVO(videoCommentService.findListByPage(query));
+	@RequestMapping("loadComment")
+	public ResponseVO loadComment (@NotEmpty String videoId, Integer pageNo,@NotNull Integer orderType) {
+		VideoCommentVO videoCommentVO = videoCommentService.loadComment(videoId, pageNo, orderType, getTokenUserInfo());
+		return getSuccessResponseVO(videoCommentVO);
 	}
 
 	/**
-	 * @description 根据条件查询数量
+	 * postComment 发布评论
 	 */
-	@RequestMapping("findCountByParam")
-	public Integer findCountByParam(VideoCommentQuery param) {
-		return this.videoCommentService.findCountByParam(param);
-	}
 
-	/**
-	 * @description 分页查询
-	 */
-	@RequestMapping("findListByPage")
-	public PaginationResultVO<VideoComment> findListByPage(VideoCommentQuery param) {
-		Integer count = this.videoCommentService.findCountByParam(param);
-		int pageSize = param.getPageSize()==null?PageSize.SIZE15.getSize():param.getPageSize();
+	@RequestMapping("postComment")
+	public ResponseVO postComment(@Validated VideoCommentDTO videoCommentDTO)
+	{
+		//获取发布视频信息
+		VideoInfo videoInfo = videoInfoService.getVideoInfoByVideoId(videoCommentDTO.getVideoId());
 
-		SimplePage page = new SimplePage(param.getPageNo(), count, pageSize);
-		param.setSimplePage(page);
-		List<VideoComment> list = this.videoCommentService.findListByParam(param);
-		PaginationResultVO<VideoComment> result = new PaginationResultVO(count, page.getPageSize(), page.getPageNo(), page.getPageTotal(), list);
-		return result;
-	}
+		if (videoInfo == null)
+			throw new BusinessException(ResponseCodeEnum.CODE_600);
 
-	/**
-	 * @description 新增
-	 */
-	@RequestMapping("add")
-	public ResponseVO add(VideoComment bean) {
-		videoCommentService.add(bean);
-		return getSuccessResponseVO(null);
-	}
-
-	/**
-	 * @description 批量新增
-	 */
-	@RequestMapping("addBatch")
-	public ResponseVO addBatch(@RequestBody List<VideoComment> listBean) {
-		videoCommentService.addBatch(listBean);
-		return getSuccessResponseVO(null);
-	}
-
-	/**
-	 * @description 批量新增/修改
-	 */
-	@RequestMapping("addOrUpdateBatch")
-	public ResponseVO addOrUpdateBatch(@RequestBody List<VideoComment> listBean) {
-		videoCommentService.addOrUpdateBatch(listBean);
-		return getSuccessResponseVO(null);
-	}
-
-
-	/**
-	 * @description 根据 CommentId查询
-	 */
-	@RequestMapping("getVideoCommentByCommentId")
-	public ResponseVO getVideoCommentByCommentId(Integer commentId) {
-		return getSuccessResponseVO(this.videoCommentService.getVideoCommentByCommentId(commentId));
-	}
-
-	/**
-	 * @description 根据 CommentId更新
-	 */
-	@RequestMapping("updateVideoCommentByCommentId")
-	public ResponseVO updateVideoCommentByCommentId(VideoComment bean, Integer commentId) {
-		this.videoCommentService.updateVideoCommentByCommentId(bean, commentId);
-		return getSuccessResponseVO(null);
-	}
-
-	/**
-	 * @description 根据 CommentId删除
-	 */
-	@RequestMapping("deleteVideoCommentByCommentId")
-	public ResponseVO deleteVideoCommentByCommentId(Integer commentId) {
-		this.videoCommentService.deleteVideoCommentByCommentId(commentId);
-		return getSuccessResponseVO(null);
+		if (videoInfo.getInteraction() != null && videoInfo.getInteraction().contains(Constants.ZERO.toString())){
+			throw new BusinessException("up主已关闭评论区");
+		}
+		//回复人信息
+		VideoComment videoComment = BeanUtil.toBean(videoCommentDTO, VideoComment.class);
+		videoComment.setUserId(getTokenUserInfo().getUserId());
+		videoComment.setPostTime(new Date());
+		videoComment.setVideoUserId(videoInfo.getUserId());
+		this.videoCommentService.postComment(videoComment);
+		return getSuccessResponseVO(videoComment);
 	}
 
 }

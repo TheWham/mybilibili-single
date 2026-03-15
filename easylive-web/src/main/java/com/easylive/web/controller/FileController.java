@@ -57,7 +57,7 @@ public class FileController extends ABaseController{
     private VideoPlayerComponent videoPlayerComponent;
 
     @RequestMapping("/uploadImage")
-    public ResponseVO uploadFile(@NotNull MultipartFile file, @NotNull boolean isCreateThumbnail) throws IOException {
+    public ResponseVO uploadFile(@NotNull MultipartFile file, @NotNull boolean createThumbnail) throws IOException {
 
         //创建上传文件保存路径
         String day = DateUtils.format(new Date(), DateTimePatternEnum.YYYYMMDD.getPattern());
@@ -69,7 +69,8 @@ public class FileController extends ABaseController{
         String originalFilename = file.getOriginalFilename();
         String fileSuffix = StringTools.getFileSuffix(originalFilename);
         //设置文件名
-        String fileRealName = StringTools.generateRandomStr(Constants.LENGTH_30) + fileSuffix;
+        String name = StringTools.generateRandomStr(Constants.LENGTH_30);
+        String fileRealName = name + fileSuffix;
         File folder = new File(folderPath);
 
         if (!folder.exists())
@@ -80,10 +81,11 @@ public class FileController extends ABaseController{
         //将上传文件转移到指定目录
         String filePath = folderPath + "/" +  fileRealName;
         file.transferTo(new File(filePath));
-        if (isCreateThumbnail)
+        if (createThumbnail)
         {
             //生成缩略图
-            fFmpegUtils.createImageThumbnail(filePath);
+            fFmpegUtils.createImageThumbnail(filePath, fileSuffix);
+            fileRealName = name + Constants.IMAGE_THUMBNAIL_SUFFIX + fileSuffix;
         }
         //返回图片路径
         return getSuccessResponseVO(Constants.FILE_PATH_FOLDER_COVER + day + "/" + fileRealName);

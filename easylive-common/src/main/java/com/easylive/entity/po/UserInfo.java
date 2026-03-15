@@ -105,13 +105,14 @@ public class UserInfo implements Serializable {
 	/**
 	 * @description 头像
 	 */
-	private Integer avatar;
+	private String avatar;
 
-	public Integer getAvatar() {
+
+	public String getAvatar() {
 		return avatar;
 	}
 
-	public void setAvatar(Integer avatar) {
+	public void setAvatar(String avatar) {
 		this.avatar = avatar;
 	}
 
