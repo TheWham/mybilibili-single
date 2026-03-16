@@ -2,7 +2,7 @@ package com.easylive.service.impl;
 
 import com.easylive.constants.Constants;
 import com.easylive.entity.dto.TokenUserInfoDTO;
-import com.easylive.entity.po.UserAction;
+import com.easylive.entity.po.UserCommentAction;
 import com.easylive.entity.po.UserInfo;
 import com.easylive.entity.po.VideoComment;
 import com.easylive.entity.po.VideoInfo;
@@ -15,7 +15,7 @@ import com.easylive.enums.ResponseCodeEnum;
 import com.easylive.enums.UserActionTypeEnum;
 import com.easylive.enums.VideoCommentTypeEnum;
 import com.easylive.exception.BusinessException;
-import com.easylive.mappers.UserActionMapper;
+import com.easylive.mappers.UserCommentActionMapper;
 import com.easylive.mappers.UserInfoMapper;
 import com.easylive.mappers.VideoCommentMapper;
 import com.easylive.mappers.VideoInfoMapper;
@@ -42,8 +42,8 @@ public class VideoCommentServiceImpl implements VideoCommentService {
 	private VideoInfoMapper<VideoInfo, VideoInfoQuery> videoInfoMapper;
 	@Resource
 	private UserInfoMapper<UserInfo, UserInfoQuery> userInfoMapper;
-	@Resource
-	private UserActionMapper<UserAction, UserActionQuery> userActionMapper;
+    @Resource
+    private UserCommentActionMapper<UserCommentAction, UserActionQuery> userCommentActionMapper;
 
 	/**
 	 * @description 根据条件查询
@@ -210,7 +210,7 @@ public class VideoCommentServiceImpl implements VideoCommentService {
 			actionQuery.setUserActionTypeList(new Integer[]{UserActionTypeEnum.COMMENT_LIKE.getType(),UserActionTypeEnum.COMMENT_HATE.getType()});
 			actionQuery.setUserId(tokenUserInfo.getUserId());
 			actionQuery.setVideoId(videoId);
-			List<UserActionVO> actionVOList = userActionMapper.selectActionTypeList(actionQuery);
+			List<UserActionVO> actionVOList = userCommentActionMapper.selectActionTypeList(actionQuery);
 			videoCommentVO.setUserActionList(actionVOList);
 		}
 

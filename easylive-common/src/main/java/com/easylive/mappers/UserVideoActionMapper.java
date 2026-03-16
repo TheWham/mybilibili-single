@@ -10,7 +10,7 @@ import java.util.List;
  * @date 2026/03/09
  * @description 用户行为  点赞,评论
  */
-public interface UserActionMapper<T, R> extends BaseMapper {
+public interface UserVideoActionMapper<T, R> extends BaseMapper {
 
 	/**
 	 * @description 根据 ActionId查询
@@ -31,12 +31,12 @@ public interface UserActionMapper<T, R> extends BaseMapper {
 	/**
 	 * @description 根据 VideoIdAndCommentIdAndActionTypeAndUserId查询
 	 */
-	T selectByVideoIdAndCommentIdAndActionTypeAndUserId(@Param("videoId") String videoId, @Param("commentId") Integer commentId, @Param("actionType") Integer actionType, @Param("userId") String userId);
+	T selectByVideoIdAndActionTypeAndUserId(@Param("videoId") String videoId, @Param("actionType") Integer actionType, @Param("userId") String userId);
 
 	/**
 	 * @description 根据 VideoIdAndCommentIdAndActionTypeAndUserId删除
 	 */
-	Integer deleteByVideoIdAndCommentIdAndActionTypeAndUserId(@Param("videoId") String videoId,@Param("commentId") Integer commentId, @Param("actionType") Integer actionType, @Param("userId") String userId);
+	Integer deleteByVideoIdAndActionTypeAndUserId(@Param("videoId") String videoId, @Param("actionType") Integer actionType, @Param("userId") String userId);
 
     Integer selectSingleAction(@Param("query") R actionQuery);
 

@@ -433,6 +433,11 @@
 		where comment_id=#{commentId}
 	</update>
 
+	<update id="updateCount">
+		update video_comment
+		set like_count = like_count + #{likeDiff}, hate_count = hate_count + #{hateDiff}
+		where comment_id = #{commentId}
+	</update>
 
 
 </mapper>

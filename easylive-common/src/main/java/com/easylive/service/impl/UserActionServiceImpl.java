@@ -1,256 +1,205 @@
 package com.easylive.service.impl;
 
-import com.easylive.entity.po.UserAction;
-import com.easylive.entity.po.UserInfo;
-import com.easylive.entity.po.VideoInfo;
-import com.easylive.entity.query.SimplePage;
+import cn.hutool.core.bean.BeanUtil;
+import com.easylive.constants.Constants;
+import com.easylive.entity.po.*;
 import com.easylive.entity.query.UserActionQuery;
 import com.easylive.entity.query.UserInfoQuery;
+import com.easylive.entity.query.VideoCommentQuery;
 import com.easylive.entity.query.VideoInfoQuery;
-import com.easylive.entity.vo.PaginationResultVO;
-import com.easylive.entity.vo.UserActionVO;
-import com.easylive.enums.PageSize;
 import com.easylive.enums.ResponseCodeEnum;
 import com.easylive.enums.UserActionTypeEnum;
 import com.easylive.exception.BusinessException;
-import com.easylive.mappers.UserActionMapper;
-import com.easylive.mappers.UserInfoMapper;
-import com.easylive.mappers.VideoInfoMapper;
+import com.easylive.mappers.*;
 import com.easylive.service.UserActionService;
 import jakarta.annotation.Resource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
-
-/**
- * @author amani
- * @date 2026/03/09
- * @description 用户行为  点赞,评论Service
- */
-
 @Service("UserActionService")
 public class UserActionServiceImpl implements UserActionService {
-	private static final Logger log = LoggerFactory.getLogger(UserActionServiceImpl.class);
-	@Resource
-	private UserActionMapper<UserAction, UserActionQuery> userActionMapper;
 
-	@Resource
-	private VideoInfoMapper<VideoInfo, VideoInfoQuery> videoInfoMapper;
-	@Resource
-	private UserInfoMapper<UserInfo, UserInfoQuery> userInfoMapper;
-
-	/**
-	 * @description 根据条件查询
-	 */
-	@Override
-	public List<UserAction> findListByParam(UserActionQuery param) {
-		return this.userActionMapper.selectList(param);
-	}
-
-	/**
-	 * @description 根据条件查询数量
-	 */
-	@Override
-	public Integer findCountByParam(UserActionQuery param) {
-		return this.userActionMapper.selectCount(param);
-	}
-
-	/**
-	 * @description 分页查询
-	 */
-	@Override
-	public PaginationResultVO<UserAction> findListByPage(UserActionQuery param) {
-		Integer count = this.findCountByParam(param);
-		int pageSize = param.getPageSize()==null?PageSize.SIZE15.getSize():param.getPageSize();
-
-		SimplePage page = new SimplePage(param.getPageNo(), count, pageSize);
-		param.setSimplePage(page);
-		List<UserAction> list = this.findListByParam(param);
-		PaginationResultVO<UserAction> result = new PaginationResultVO(count, page.getPageSize(), page.getPageNo(), page.getPageTotal(), list);
-		return result;
-	}
-
-	/**
-	 * @description 新增
-	 */
-	@Override
-	public Integer add(UserAction bean) {
-		return this.userActionMapper.insert(bean);
-	}
-
-	/**
-	 * @description 批量新增
-	 */
-	@Override
-	public Integer addBatch(List<UserAction>  listBean) {
-		if (listBean == null || listBean.isEmpty()) {
-			return 0;
-		}
-		return this.userActionMapper.insertBatch(listBean);
-	}
-
-	/**
-	 * @description 批量新增/修改
-	 */
-	@Override
-	public Integer addOrUpdateBatch(List<UserAction> listBean) {
-		if (listBean == null || listBean.isEmpty()) {
-			return 0;
-		}
-		return this.userActionMapper.insertOrUpdateBatch(listBean);
-	}
+    @Resource
+    private VideoInfoMapper<VideoInfo, VideoInfoQuery> videoInfoMapper;
+    @Resource
+    private UserInfoMapper<UserInfo, UserInfoQuery> userInfoMapper;
+    @Resource
+    private VideoCommentMapper<VideoComment, VideoCommentQuery> videoCommentMapper;
+    @Resource
+    private UserVideoActionMapper<UserVideoAction, UserActionQuery> userVideoActionMapper;
+    @Resource
+    private UserCommentActionMapper<UserCommentAction, UserActionQuery> userCommentActionMapper;
 
 
-	/**
-	 * @description 根据 ActionId查询
-	 */
-	@Override
-	public UserAction getUserActionByActionId(Integer actionId) {
-		return this.userActionMapper.selectByActionId(actionId);
-	}
+    /**
+     * 用户点击点赞
+     *    ↓
+     * 请求到服务
+     *    ↓
+     * Redis记录点赞状态
+     *    ↓
+     * 立即返回成功
+     *    ↓
+     * MQ发送消息
+     *    ↓
+     * 异步写MySQL
+     * 更新之后解决高并发版本 没有加入redis mq 只是单纯用mysql抗压
+     * 从之前先select在更新变成先insert判断解决数据不一致问题
+     *
+     */
 
-	/**
-	 * @description 根据 ActionId更新
-	 */
-	@Override
-	public Integer updateUserActionByActionId(UserAction bean, Integer actionId) {
-		return this.userActionMapper.updateByActionId(bean, actionId);
-	}
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void doAction(UserAction userAction)
+    {
+        VideoInfo videoInfo = videoInfoMapper.selectByVideoId(userAction.getVideoId());
+        UserActionTypeEnum actionTypeEnum = UserActionTypeEnum.getEnum(userAction.getActionType());
 
-	/**
-	 * @description 根据 ActionId删除
-	 */
-	@Override
-	public Integer deleteUserActionByActionId(Integer actionId) {
-		return this.userActionMapper.deleteByActionId(actionId);
-	}
+        if (videoInfo == null || actionTypeEnum == null)
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
 
+        userAction.setVideoUserId(videoInfo.getUserId());
+        //TODO 引入redis存储点赞数量异步放到MQ处理消息
 
-	/**
-	 * @description 根据 VideoIdAndCommentIdAndActionTypeAndUserId查询
-	 */
-	@Override
-	public UserAction getUserActionByVideoIdAndCommentIdAndActionTypeAndUserId(String videoId, Integer commentId, Integer actionType, String userId) {
-		return this.userActionMapper.selectByVideoIdAndCommentIdAndActionTypeAndUserId(videoId, commentId, actionType, userId);
-	}
+        switch (actionTypeEnum) {
+            case VIDEO_LIKE:
+            case VIDEO_COLLECT:
+                handleToggleAction(userAction, actionTypeEnum);
+                break;
 
-	/**
-	 * @description 根据 VideoIdAndActionTypeAndUserId删除
-	 */
-	@Override
-	public Integer deleteUserActionByVideoIdAndCommentIdAndActionTypeAndUserId(String videoId,Integer commentId, Integer actionType, String userId) {
-		return this.userActionMapper.deleteByVideoIdAndCommentIdAndActionTypeAndUserId(videoId,commentId, actionType, userId);
-	}
+            case VIDEO_COIN:
+                handleCoinAction(userAction, actionTypeEnum);
+                break;
 
-	/**
-	 * 用户点击点赞
-	 *    ↓
-	 * 请求到服务
-	 *    ↓
-	 * Redis记录点赞状态
-	 *    ↓
-	 * 立即返回成功
-	 *    ↓
-	 * MQ发送消息
-	 *    ↓
-	 * 异步写MySQL
-	 * 更新之后解决高并发版本 没有加入redis mq 只是单纯用mysql抗压
-	 * 从之前先select在更新变成先insert判断解决数据不一致问题
-	 *
-	 */
+            case COMMENT_LIKE:
+            case COMMENT_HATE:
+                handleComment(userAction, actionTypeEnum);
+                break;
+        }
 
-	@Override
-	@Transactional(rollbackFor = Exception.class)
-	public void doAction(UserAction userAction)
-	{
-		VideoInfo videoInfo = videoInfoMapper.selectByVideoId(userAction.getVideoId());
-		UserActionTypeEnum actionTypeEnum = UserActionTypeEnum.getEnum(userAction.getActionType());
+    }
 
-		if (videoInfo == null || actionTypeEnum == null)
-			throw new BusinessException(ResponseCodeEnum.CODE_600);
+    private void handleToggleAction(UserAction userAction, UserActionTypeEnum userActionTypeEnum)
+    {
+        UserVideoAction userVideoAction = BeanUtil.toBean(userAction, UserVideoAction.class);
+        // 因为已经加入了unique字段索引 所以插入成功表示原先不存在
+        Integer insertRows = userVideoActionMapper.insertIgnore(userVideoAction);
+        boolean liked = insertRows > 0;
 
-		userAction.setVideoUserId(videoInfo.getUserId());
-		//TODO 引入redis存储点赞数量异步放到MQ处理消息
+        if (!liked) {
+            //插入失败需要进行删除
+            this.userVideoActionMapper.deleteByVideoIdAndActionTypeAndUserId(
+                    userVideoAction.getVideoId(),
+                    userVideoAction.getActionType(),
+                    userVideoAction.getUserId()
+            );
+        }
 
-		switch (actionTypeEnum) {
-			case VIDEO_LIKE:
-			case VIDEO_COLLECT:
-				handleToggleAction(userAction, actionTypeEnum);
-				break;
+        int count = liked ? userAction.getActionCount(): -userAction.getActionCount();
+        videoInfoMapper.updateCount(userAction.getVideoId(), userActionTypeEnum.getField(), count);
 
-			case VIDEO_COIN:
-				handleCoinAction(userAction, actionTypeEnum);
-				break;
-		}
+        if (userActionTypeEnum.equals(UserActionTypeEnum.VIDEO_COLLECT))
+        {
+            //TODO 将收藏数量更新到es
+        }
+    }
 
-	}
+    /**
+     * 尽量避免先查询操作, 涉及到扣减问题一定要用原子更新 或者 加锁避免并发问题
+     */
+    private void handleCoinAction(UserAction userAction, UserActionTypeEnum userActionTypeEnum)
+    {
+        UserVideoAction userVideoAction = BeanUtil.toBean(userAction, UserVideoAction.class);
+        String userId = userVideoAction.getUserId();
+        String videoUserId = userVideoAction.getVideoUserId();
 
-	private void handleToggleAction(UserAction userAction, UserActionTypeEnum userActionTypeEnum)
-	{
-		// 因为已经加入了unique字段索引 所以插入成功表示原先不存在
-		Integer insertRows = userActionMapper.insertIgnore(userAction);
-		boolean liked = insertRows > 0;
+        if (userId.equals(videoUserId))
+            throw new BusinessException("不能给自己投币");
 
-		if (!liked) {
-			//插入失败需要进行删除
-			deleteUserActionByVideoIdAndCommentIdAndActionTypeAndUserId(
-					userAction.getVideoId(),
-					userAction.getCommentId(),
-					userAction.getActionType(),
-					userAction.getUserId()
-			);
-		}
+        // 因为已经加入了unique字段索引 所以插入成功表示原先不存在
+        Integer insertRows = userVideoActionMapper.insertIgnore(userVideoAction);
+        boolean hasNoCoinEver = insertRows > 0;
 
-		int count = liked ? userAction.getActionCount(): -userAction.getActionCount();
-		videoInfoMapper.updateCount(userAction.getVideoId(), userActionTypeEnum.getField(), count);
+        if (!hasNoCoinEver)
+            throw new BusinessException("已经投过币了");;
 
-		if (userActionTypeEnum.equals(UserActionTypeEnum.VIDEO_COLLECT))
-		{
-			//TODO 将收藏数量更新到es
-		}
-	}
+        //扣除投币用户硬币
+        Integer updateRows = userInfoMapper.updateUserCoin(userId, -userVideoAction.getActionCount());
+        boolean isDecreaseSuccess = updateRows > 0;
 
-	/**
-	 * 尽量避免先查询操作, 涉及到扣减问题一定要用原子更新 或者 加锁避免并发问题
-	 */
-	private void handleCoinAction(UserAction userAction, UserActionTypeEnum userActionTypeEnum)
-	{
+        if (!isDecreaseSuccess)
+        {
+            throw new BusinessException("投币失败,硬币不足");
+        }
 
-		String userId = userAction.getUserId();
-		String videoUserId = userAction.getVideoUserId();
+        //增加发布视频用户硬币
+        userInfoMapper.updateUserCoin(videoUserId, userVideoAction.getActionCount());
 
-		if (userId.equals(videoUserId))
-			throw new BusinessException("不能给自己投币");
+        videoInfoMapper.updateCount(userVideoAction.getVideoId(), userActionTypeEnum.getField(), userVideoAction.getActionCount());
+    }
 
-		// 因为已经加入了unique字段索引 所以插入成功表示原先不存在
-		Integer insertRows = userActionMapper.insertIgnore(userAction);
-		boolean hasNoCoinEver = insertRows > 0;
+    /**
+     * 需要引入redis不能每次操作全盘扫描, 从redis 用lua脚本计算好之后 用定时任务更新到mysql中 一天只需更新一次剩下的全部从redis中去
+     * 还要注意不能把每个视频都存入redis中, 不然会让内存爆炸, 一般只需存储热门视频的操作数, 冷门的视频从mysql中去然后同步到redis中
+     */
+    private void handleComment(UserAction userAction, UserActionTypeEnum typeEnum)
+    {
+        UserCommentAction userCommentAction = BeanUtil.toBean(userAction, UserCommentAction.class);
+        //检查评论是否存在
+        Integer commentId = userAction.getCommentId();
 
-		if (!hasNoCoinEver)
-			throw new BusinessException("已经投过币了");;
+        if (commentId == null) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
 
-		//扣除投币用户硬币
-		Integer updateRows = userInfoMapper.updateUserCoin(userId, -userAction.getActionCount());
-		boolean isDecreaseSuccess = updateRows > 0;
+        String userId = userAction.getUserId();
+        Integer actionCount = userAction.getActionCount();
 
-		if (!isDecreaseSuccess)
-		{
-			throw new BusinessException("投币失败,硬币不足");
-		}
+        actionCount = actionCount > Constants.ONE ? Constants.ONE : actionCount;
 
-		//增加发布视频用户硬币
-		userInfoMapper.updateUserCoin(videoUserId, userAction.getActionCount());
+        //先用悲观锁 解决并发问题
+        Integer oldActionType = userCommentActionMapper.selectActionTypeForUpdate(commentId, userId);
 
-		videoInfoMapper.updateCount(userAction.getVideoId(), userActionTypeEnum.getField(), userAction.getActionCount());
-	}
+        Integer likeDiff = 0, hateDiff = 0;
+        boolean isCancel = false;
+        if (oldActionType != null && oldActionType.equals(typeEnum.getType()))
+        {
+            isCancel = true;
+            if (typeEnum.equals(UserActionTypeEnum.COMMENT_LIKE)) {
+                likeDiff = -actionCount;
+            } else {
+                hateDiff = -actionCount;
+            }
+        }else if (oldActionType != null)
+        {
+            //oldType != newType
+            if (typeEnum.equals(UserActionTypeEnum.COMMENT_LIKE))
+            {
+                likeDiff = actionCount;
+                hateDiff = -actionCount;
+            }else {
+                likeDiff = -actionCount;
+                hateDiff = actionCount;
+            }
+        }else {
+            //oldActionType == null
+            if (typeEnum.equals(UserActionTypeEnum.COMMENT_LIKE)) {
+                likeDiff = actionCount;
+            } else {
+                hateDiff = actionCount;
+            }
+        }
 
-	@Override
-	public List<UserActionVO> getUserActionTypeList(UserActionQuery actionQuery) {
-		return userActionMapper.selectActionTypeList(actionQuery);
-	}
+        if (isCancel){
+            userCommentActionMapper.deleteByCommentIdAndUserId(commentId, userId);
+        }else {
+            userCommentActionMapper.insertOrUpdate(userCommentAction);
+        }
+
+        Integer rows = videoCommentMapper.updateCount(commentId, likeDiff, hateDiff);
+        if (rows == 0) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
+    }
 
 }

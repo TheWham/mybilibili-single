@@ -3,6 +3,15 @@ package com.easylive.entity.vo;
 public class UserActionVO {
 
     private Integer actionType;
+    private Integer commentId;
+
+    public Integer getCommentId() {
+        return commentId;
+    }
+
+    public void setCommentId(Integer commentId) {
+        this.commentId = commentId;
+    }
 
     public Integer getActionType() {
         return actionType;

@@ -52,5 +52,14 @@ public class Constants {
     public static final String FILE_VIDEO_TEMP_SUFFIX = "_temp";
     public static final String TS_NAME = "index.ts";
     public static final String M3U8_NAME = "index.m3u8";
+
+    //在线播放人数
+    public static final String REDIS_KEY_VIDEO_PLAY_COUNT_ONLINE_PREIFX = REDIS_PREFIX + "video:play:online:";
+
+    public static final String REDIS_KEY_VIDEO_PLAY_COUNT_ONLINE = REDIS_KEY_VIDEO_PLAY_COUNT_ONLINE_PREIFX + "count:%s";
+
+    public static final String REDIS_KEY_VIDEO_PLAY_COUNT_USER_PREFIX = "user:";
+
+    public static final String REDIS_KEY_VIDEO_PLAY_COUNT_USER = REDIS_KEY_VIDEO_PLAY_COUNT_ONLINE_PREIFX + REDIS_KEY_VIDEO_PLAY_COUNT_USER_PREFIX + "%s:%s";
 }
 

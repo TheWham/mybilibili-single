@@ -14,7 +14,7 @@ import com.easylive.enums.ResponseCodeEnum;
 import com.easylive.enums.UserActionTypeEnum;
 import com.easylive.enums.VideoRecommendEnum;
 import com.easylive.exception.BusinessException;
-import com.easylive.service.UserActionService;
+import com.easylive.service.UserVideoActionService;
 import com.easylive.service.VideoInfoFileService;
 import com.easylive.service.VideoInfoService;
 import jakarta.annotation.Resource;
@@ -35,7 +35,7 @@ public class VideoShowController extends ABaseController{
     private VideoInfoFileService videoInfoFileService;
 
     @Resource
-    private UserActionService userActionService;
+    private UserVideoActionService userVideoActionService;
 
     @RequestMapping("/loadVideo")
     public ResponseVO loadVideo(Integer pageNo, Integer pCategoryId, Integer categoryId)
@@ -73,7 +73,7 @@ public class VideoShowController extends ABaseController{
         actionQuery.setUserId(userId);
         actionQuery.setVideoId(videoId);
         actionQuery.setUserActionTypeList(new Integer[]{UserActionTypeEnum.VIDEO_LIKE.getType(), UserActionTypeEnum.VIDEO_COIN.getType(), UserActionTypeEnum.VIDEO_COLLECT.getType()});
-        List<UserActionVO> userActionTypeList = userActionService.getUserActionTypeList(actionQuery);
+        List<UserActionVO> userActionTypeList = userVideoActionService.getUserActionTypeList(actionQuery);
         videoInfoResultVO.setUserActionList(userActionTypeList);
         return getSuccessResponseVO(videoInfoResultVO);
     }

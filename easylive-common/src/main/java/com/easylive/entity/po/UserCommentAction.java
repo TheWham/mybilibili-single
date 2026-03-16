@@ -10,53 +10,46 @@ import java.util.Date;
 
 /**
  * @author amani
- * @since 2026/03/09
- * 用户行为  点赞,评论
+ * @since 2026/03/16
+ * 用户评论行为
  */
-public class UserAction implements Serializable {
+public class UserCommentAction implements Serializable {
 	/**
-	 * @description 自增id
+	 * 自增id
 	 */
     private Integer actionId;
 
 	/**
-	 * @description 视频Id
+	 * 视频Id
 	 */
     private String videoId;
 
 	/**
-	 * @description 视频用户id
+	 * 视频用户id
 	 */
     private String videoUserId;
 
 	/**
-	 * @description 评论id
+	 * 评论id
 	 */
     private Integer commentId;
 
 	/**
-	 * @description 0:评论喜欢点赞 1:讨厌评论 2:视频点赞 3:视频收藏 4:视频投币
+	 * 0:评论喜欢点赞 1:讨厌评论
 	 */
     private Integer actionType;
 
 	/**
-	 * @description 数量
-	 */
-    private Integer actionCount;
-
-	/**
-	 * @description 用户id
+	 * 用户id
 	 */
     private String userId;
 
 	/**
-	 * @description 操作时间
+	 * 操作时间
 	 */
 	@JsonFormat (pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
 	@DateTimeFormat (pattern = "yyyy-MM-dd HH:mm:ss")
     private Date actionTime;
-
-
 
 	public void setActionId(Integer actionId) {
 		this.actionId = actionId;
@@ -88,12 +81,6 @@ public class UserAction implements Serializable {
 	public Integer getActionType() {
 		return this.actionType;
 	}
-	public void setActionCount(Integer actionCount) {
-		this.actionCount = actionCount;
-	}
-	public Integer getActionCount() {
-		return this.actionCount;
-	}
 	public void setUserId(String userId) {
 		this.userId = userId;
 	}
@@ -109,13 +96,12 @@ public class UserAction implements Serializable {
 
 	@Override
 	public String toString() {
-		return "UserAction{" +
+		return "UserCommentAction{" +
 				"actionId='" + actionId + 
 				", videoId='" + videoId + '\'' + 
-				", videoUserId='" + videoUserId + '\'' +
-				", commentId='" + commentId + '\'' +
+				", videoUserId='" + videoUserId + '\'' + 
+				", commentId='" + commentId + '\'' + 
 				", actionType='" + actionType + '\'' + 
-				", actionCount='" + actionCount + '\'' + 
 				", userId='" + userId + '\'' + 
 				", actionTime='" + DateUtils.format(actionTime, DateTimePatternEnum.YYYY_MM_DD_HH_MM_SS.getPattern()) + '\'' + 
 				'}';
