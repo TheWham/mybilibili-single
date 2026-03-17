@@ -1,0 +1,63 @@
+package com.easylive.service;
+
+import com.easylive.entity.po.UserVideoSeries;
+import com.easylive.entity.query.UserVideoSeriesQuery;
+import com.easylive.entity.vo.PaginationResultVO;
+
+import java.util.List;
+
+
+/**
+ * @author amani
+ * @since 2026/03/18
+ * 用户视频列表Service
+ */
+public interface UserVideoSeriesService {
+
+	/**
+	 * 根据条件查询
+	 */
+	List<UserVideoSeries> findListByParam(UserVideoSeriesQuery param);
+
+	/**
+	 * 根据条件查询数量
+	 */
+	Integer findCountByParam(UserVideoSeriesQuery param);
+
+	/**
+	 * 分页查询
+	 */
+	PaginationResultVO<UserVideoSeries> findListByPage(UserVideoSeriesQuery param);
+
+	/**
+	 * 新增
+	 */
+	Integer add(UserVideoSeries bean);
+
+	/**
+	 * 批量新增
+	 */
+	Integer addBatch(List<UserVideoSeries>  listBean);
+
+	/**
+	 * 批量新增/修改
+	 */
+	Integer addOrUpdateBatch(List<UserVideoSeries> listBean);
+
+
+	/**
+	 * 根据 SeriesId查询
+	 */
+	UserVideoSeries getUserVideoSeriesBySeriesId(Integer seriesId);
+
+	/**
+	 * 根据 SeriesId更新
+	 */
+	Integer updateUserVideoSeriesBySeriesId(UserVideoSeries bean, Integer seriesId);
+
+	/**
+	 * 根据 SeriesId删除
+	 */
+	Integer deleteUserVideoSeriesBySeriesId(Integer seriesId);
+
+}

@@ -5,6 +5,7 @@ import com.easylive.component.RedisComponent;
 import com.easylive.config.AdminConfig;
 import com.easylive.constants.Constants;
 import com.easylive.entity.dto.SysSettingDTO;
+import com.easylive.entity.dto.VideoCountDTO;
 import com.easylive.entity.po.VideoInfo;
 import com.easylive.entity.po.VideoInfoFile;
 import com.easylive.entity.po.VideoInfoFilePost;
@@ -54,6 +55,7 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 	private RedisComponent redisComponent;
 	@Resource
 	private AdminConfig adminConfig;
+
 
 	/**
 	 * @description 根据条件查询
@@ -201,6 +203,17 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 
 		//TODO 将发布信息存入es
 
+	}
+
+	@Override
+	public Integer reportVideoPlayOnline(String fileId, String deviceId) {
+		Integer count = redisComponent.reportVideoPlayOnline(fileId, deviceId);
+		return count;
+	}
+
+	@Override
+	public VideoCountDTO sumVideoCountByUserId(String userId) {
+		return this.videoInfoMapper.sumVideoCountByUserId(userId);
 	}
 
 	/**

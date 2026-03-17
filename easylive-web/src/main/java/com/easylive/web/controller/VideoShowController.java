@@ -99,9 +99,10 @@ public class VideoShowController extends ABaseController{
     }
 
     @RequestMapping("/reportVideoPlayOnline")
-    public ResponseVO reportVideoPlayOnline()
+    public ResponseVO reportVideoPlayOnline(@NotEmpty String fileId, @NotEmpty String deviceId)
     {
-        return getSuccessResponseVO(null);
+        Integer count = videoInfoService.reportVideoPlayOnline(fileId, deviceId);
+        return getSuccessResponseVO(count);
     }
 }
 

@@ -1,5 +1,6 @@
 package com.easylive.service;
 
+import com.easylive.entity.dto.VideoCountDTO;
 import com.easylive.entity.po.VideoInfo;
 import com.easylive.entity.query.VideoInfoQuery;
 import com.easylive.entity.vo.PaginationResultVO;
@@ -64,4 +65,8 @@ public interface VideoInfoService {
 	Integer addOrUpdate(VideoInfo videoInfo);
 
 	void auditVideo(String videoId, Integer status, String reason);
+
+	Integer reportVideoPlayOnline(String fileId, String deviceId);
+
+    VideoCountDTO sumVideoCountByUserId(String userId);
 }

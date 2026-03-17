@@ -586,7 +586,15 @@
 		from video_info v where v.video_id=#{videoId}
 	</select>
 
-	<!--根据VideoId删除 -->
+    <select id="sumVideoCountByUserId" resultType="com.easylive.entity.dto.VideoCountDTO">
+		SELECT
+		    IFNULL(SUM(like_count), 0) AS totalLikeCount,
+		    IFNULL(SUM(play_count), 0) AS totalPlayCount
+		FROM video_info
+		WHERE user_id = #{userId}
+	</select>
+
+    <!--根据VideoId删除 -->
 	<delete id="deleteByVideoId">
 		delete from video_info where video_id=#{videoId}
 	</delete>

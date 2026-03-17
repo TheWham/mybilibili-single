@@ -1,5 +1,6 @@
 package com.easylive.mappers;
 
+import com.easylive.entity.dto.VideoCountDTO;
 import org.apache.ibatis.annotations.Param;
 
 /**
@@ -36,4 +37,7 @@ public interface VideoInfoMapper<T, R> extends BaseMapper {
     Integer updateCount(@Param("videoId") String videoId,@Param("field") String field, @Param("count")Integer count);
 
 	String selectUserIdByVideoId(@Param("videoId") String videoId);
+
+    VideoCountDTO sumVideoCountByUserId(@Param("userId") String userId);
+
 }

@@ -26,10 +26,30 @@ public class TokenUserInfoDTO implements Serializable {
 
     // 当前金币数量
     private String currentCoinCount;
-    // 粉丝数量
-    private String fansCount;
-    // 关注数量
-    private String focusCount;
+    //个人简介
+    private String personIntroduction;
+    //封面主题
+    private Integer theme;
+
+    public void setExpireAt(Long expireAt) {
+        this.expireAt = expireAt;
+    }
+
+    public String getPersonIntroduction() {
+        return personIntroduction;
+    }
+
+    public void setPersonIntroduction(String personIntroduction) {
+        this.personIntroduction = personIntroduction;
+    }
+
+    public Integer getTheme() {
+        return theme;
+    }
+
+    public void setTheme(Integer theme) {
+        this.theme = theme;
+    }
 
     /**
      * 获取用户ID
@@ -107,19 +127,4 @@ public class TokenUserInfoDTO implements Serializable {
         this.currentCoinCount = currentCoinCount;
     }
 
-    public String getFansCount() {
-        return fansCount;
-    }
-
-    public void setFansCount(String fansCount) {
-        this.fansCount = fansCount;
-    }
-
-    public String getFocusCount() {
-        return focusCount;
-    }
-
-    public void setFocusCount(String focusCount) {
-        this.focusCount = focusCount;
-    }
 }
