@@ -1,15 +1,24 @@
 package com.easylive.service.impl;
 
+import com.easylive.component.RedisComponent;
+import com.easylive.constants.Constants;
 import com.easylive.entity.po.UserFocus;
+import com.easylive.entity.po.UserStats;
 import com.easylive.entity.query.SimplePage;
 import com.easylive.entity.query.UserFocusQuery;
+import com.easylive.entity.query.UserStatsQuery;
 import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.enums.PageSize;
+import com.easylive.enums.UserActionTypeEnum;
+import com.easylive.exception.BusinessException;
 import com.easylive.mappers.UserFocusMapper;
+import com.easylive.mappers.UserStatsMapper;
 import com.easylive.service.UserFocusService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
 import java.util.List;
 
 
@@ -23,6 +32,10 @@ import java.util.List;
 public class UserFocusServiceImpl implements UserFocusService {
 	@Resource
 	private UserFocusMapper<UserFocus, UserFocusQuery> userFocusMapper;
+    @Resource
+	private UserStatsMapper<UserStats, UserStatsQuery> userStatsMapper;
+	@Resource
+	private RedisComponent redisComponent;
 
 	/**
 	 * 根据条件查询
@@ -108,6 +121,42 @@ public class UserFocusServiceImpl implements UserFocusService {
 	@Override
 	public Integer deleteUserFocusByUserIdAndUserFocusId(String userId, String userFocusId) {
 		return this.userFocusMapper.deleteByUserIdAndUserFocusId(userId, userFocusId);
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void focus(String focusUserId, String userId) {
+		//查询是否关注已关注 则取消
+		UserFocus userFocus = new UserFocus();
+		userFocus.setFocusTime(new Date());
+		userFocus.setUserId(userId);
+		userFocus.setUserFocusId(focusUserId);
+		Integer rowCount = userFocusMapper.insertIgnore(userFocus);
+		if (rowCount == 0)
+		{
+			//插入失败表示已经关注
+			throw new BusinessException("不能重复关注");
+		}
+		userStatsMapper.insertOrUpdateCount(userId, UserActionTypeEnum.USER_FOCUS.getField(), Constants.ONE);
+		userStatsMapper.insertOrUpdateCount(focusUserId, UserActionTypeEnum.USER_FANS.getField(), Constants.ONE);
+		//同步redis
+		//TODO待优化
+		redisComponent.delUserInfoInRedis(userId);
+		redisComponent.delUserInfoInRedis(focusUserId);
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void cancelFocus(String focusUserId, String userId)
+	{
+		Integer count = userFocusMapper.deleteByUserIdAndUserFocusId(userId, focusUserId);
+		if (count == 0)
+			throw new BusinessException("取关失败");
+		userStatsMapper.insertOrUpdateCount(userId, UserActionTypeEnum.USER_FOCUS.getField(), -Constants.ONE);
+		userStatsMapper.insertOrUpdateCount(focusUserId, UserActionTypeEnum.USER_FANS.getField(), -Constants.ONE);
+		//同步redis
+		redisComponent.delUserInfoInRedis(userId);
+		redisComponent.delUserInfoInRedis(focusUserId);
 	}
 
 }

@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTO Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easylive.mappers.UserStatsMapper">
+	<!--实体映射 -->
+	<resultMap id="base_result_map" type="com.easylive.entity.po.UserStats">
+		<!-- 用户id 关联user_info-->
+		<id column="user_id" property="userId"/>
+		<!-- 播放数量-->
+		<result column="play_count" property="playCount"/>
+		<!-- 点赞数量-->
+		<result column="like_count" property="likeCount"/>
+		<!-- 当前硬币数量-->
+		<result column="current_coin_count" property="currentCoinCount"/>
+		<!-- 关注数量-->
+		<result column="focus_count" property="focusCount"/>
+		<!-- 粉丝数量-->
+		<result column="fans_count" property="fansCount"/>
+	</resultMap>
+
+	<!--通用查询结果列 -->
+	<sql id="base_column_list">
+		v.user_id,v.play_count,v.like_count,v.current_coin_count,v.focus_count,v.fans_count
+	</sql>
+
+	<!--基础查询条件 -->
+	<sql id="base_query_condition">
+		<if test="query.userId != null and query.userId != ''" >
+			and v.user_id = #{query.userId}
+		</if>
+		<if test="query.playCount != null" >
+			and v.play_count = #{query.playCount}
+		</if>
+		<if test="query.likeCount != null" >
+			and v.like_count = #{query.likeCount}
+		</if>
+		<if test="query.currentCoinCount != null" >
+			and v.current_coin_count = #{query.currentCoinCount}
+		</if>
+		<if test="query.focusCount != null" >
+			and v.focus_count = #{query.focusCount}
+		</if>
+		<if test="query.fansCount != null" >
+			and v.fans_count = #{query.fansCount}
+		</if>
+	</sql>
+
+	<!--通用条件列 -->
+	<sql id="query_condition">
+		<where>
+			<include refid="base_query_condition" />
+			<include refid="base_query_condition_extend" />
+		</where>
+	</sql>
+
+	<!--拓展查询条件 -->
+	<sql id="base_query_condition_extend">
+		<if test="query.userIdFuzzy != null and query.userIdFuzzy != ''" >
+			and v.user_id like concat('%', #{query.userIdFuzzy}, '%')
+		</if>
+	</sql>
+
+	<!--通用查询列表 -->
+	<select id="selectList" resultMap="base_result_map">
+		SELECT
+		<include refid="base_column_list"/>
+		FROM user_stats v 
+		<include refid="query_condition"/>
+		<if test="query.orderBy!=null">
+			order by ${query.orderBy}
+		</if>
+		<if test="query.simplePage!=null">
+			limit #{query.simplePage.start}, #{query.simplePage.end}
+		</if>
+	</select>
+
+	<!--查询数量 -->
+	<select id="selectCount" resultType="java.lang.Integer">
+		SELECT count(1) FROM user_stats v 
+		<include refid="query_condition"/>
+	</select>
+
+	<!--插入 -->
+	<insert id="insert" parameterType="com.easylive.entity.po.UserStats">
+		INSERT INTO user_stats
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="bean.userId != null">
+				user_id,
+			</if>
+			<if test="bean.playCount != null">
+				play_count,
+			</if>
+			<if test="bean.likeCount != null">
+				like_count,
+			</if>
+			<if test="bean.currentCoinCount != null">
+				current_coin_count,
+			</if>
+			<if test="bean.focusCount != null">
+				focus_count,
+			</if>
+			<if test="bean.fansCount != null">
+				fans_count,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="bean.userId != null">
+				#{bean.userId},
+			</if>
+			<if test="bean.playCount != null">
+				#{bean.playCount},
+			</if>
+			<if test="bean.likeCount != null">
+				#{bean.likeCount},
+			</if>
+			<if test="bean.currentCoinCount != null">
+				#{bean.currentCoinCount},
+			</if>
+			<if test="bean.focusCount != null">
+				#{bean.focusCount},
+			</if>
+			<if test="bean.fansCount != null">
+				#{bean.fansCount},
+			</if>
+		</trim>
+
+	</insert>
+
+	<!--insertOrUpdate 过滤掉了唯一索引字段-->
+	<insert id="insertOrUpdate" parameterType="com.easylive.entity.po.UserStats">
+		INSERT INTO user_stats
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="bean.userId != null">
+				user_id,
+			</if>
+			<if test="bean.playCount != null">
+				play_count,
+			</if>
+			<if test="bean.likeCount != null">
+				like_count,
+			</if>
+			<if test="bean.currentCoinCount != null">
+				current_coin_count,
+			</if>
+			<if test="bean.focusCount != null">
+				focus_count,
+			</if>
+			<if test="bean.fansCount != null">
+				fans_count,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="bean.userId != null">
+				#{bean.userId},
+			</if>
+			<if test="bean.playCount != null">
+				#{bean.playCount},
+			</if>
+			<if test="bean.likeCount != null">
+				#{bean.likeCount},
+			</if>
+			<if test="bean.currentCoinCount != null">
+				#{bean.currentCoinCount},
+			</if>
+			<if test="bean.focusCount != null">
+				#{bean.focusCount},
+			</if>
+			<if test="bean.fansCount != null">
+				#{bean.fansCount},
+			</if>
+		</trim>
+		on DUPLICATE key update
+		<trim prefix="" suffix="" suffixOverrides=",">
+			<if test="bean.playCount != null">
+				play_count = VALUES(play_count),
+			</if>
+			<if test="bean.likeCount != null">
+				like_count = VALUES(like_count),
+			</if>
+			<if test="bean.currentCoinCount != null">
+				current_coin_count = VALUES(current_coin_count),
+			</if>
+			<if test="bean.focusCount != null">
+				focus_count = VALUES(focus_count),
+			</if>
+			<if test="bean.fansCount != null">
+				fans_count = VALUES(fans_count),
+			</if>
+		</trim>
+	</insert>
+
+	<insert id="insertOrUpdateCount">
+		INSERT INTO user_stats (user_id, ${field})
+		VALUES (#{userId}, #{count})
+			ON DUPLICATE KEY UPDATE
+			${field} = ${field} + #{count}
+	</insert>
+
+	<!--批量添加 -->
+	<insert id="insertBatch" parameterType="com.easylive.entity.po.UserStats"  useGeneratedKeys="true" keyProperty="userId">
+		INSERT INTO user_stats(user_id,play_count,like_count,current_coin_count,focus_count,fans_count) values
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.userId},#{item.playCount},#{item.likeCount},#{item.currentCoinCount},#{item.focusCount},#{item.fansCount}
+			)
+		</foreach>
+	</insert>
+
+	<!--批量新增修改 (没有过滤掉唯一索引字段)-->
+	<insert id="insertOrUpdateBatch" parameterType="com.easylive.entity.po.UserStats">
+		INSERT INTO user_stats(user_id,play_count,like_count,current_coin_count,focus_count,fans_count) values
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.userId},#{item.playCount},#{item.likeCount},#{item.currentCoinCount},#{item.focusCount},#{item.fansCount}
+			)
+		</foreach>
+		on DUPLICATE key update
+		play_count = VALUES(play_count),like_count = VALUES(like_count),current_coin_count = VALUES(current_coin_count),focus_count = VALUES(focus_count),fans_count = VALUES(fans_count)
+	</insert>
+
+	<!--根据UserId查询 -->
+	<select id="selectByUserId" resultMap="base_result_map">
+		select <include refid="base_column_list"/>
+		from user_stats v where user_id=#{userId}
+	</select>
+
+	<!--根据UserId删除 -->
+	<delete id="deleteByUserId">
+		delete from user_stats where user_id=#{userId}
+	</delete>
+
+	<!--根据UserId更新 -->
+	<update id="updateByUserId" parameterType="com.easylive.entity.po.UserStats">
+		update user_stats
+		<set>
+			<if test="bean.userId != null">
+				user_id = #{bean.userId},
+			</if>
+			<if test="bean.playCount != null">
+				play_count = #{bean.playCount},
+			</if>
+			<if test="bean.likeCount != null">
+				like_count = #{bean.likeCount},
+			</if>
+			<if test="bean.currentCoinCount != null">
+				current_coin_count = #{bean.currentCoinCount},
+			</if>
+			<if test="bean.focusCount != null">
+				focus_count = #{bean.focusCount},
+			</if>
+			<if test="bean.fansCount != null">
+				fans_count = #{bean.fansCount},
+			</if>
+		</set>
+		where user_id=#{userId}
+	</update>
+
+
+</mapper>

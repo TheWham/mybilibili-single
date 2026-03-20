@@ -137,5 +137,10 @@ public class ABaseController {
         }
     }
 
+    protected void saveUserInfo2Redis(String userId)
+    {
+
+    }
+
 
 }

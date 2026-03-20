@@ -24,4 +24,5 @@ public interface UserFocusMapper<T, R> extends BaseMapper {
 	 */
 	Integer deleteByUserIdAndUserFocusId(@Param("userId") String userId, @Param("userFocusId") String userFocusId);
 
+    Integer insertIgnore(@Param("bean") T userFocus);
 }

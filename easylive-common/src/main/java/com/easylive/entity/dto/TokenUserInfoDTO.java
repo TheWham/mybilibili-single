@@ -23,17 +23,9 @@ public class TokenUserInfoDTO implements Serializable {
     private Long expireAt;
     // 用户头像URL
     private String avatar;
-
-    // 当前金币数量
-    private String currentCoinCount;
-    //个人简介
-    private String personIntroduction;
-    //封面主题
+    //主页主题
     private Integer theme;
-
-    public void setExpireAt(Long expireAt) {
-        this.expireAt = expireAt;
-    }
+    private String personIntroduction;
 
     public String getPersonIntroduction() {
         return personIntroduction;
@@ -49,6 +41,10 @@ public class TokenUserInfoDTO implements Serializable {
 
     public void setTheme(Integer theme) {
         this.theme = theme;
+    }
+
+    public void setExpireAt(Long expireAt) {
+        this.expireAt = expireAt;
     }
 
     /**
@@ -119,12 +115,5 @@ public class TokenUserInfoDTO implements Serializable {
         this.avatar = avatar;
     }
 
-    public String getCurrentCoinCount() {
-        return currentCoinCount;
-    }
-
-    public void setCurrentCoinCount(String currentCoinCount) {
-        this.currentCoinCount = currentCoinCount;
-    }
 
 }

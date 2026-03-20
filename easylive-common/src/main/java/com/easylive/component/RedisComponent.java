@@ -7,6 +7,7 @@ import com.easylive.entity.dto.TokenUserInfoDTO;
 import com.easylive.entity.dto.UploadingFileDTO;
 import com.easylive.entity.po.CategoryInfo;
 import com.easylive.entity.po.VideoInfoFilePost;
+import com.easylive.entity.vo.UserInfoVO;
 import com.easylive.exception.BusinessException;
 import com.easylive.redis.RedisUtils;
 import jakarta.annotation.Resource;
@@ -19,6 +20,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import static com.easylive.constants.Constants.REDIS_EXPIRE_TIME_DAY_COUNT;
+import static com.easylive.constants.Constants.REDIS_EXPIRE_TIME_MINUTE_COUNT;
 
 @Component("redisComponent")
 public class RedisComponent {
@@ -196,5 +198,25 @@ public class RedisComponent {
         count = (Integer)redisUtils.get(playCountOnlineKey);
         count = count == null ? 1 : count;
         return count;
+    }
+
+    public void updateTokenUserInfo(TokenUserInfoDTO tokenUserInfoDTO) {
+        redisUtils.setex(Constants.REDIS_WEB_TOKEN_KEY + tokenUserInfoDTO.getTokenId(), tokenUserInfoDTO, Constants.REDIS_EXPIRE_TIME_ONE_DAY * REDIS_EXPIRE_TIME_DAY_COUNT);
+    }
+
+    public UserInfoVO getUserInfoVOInRedis(String userId) {
+        Object o = redisUtils.get(Constants.REDIS_WEB_USER_INFO_KEY + userId);
+        if (o == null)
+            return null;
+        return (UserInfoVO) o;
+    }
+
+    public void saveUserInfoVOInRedis(UserInfoVO userInfoVO) {
+        // 存放登录信息
+        redisUtils.setex(Constants.REDIS_WEB_USER_INFO_KEY + userInfoVO.getUserId(), userInfoVO, Constants.REDIS_EXPIRE_TIME_ONE_MINUTE * REDIS_EXPIRE_TIME_MINUTE_COUNT * 6);
+    }
+
+    public void delUserInfoInRedis(String userId) {
+        redisUtils.delete(Constants.REDIS_WEB_USER_INFO_KEY + userId);
     }
 }

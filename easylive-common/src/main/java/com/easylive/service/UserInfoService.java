@@ -6,6 +6,8 @@ import com.easylive.entity.dto.WebLoginDTO;
 import com.easylive.entity.po.UserInfo;
 import com.easylive.entity.query.UserInfoQuery;
 import com.easylive.entity.vo.PaginationResultVO;
+import com.easylive.entity.vo.UserCountVO;
+import com.easylive.entity.vo.UserInfoVO;
 import com.easylive.exception.BusinessException;
 
 import java.util.List;
@@ -13,8 +15,7 @@ import java.util.List;
 
 /**
  * @author amani
- * @date 2026/01/07
- * @description Service
+ * @since 2026/01/07
  */
 
 public interface UserInfoService {
@@ -109,4 +110,16 @@ public interface UserInfoService {
 	 * @param webLoginDTO 登录数据传输对象，包含用户登录所需的信息
 	 */
 	TokenUserInfoDTO login(WebLoginDTO webLoginDTO);
+
+	void setUserInHome(UserInfoVO userInfoVO);
+
+	void updateUserInfoUHome(TokenUserInfoDTO tokenUserInfoDTO, UserInfo userInfo);
+
+	/**
+	 * 查询硬币数量
+	 */
+	Integer selectTotalCoinCount(String userId);
+
+
+	UserCountVO getUserCountInfo(String userId);
 }

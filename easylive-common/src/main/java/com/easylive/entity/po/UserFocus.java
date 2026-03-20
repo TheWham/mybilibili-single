@@ -30,6 +30,69 @@ public class UserFocus implements Serializable {
 	@JsonFormat (pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
 	@DateTimeFormat (pattern = "yyyy-MM-dd HH:mm:ss")
     private Date focusTime;
+	/**
+	 * 粉丝昵称
+	 */
+	private String otherNickName;
+	/**
+	 * 粉丝头像
+	 */
+	private String otherAvatar;
+
+	/**
+	 * 粉丝用户id
+	 */
+	private String otherUserId;
+
+	/**
+	 * 关注类型 0表示为关注, 1表示关注
+	 */
+	private Integer focusType;
+
+	public Integer getFocusType() {
+		return focusType;
+	}
+
+	public void setFocusType(Integer focusType) {
+		this.focusType = focusType;
+	}
+
+	public String getOtherUserId() {
+		return otherUserId;
+	}
+
+	public void setOtherUserId(String otherUserId) {
+		this.otherUserId = otherUserId;
+	}
+
+	/**
+	 * 粉丝个人简介
+	 */
+	private String otherPersonIntroduction;
+
+	public String getOtherNickName() {
+		return otherNickName;
+	}
+
+	public void setOtherNickName(String otherNickName) {
+		this.otherNickName = otherNickName;
+	}
+
+	public String getOtherAvatar() {
+		return otherAvatar;
+	}
+
+	public void setOtherAvatar(String otherAvatar) {
+		this.otherAvatar = otherAvatar;
+	}
+
+	public String getOtherPersonIntroduction() {
+		return otherPersonIntroduction;
+	}
+
+	public void setOtherPersonIntroduction(String otherPersonIntroduction) {
+		this.otherPersonIntroduction = otherPersonIntroduction;
+	}
 
 	public void setUserId(String userId) {
 		this.userId = userId;

@@ -23,8 +23,13 @@ public enum UserActionTypeEnum {
     // 弹幕数量枚举值
     VIDEO_DNAMU(6,"danmu_count", "弹幕数量"),
     // 视频播放量枚举值
-    VIDEO_PLAY(7, "play_count", "视频播放量");
-
+    VIDEO_PLAY(7, "play_count", "视频播放量"),
+    //关注数量枚举
+    USER_FOCUS(8, "focus_count", "用户关注数量"),
+    //粉丝数量枚举
+    USER_FANS(9, "fans_count", "用户粉丝数量"),
+    // 用户硬币数量枚举值
+    USER_COIN(10, "current_coin_count", "用户硬币数量");
     // 用户行为类型
     private Integer type;
     // 对应数据库字段名

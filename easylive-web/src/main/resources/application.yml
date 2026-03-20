@@ -1,7 +1,7 @@
 server:
   port: 7071
-  servlet:
-    context-path: /web
+ # servlet:
+#    context-path: /web
 spring:
   servlet:
     multipart:

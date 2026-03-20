@@ -6,20 +6,28 @@ import com.easylive.constants.Constants;
 import com.easylive.entity.dto.RegisterDTO;
 import com.easylive.entity.dto.TokenUserInfoDTO;
 import com.easylive.entity.dto.WebLoginDTO;
+import com.easylive.entity.po.UserFocus;
 import com.easylive.entity.po.UserInfo;
-import com.easylive.entity.query.SimplePage;
-import com.easylive.entity.query.UserInfoQuery;
+import com.easylive.entity.po.UserStats;
+import com.easylive.entity.po.VideoInfo;
+import com.easylive.entity.query.*;
 import com.easylive.entity.vo.PaginationResultVO;
+import com.easylive.entity.vo.UserCountVO;
+import com.easylive.entity.vo.UserInfoVO;
 import com.easylive.enums.PageSize;
 import com.easylive.enums.SexEnum;
 import com.easylive.enums.StatusEnum;
 import com.easylive.exception.BusinessException;
+import com.easylive.mappers.UserFocusMapper;
 import com.easylive.mappers.UserInfoMapper;
+import com.easylive.mappers.UserStatsMapper;
+import com.easylive.mappers.VideoInfoMapper;
 import com.easylive.service.UserInfoService;
 import com.easylive.utils.StringTools;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
@@ -37,7 +45,13 @@ public class UserInfoServiceImpl implements UserInfoService {
 	@Resource
 	private UserInfoMapper<UserInfo, UserInfoQuery> userInfoMapper;
 	@Resource
+	private VideoInfoMapper<VideoInfo, VideoInfoQuery> videoInfoMapper;
+	@Resource
+	private UserFocusMapper<UserFocus, UserFocusQuery> userFocusMapper;
+	@Resource
 	private RedisComponent redisComponent;
+	@Resource
+	private UserStatsMapper<UserStats, UserStatsQuery> userStatsMapper;
 	/**
 	 * @description 根据条件查询
 	 */
@@ -232,5 +246,65 @@ public class UserInfoServiceImpl implements UserInfoService {
 		redisComponent.saveTokenIdByUserId(userInfo.getUserId(), tokenUserInfoDTO.getTokenId());
 
 		return tokenUserInfoDTO;
+	}
+
+	@Override
+	public void setUserInHome(UserInfoVO userInfoVO) {
+		String userId = userInfoVO.getUserId();
+		UserStats userStats = userStatsMapper.selectByUserId(userId);
+		userInfoVO.setPlayCount(userStats.getPlayCount());
+		userInfoVO.setLikeCount(userStats.getLikeCount());
+		userInfoVO.setFansCount(userStats.getFansCount());
+		userInfoVO.setFocusCount(userStats.getFocusCount());
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void updateUserInfoUHome(TokenUserInfoDTO tokenUserInfoDTO, UserInfo userInfo) {
+		String userId = tokenUserInfoDTO.getUserId();
+		boolean isEditNickName = !tokenUserInfoDTO.getNickName().equals(userInfo.getNickName());
+		//修改名称需要扣硬币
+		Integer totalCoinCount = userInfoMapper.selectTotalCoinCount(userId);
+		if (isEditNickName && totalCoinCount < Constants.UPDATE_NAME_COIN)
+		{
+			throw new BusinessException("硬币不足, 无法修改昵称");
+		}
+		userInfoMapper.updateByUserId(userInfo, userId);
+
+		//更新硬币数量
+		if (isEditNickName){
+			Integer count = userInfoMapper.updateUserCoin(userId, -Constants.UPDATE_NAME_COIN);
+			if (count == 0){
+				throw new BusinessException("硬币不足,无法修改昵称");
+			}
+		}
+
+		boolean isEditAvatar = tokenUserInfoDTO.getAvatar() == null || !tokenUserInfoDTO.getAvatar().equals(userInfo.getAvatar());
+		boolean isEditPersonIntroduction = tokenUserInfoDTO.getPersonIntroduction() == null || !tokenUserInfoDTO.getPersonIntroduction().equals(userInfo.getPersonIntroduction());
+		if (isEditNickName|| isEditAvatar || isEditPersonIntroduction)
+		{
+			tokenUserInfoDTO.setNickName(userInfo.getNickName());
+			tokenUserInfoDTO.setPersonIntroduction(userInfo.getPersonIntroduction());
+			tokenUserInfoDTO.setAvatar(userInfo.getAvatar());
+			redisComponent.updateTokenUserInfo(tokenUserInfoDTO);
+		}
+
+	}
+
+	@Override
+	public Integer selectTotalCoinCount(String userId) {
+		return this.selectTotalCoinCount(userId);
+	}
+
+	@Override
+	public UserCountVO getUserCountInfo(String userId) {
+		UserInfoVO userInfoVOInRedis = redisComponent.getUserInfoVOInRedis(userId);
+		if (userInfoVOInRedis != null)
+		{
+			UserCountVO userCountVO = BeanUtil.toBean(userInfoVOInRedis, UserCountVO.class);
+			return userCountVO;
+		}
+		UserCountVO userCountVO = userInfoMapper.selectUserCountInfo(userId);
+		return userCountVO;
 	}
 }

@@ -1,12 +1,10 @@
 package com.easylive.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.easylive.component.RedisComponent;
 import com.easylive.constants.Constants;
 import com.easylive.entity.po.*;
-import com.easylive.entity.query.UserActionQuery;
-import com.easylive.entity.query.UserInfoQuery;
-import com.easylive.entity.query.VideoCommentQuery;
-import com.easylive.entity.query.VideoInfoQuery;
+import com.easylive.entity.query.*;
 import com.easylive.enums.ResponseCodeEnum;
 import com.easylive.enums.UserActionTypeEnum;
 import com.easylive.exception.BusinessException;
@@ -29,6 +27,10 @@ public class UserActionServiceImpl implements UserActionService {
     private UserVideoActionMapper<UserVideoAction, UserActionQuery> userVideoActionMapper;
     @Resource
     private UserCommentActionMapper<UserCommentAction, UserActionQuery> userCommentActionMapper;
+    @Resource
+    private UserStatsMapper<UserStats, UserStatsQuery> userStatsMapper;
+    @Resource
+    private RedisComponent redisComponent;
 
 
     /**
@@ -98,6 +100,12 @@ public class UserActionServiceImpl implements UserActionService {
         int count = liked ? userAction.getActionCount(): -userAction.getActionCount();
         videoInfoMapper.updateCount(userAction.getVideoId(), userActionTypeEnum.getField(), count);
 
+        if (userActionTypeEnum.equals(UserActionTypeEnum.VIDEO_LIKE) || userActionTypeEnum.equals(UserActionTypeEnum.VIDEO_PLAY)){
+            userStatsMapper.insertOrUpdateCount(userAction.getUserId(), userActionTypeEnum.getField(), count);
+            redisComponent.delUserInfoInRedis(userAction.getUserId());
+        }
+
+
         if (userActionTypeEnum.equals(UserActionTypeEnum.VIDEO_COLLECT))
         {
             //TODO 将收藏数量更新到es
@@ -132,10 +140,17 @@ public class UserActionServiceImpl implements UserActionService {
             throw new BusinessException("投币失败,硬币不足");
         }
 
+        /**
+         * 后续要进行优化成高并发模式
+         */
         //增加发布视频用户硬币
         userInfoMapper.updateUserCoin(videoUserId, userVideoAction.getActionCount());
-
+        //增加视频硬币数量
         videoInfoMapper.updateCount(userVideoAction.getVideoId(), userActionTypeEnum.getField(), userVideoAction.getActionCount());
+        //更新统计表中用户数量
+        userStatsMapper.insertOrUpdateCount(videoUserId, UserActionTypeEnum.USER_COIN.getField(), userVideoAction.getActionCount());
+        userStatsMapper.insertOrUpdateCount(userId, UserActionTypeEnum.USER_COIN.getField(), -userVideoAction.getActionCount());
+        redisComponent.delUserInfoInRedis(userId);
     }
 
     /**

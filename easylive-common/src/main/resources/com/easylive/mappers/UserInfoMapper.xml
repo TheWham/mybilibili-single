@@ -97,7 +97,7 @@
 			and theme = #{query.theme}
 		</if>
 		<if test="query.avatar != null" >
-			and theme = #{query.avatar}
+			and avatar = #{query.avatar}
 		</if>
 	</sql>
 
@@ -230,6 +230,9 @@
 			<if test="bean.theme != null">
 				theme,
 			</if>
+			<if test="bean.avatar != null">
+				avatar = #{bean.avatar},
+			</if>
 		</trim>
 		<trim prefix="values (" suffix=")" suffixOverrides=",">
 			<if test="bean.userId != null">
@@ -279,6 +282,9 @@
 			</if>
 			<if test="bean.theme != null">
 				#{bean.theme},
+			</if>
+			<if test="bean.avatar != null">
+				avatar = #{bean.avatar},
 			</if>
 		</trim>
 
@@ -336,6 +342,9 @@
 			<if test="bean.theme != null">
 				theme,
 			</if>
+			<if test="bean.avatar != null">
+				avatar = #{bean.avatar},
+			</if>
 		</trim>
 		<trim prefix="values (" suffix=")" suffixOverrides=",">
 			<if test="bean.userId != null">
@@ -386,6 +395,9 @@
 			<if test="bean.theme != null">
 				#{bean.theme},
 			</if>
+			<if test="bean.avatar != null">
+				avatar = #{bean.avatar},
+			</if>
 		</trim>
 		on DUPLICATE key update
 		<trim prefix="" suffix="" suffixOverrides=",">
@@ -428,29 +440,32 @@
 			<if test="bean.theme != null">
 				theme = VALUES(theme),
 			</if>
+			<if test="bean.avatar != null">
+				avatar = VALUES(avatar),
+			</if>
 		</trim>
 	</insert>
 
 	<!--批量添加 -->
 	<insert id="insertBatch" parameterType="com.easylive.entity.po.UserInfo"  useGeneratedKeys="true" keyProperty="userId">
-		INSERT INTO user_info(user_id,nick_name,birthday,sex,email,password,school,person_introduction,join_time,last_login_time,last_login_ip,status,notice_info,total_coin_count,current_coin_count,theme) values
+		INSERT INTO user_info(user_id,nick_name,birthday,sex,email,password,school,person_introduction,join_time,last_login_time,last_login_ip,status,notice_info,total_coin_count,current_coin_count,theme,avatar) values
 		<foreach collection="list" item="item" separator=",">
 			(
-			#{item.userId},#{item.nickName},#{item.birthday},#{item.sex},#{item.email},#{item.password},#{item.school},#{item.personIntroduction},#{item.joinTime},#{item.lastLoginTime},#{item.lastLoginIp},#{item.status},#{item.noticeInfo},#{item.totalCoinCount},#{item.currentCoinCount},#{item.theme}
+			#{item.userId},#{item.nickName},#{item.birthday},#{item.sex},#{item.email},#{item.password},#{item.school},#{item.personIntroduction},#{item.joinTime},#{item.lastLoginTime},#{item.lastLoginIp},#{item.status},#{item.noticeInfo},#{item.totalCoinCount},#{item.currentCoinCount},#{item.theme},#{item.avatar}
 			)
 		</foreach>
 	</insert>
 
 	<!--批量新增修改 (没有过滤掉唯一索引字段)-->
 	<insert id="insertOrUpdateBatch" parameterType="com.easylive.entity.po.UserInfo">
-		INSERT INTO user_info(user_id,nick_name,birthday,sex,email,password,school,person_introduction,join_time,last_login_time,last_login_ip,status,notice_info,total_coin_count,current_coin_count,theme) values
+		INSERT INTO user_info(user_id,nick_name,birthday,sex,email,password,school,person_introduction,join_time,last_login_time,last_login_ip,status,notice_info,total_coin_count,current_coin_count,theme,avatar) values
 		<foreach collection="list" item="item" separator=",">
 			(
-			#{item.userId},#{item.nickName},#{item.birthday},#{item.sex},#{item.email},#{item.password},#{item.school},#{item.personIntroduction},#{item.joinTime},#{item.lastLoginTime},#{item.lastLoginIp},#{item.status},#{item.noticeInfo},#{item.totalCoinCount},#{item.currentCoinCount},#{item.theme}
+			#{item.userId},#{item.nickName},#{item.birthday},#{item.sex},#{item.email},#{item.password},#{item.school},#{item.personIntroduction},#{item.joinTime},#{item.lastLoginTime},#{item.lastLoginIp},#{item.status},#{item.noticeInfo},#{item.totalCoinCount},#{item.currentCoinCount},#{item.theme},#{item.avatar}
 			)
 		</foreach>
 		on DUPLICATE key update
-		birthday = VALUES(birthday),sex = VALUES(sex),password = VALUES(password),school = VALUES(school),person_introduction = VALUES(person_introduction),join_time = VALUES(join_time),last_login_time = VALUES(last_login_time),last_login_ip = VALUES(last_login_ip),status = VALUES(status),notice_info = VALUES(notice_info),total_coin_count = VALUES(total_coin_count),current_coin_count = VALUES(current_coin_count),theme = VALUES(theme)
+		birthday = VALUES(birthday),sex = VALUES(sex),password = VALUES(password),school = VALUES(school),person_introduction = VALUES(person_introduction),join_time = VALUES(join_time),last_login_time = VALUES(last_login_time),last_login_ip = VALUES(last_login_ip),status = VALUES(status),notice_info = VALUES(notice_info),total_coin_count = VALUES(total_coin_count),current_coin_count = VALUES(current_coin_count),theme = VALUES(theme),avatar = VALUES(avatar)
 	</insert>
 
 	<!--根据UserId查询 -->
@@ -515,6 +530,9 @@
 			</if>
 			<if test="bean.theme != null">
 				theme = #{bean.theme},
+			</if>
+			<if test="bean.avatar != null">
+				avatar = #{bean.avatar},
 			</if>
 		</set>
 		where user_id=#{userId}
@@ -583,6 +601,9 @@
 			<if test="bean.theme != null">
 				theme = #{bean.theme},
 			</if>
+			<if test="bean.avatar != null">
+				avatar = #{bean.avatar},
+			</if>
 		</set>
 		where email=#{email}
 	</update>
@@ -591,6 +612,13 @@
 	<select id="selectByNickName" resultMap="base_result_map">
 		select <include refid="base_column_list"/>
 		from user_info where nick_name=#{nickName}
+	</select>
+	<select id="selectTotalCoinCount" resultType="java.lang.Integer">
+		SELECT total_coin_count from user_info where user_id = #{userId}
+	</select>
+
+	<select id="selectUserCountInfo" resultType="com.easylive.entity.vo.UserCountVO">
+		select
 	</select>
 
 	<!--根据NickName删除 -->
@@ -649,6 +677,9 @@
 			</if>
 			<if test="bean.theme != null">
 				theme = #{bean.theme},
+			</if>
+			<if test="bean.avatar != null">
+				avatar = #{bean.avatar},
 			</if>
 		</set>
 		where nick_name=#{nickName}

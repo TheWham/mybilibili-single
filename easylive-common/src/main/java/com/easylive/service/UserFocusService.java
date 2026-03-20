@@ -60,4 +60,7 @@ public interface UserFocusService {
 	 */
 	Integer deleteUserFocusByUserIdAndUserFocusId(String userId, String userFocusId);
 
+    void focus(String focusUserId, String userId);
+
+    void cancelFocus(String focusUserId, String userId);
 }

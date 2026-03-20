@@ -58,7 +58,24 @@
 	<select id="selectList" resultMap="base_result_map">
 		SELECT
 		<include refid="base_column_list"/>
-		FROM user_focus v 
+		<if test="query.isQueryFansDetailInfo || query.isQueryFocusDetailInfo">
+		    ,u.user_id otherUserId
+		    ,u.avatar otherAvatar
+		    ,u.nick_name otherNickName
+		    ,u.person_introduction otherPersonIntroduction
+			-- 判断是否互关的标识列：如果反向关系存在，返回 1 (互关)，否则返回 0 (单向)
+			,IF(v2.user_id IS NOT NULL, 1, 0) AS focusType
+		</if>
+		FROM user_focus v
+		<if test="query.isQueryFansDetailInfo">
+		inner JOIN user_info u on u.user_id = v.user_id
+		</if>
+		<if test="query.isQueryFocusDetailInfo">
+		inner JOIN user_info u on u.user_id = v.user_focus_id
+		</if>
+		<if test="query.isQueryFansDetailInfo || query.isQueryFocusDetailInfo">
+		LEFT JOIN user_focus v2 on v2.user_id = v.user_focus_id AND v2.user_focus_id = v.user_id
+		</if>
 		<include refid="query_condition"/>
 		<if test="query.orderBy!=null">
 			order by ${query.orderBy}
@@ -77,6 +94,33 @@
 	<!--插入 -->
 	<insert id="insert" parameterType="com.easylive.entity.po.UserFocus">
 		INSERT INTO user_focus
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="bean.userId != null">
+				user_id,
+			</if>
+			<if test="bean.userFocusId != null">
+				user_focus_id,
+			</if>
+			<if test="bean.focusTime != null">
+				focus_time,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="bean.userId != null">
+				#{bean.userId},
+			</if>
+			<if test="bean.userFocusId != null">
+				#{bean.userFocusId},
+			</if>
+			<if test="bean.focusTime != null">
+				#{bean.focusTime},
+			</if>
+		</trim>
+	</insert>
+
+	<!--插入 -->
+	<insert id="insertIgnore" parameterType="com.easylive.entity.po.UserFocus">
+		INSERT IGNORE INTO user_focus
 		<trim prefix="(" suffix=")" suffixOverrides=",">
 			<if test="bean.userId != null">
 				user_id,

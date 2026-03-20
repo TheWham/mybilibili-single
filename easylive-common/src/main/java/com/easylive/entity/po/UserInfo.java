@@ -29,9 +29,7 @@ public class UserInfo implements Serializable {
 	/**
 	 * @description 出生日期
 	 */
-	@JsonFormat (pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
-	@DateTimeFormat (pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date birthday;
+    private String birthday;
 
 	/**
 	 * @description 0:女 1:男 2:未知
@@ -128,12 +126,15 @@ public class UserInfo implements Serializable {
 	public String getNickName() {
 		return this.nickName;
 	}
-	public void setBirthday(Date birthday) {
+
+	public String getBirthday() {
+		return birthday;
+	}
+
+	public void setBirthday(String birthday) {
 		this.birthday = birthday;
 	}
-	public Date getBirthday() {
-		return this.birthday;
-	}
+
 	public void setSex(Integer sex) {
 		this.sex = sex;
 	}
@@ -218,7 +219,7 @@ public class UserInfo implements Serializable {
 		return "UserInfo{" +
 				"userId='" + userId + 
 				", nickName='" + nickName + '\'' + 
-				", birthday='" + DateUtils.format(birthday, DateTimePatternEnum.YYYY_MM_DD_HH_MM_SS.getPattern()) + '\'' + 
+				", birthday='" + birthday + '\'' +
 				", sex='" + sex + '\'' + 
 				", email='" + email + '\'' + 
 				", password='" + password + '\'' + 

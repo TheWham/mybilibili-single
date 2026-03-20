@@ -1,14 +1,19 @@
 package com.easylive.web.controller;
 
 
+import cn.hutool.core.bean.BeanUtil;
 import com.easylive.component.RedisComponent;
 import com.easylive.constants.Constants;
 import com.easylive.entity.dto.RegisterDTO;
 import com.easylive.entity.dto.TokenUserInfoDTO;
 import com.easylive.entity.dto.WebLoginDTO;
+import com.easylive.entity.po.UserStats;
 import com.easylive.entity.vo.ResponseVO;
+import com.easylive.entity.vo.UserCountVO;
+import com.easylive.entity.vo.UserInfoVO;
 import com.easylive.exception.BusinessException;
 import com.easylive.service.UserInfoService;
+import com.easylive.service.UserStatsService;
 import com.wf.captcha.ArithmeticCaptcha;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,6 +38,8 @@ public class AccountController extends ABaseController{
 
     @Resource
     public RedisComponent redisComponent;
+    @Resource
+    public UserStatsService userStatsService;
 
 /**
  * 获取验证码接口
@@ -133,6 +140,7 @@ public class AccountController extends ABaseController{
 
         saveToken2Session(response, tokenUserInfo.getTokenId());
         //TODO 设置粉丝数, 关注数, 硬币数
+
         return getSuccessResponseVO(tokenUserInfo);
     }
 
@@ -140,6 +148,29 @@ public class AccountController extends ABaseController{
     public ResponseVO logout(HttpServletResponse response){
         cleanCookie(response);
         return getSuccessResponseVO(null);
+    }
+
+    @RequestMapping("/getUserCountInfo")
+    public ResponseVO getUserCountInfo()
+    {
+        TokenUserInfoDTO tokenUserInfoDTO = getTokenUserInfo();
+        String userId = tokenUserInfoDTO.getUserId();
+        UserInfoVO userInfoVO = redisComponent.getUserInfoVOInRedis(userId);
+        if (userInfoVO != null)
+        {
+            UserCountVO userCountVO = BeanUtil.toBean(userInfoVO, UserCountVO.class);
+            return getSuccessResponseVO(userCountVO);
+        }
+        UserStats userStatus = userStatsService.getUserStatsByUserId(userId);
+        UserCountVO userCountVO = BeanUtil.toBean(userStatus, UserCountVO.class);
+
+        userInfoVO = BeanUtil.toBean(userStatus, UserInfoVO.class);
+        userInfoVO.setUserId(userId);
+        userInfoVO.setAvatar(tokenUserInfoDTO.getAvatar());
+        userInfoVO.setNickName(tokenUserInfoDTO.getNickName());
+        userInfoVO.setTheme(tokenUserInfoDTO.getTheme());
+        redisComponent.saveUserInfoVOInRedis(userInfoVO);
+        return getSuccessResponseVO(userCountVO);
     }
 
 }

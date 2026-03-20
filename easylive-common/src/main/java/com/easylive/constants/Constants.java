@@ -59,5 +59,9 @@ public class Constants {
     public static final String REDIS_KEY_VIDEO_PLAY_COUNT_USER_PREFIX = "user:";
     public static final String REDIS_KEY_VIDEO_PLAY_COUNT_USER = REDIS_KEY_VIDEO_PLAY_COUNT_ONLINE_PREIFX + REDIS_KEY_VIDEO_PLAY_COUNT_USER_PREFIX + "%s:%s";
     public static final Integer REDIS_EXPIRE_TIME_ONE_SECOND = 1000;
+    public static final Integer UPDATE_NAME_COIN = 3;
+
+    //用户信息存储
+    public static final String REDIS_WEB_USER_INFO_KEY = REDIS_PREFIX + "web:usrInfo:";
 }
 

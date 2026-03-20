@@ -24,6 +24,20 @@ public class UserFocusQuery extends BaseQuery {
 	private Date focusTime;
 	private String focusTimeStart;
 	private String focusTimeEnd;
+	private Boolean isQueryFansDetailInfo;
+	private Boolean isQueryFocusDetailInfo;
+
+
+
+
+	public Boolean getQueryFocusDetailInfo() {
+		return isQueryFocusDetailInfo;
+	}
+
+	public void setQueryFocusDetailInfo(Boolean queryFocusDetailInfo) {
+		isQueryFocusDetailInfo = queryFocusDetailInfo;
+	}
+
 	public void setUserId(String userId) {
 		this.userId = userId;
 	}
@@ -67,4 +81,11 @@ public class UserFocusQuery extends BaseQuery {
 		return this.focusTimeEnd;
 	}
 
+	public Boolean getQueryFansDetailInfo() {
+		return isQueryFansDetailInfo;
+	}
+
+	public void setQueryFansDetailInfo(Boolean queryFansDetailInfo) {
+		isQueryFansDetailInfo = queryFansDetailInfo;
+	}
 }
