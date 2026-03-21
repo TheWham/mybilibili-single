@@ -1,35 +1,20 @@
 package com.easylive.enums;
 
-
 /**
- * @author 86150
+ * @since 2026.3.22
+ * @author amani
  */
-
-public enum UserActionTypeEnum {
-
-
-    // 评论点赞数量枚举值
-    COMMENT_LIKE(0, "like_count", "评论点赞数量"),
-    // 评论讨厌枚举值
-    COMMENT_HATE(1, "hate_count", "评论讨厌"),
+public enum UserStatsRedisEnum {
     // 视频点赞枚举值
-    VIDEO_LIKE(2, "like_count", "视频点赞"),
-    // 视频收藏枚举值
-    VIDEO_COLLECT(3, "collect_count", "视频收藏"),
-    // 视频投币枚举值
-    VIDEO_COIN(4, "coin_count", "视频投币"),
-    // 评论数量枚举值
-    VIDEO_COMMENT(5, "comment_count", "评论数量"),
-    // 弹幕数量枚举值
-    VIDEO_DNAMU(6,"danmu_count", "弹幕数量"),
+    VIDEO_LIKE(0, "likeCount", "视频点赞"),
     // 视频播放量枚举值
-    VIDEO_PLAY(7, "play_count", "视频播放量"),
+    VIDEO_PLAY(1, "playCount", "视频播放量"),
     //关注数量枚举
-    USER_FOCUS(8, "focus_count", "用户关注数量"),
+    USER_FOCUS(2, "focusCount", "用户关注数量"),
     //粉丝数量枚举
-    USER_FANS(9, "fans_count", "用户粉丝数量"),
+    USER_FANS(3, "fansCount", "用户粉丝数量"),
     // 用户硬币数量枚举值
-    USER_COIN(10, "current_coin_count", "用户硬币数量");
+    USER_COIN(4, "currentCoinCount", "用户硬币数量");
     // 用户行为类型
     private Integer type;
     // 对应数据库字段名
@@ -38,7 +23,7 @@ public enum UserActionTypeEnum {
     private String desc;
 
     // 构造方法，初始化用户行为类型
-    UserActionTypeEnum(Integer type, String field, String desc) {
+    UserStatsRedisEnum(Integer type, String field, String desc) {
         this.type = type;
         this.field = field;
         this.desc = desc;
@@ -49,10 +34,10 @@ public enum UserActionTypeEnum {
      * @param type 用户行为类型
      * @return 对应的枚举值，如果不存在则返回null
      */
-    public static UserActionTypeEnum getEnum(Integer type)
+    public static UserStatsRedisEnum getEnum(Integer type)
     {
         // 遍历所有枚举值
-        for(UserActionTypeEnum typeEnum : UserActionTypeEnum.values())
+        for(UserStatsRedisEnum typeEnum : UserStatsRedisEnum.values())
         {
             // 如果找到匹配的类型，返回对应的枚举值
             if (typeEnum.getType().equals(type))

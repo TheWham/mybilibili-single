@@ -54,6 +54,7 @@ public class Constants {
     public static final String M3U8_NAME = "index.m3u8";
 
     //在线播放人数
+
     public static final String REDIS_KEY_VIDEO_PLAY_COUNT_ONLINE_PREIFX = REDIS_PREFIX + "video:play:online:";
     public static final String REDIS_KEY_VIDEO_PLAY_COUNT_ONLINE = REDIS_KEY_VIDEO_PLAY_COUNT_ONLINE_PREIFX + "count:%s";
     public static final String REDIS_KEY_VIDEO_PLAY_COUNT_USER_PREFIX = "user:";
@@ -62,6 +63,8 @@ public class Constants {
     public static final Integer UPDATE_NAME_COIN = 3;
 
     //用户信息存储
+
     public static final String REDIS_WEB_USER_INFO_KEY = REDIS_PREFIX + "web:usrInfo:";
+    public static final String REDIS_WEB_USER_STATS_KEY = REDIS_PREFIX + "web:userInfo:stats:";
 }
 

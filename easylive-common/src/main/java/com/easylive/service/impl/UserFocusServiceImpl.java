@@ -2,6 +2,7 @@ package com.easylive.service.impl;
 
 import com.easylive.component.RedisComponent;
 import com.easylive.constants.Constants;
+import com.easylive.entity.event.UserStatsChangeEvent;
 import com.easylive.entity.po.UserFocus;
 import com.easylive.entity.po.UserStats;
 import com.easylive.entity.query.SimplePage;
@@ -10,11 +11,13 @@ import com.easylive.entity.query.UserStatsQuery;
 import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.enums.PageSize;
 import com.easylive.enums.UserActionTypeEnum;
+import com.easylive.enums.UserStatsRedisEnum;
 import com.easylive.exception.BusinessException;
 import com.easylive.mappers.UserFocusMapper;
 import com.easylive.mappers.UserStatsMapper;
 import com.easylive.service.UserFocusService;
 import jakarta.annotation.Resource;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +39,8 @@ public class UserFocusServiceImpl implements UserFocusService {
 	private UserStatsMapper<UserStats, UserStatsQuery> userStatsMapper;
 	@Resource
 	private RedisComponent redisComponent;
+	@Resource
+	private ApplicationEventPublisher eventPublisher;
 
 	/**
 	 * 根据条件查询
@@ -140,9 +145,7 @@ public class UserFocusServiceImpl implements UserFocusService {
 		userStatsMapper.insertOrUpdateCount(userId, UserActionTypeEnum.USER_FOCUS.getField(), Constants.ONE);
 		userStatsMapper.insertOrUpdateCount(focusUserId, UserActionTypeEnum.USER_FANS.getField(), Constants.ONE);
 		//同步redis
-		//TODO待优化
-		redisComponent.delUserInfoInRedis(userId);
-		redisComponent.delUserInfoInRedis(focusUserId);
+		eventPublisher.publishEvent(new UserStatsChangeEvent(this, userId, focusUserId, Constants.ONE, UserStatsRedisEnum.USER_FOCUS));
 	}
 
 	@Override
@@ -155,8 +158,7 @@ public class UserFocusServiceImpl implements UserFocusService {
 		userStatsMapper.insertOrUpdateCount(userId, UserActionTypeEnum.USER_FOCUS.getField(), -Constants.ONE);
 		userStatsMapper.insertOrUpdateCount(focusUserId, UserActionTypeEnum.USER_FANS.getField(), -Constants.ONE);
 		//同步redis
-		redisComponent.delUserInfoInRedis(userId);
-		redisComponent.delUserInfoInRedis(focusUserId);
+		eventPublisher.publishEvent(new UserStatsChangeEvent(this, userId, focusUserId, -Constants.ONE, UserStatsRedisEnum.USER_FOCUS));
 	}
 
 }

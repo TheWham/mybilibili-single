@@ -14,10 +14,7 @@ import jakarta.annotation.Resource;
 import jakarta.validation.constraints.NotEmpty;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 import static com.easylive.constants.Constants.REDIS_EXPIRE_TIME_DAY_COUNT;
 import static com.easylive.constants.Constants.REDIS_EXPIRE_TIME_MINUTE_COUNT;
@@ -218,5 +215,17 @@ public class RedisComponent {
 
     public void delUserInfoInRedis(String userId) {
         redisUtils.delete(Constants.REDIS_WEB_USER_INFO_KEY + userId);
+    }
+
+    public void saveUserStatsInfo(String userId, Map<String, Integer> userStatsInfo) {
+        redisUtils.hmset(Constants.REDIS_WEB_USER_STATS_KEY + userId, userStatsInfo, Constants.REDIS_EXPIRE_TIME_ONE_MINUTE * Constants.LENGTH_30);
+    }
+
+    public void flashUserStatsExpire(String userId) {
+        redisUtils.expire(Constants.REDIS_WEB_USER_STATS_KEY + userId, Constants.REDIS_EXPIRE_TIME_ONE_MINUTE * Constants.LENGTH_30);
+    }
+
+    public HashMap<String, Integer> getUserStatsInfo(String userId) {
+        return (HashMap<String, Integer>) redisUtils.hmget(Constants.REDIS_WEB_USER_STATS_KEY + userId);
     }
 }

@@ -16,6 +16,7 @@ import com.easylive.entity.vo.ResponseVO;
 import com.easylive.entity.vo.UserInfoVO;
 import com.easylive.entity.vo.VideoInfoUHomeVO;
 import com.easylive.enums.ResponseCodeEnum;
+import com.easylive.enums.UserStatsRedisEnum;
 import com.easylive.exception.BusinessException;
 import com.easylive.service.UserFocusService;
 import com.easylive.service.UserInfoService;
@@ -30,7 +31,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("uhome")
@@ -89,19 +92,33 @@ public class UHomeController extends ABaseController{
 
         if (userInfoDb == null)
             throw new BusinessException(ResponseCodeEnum.CODE_600);
+        TokenUserInfoDTO tokenUserInfo = getTokenUserInfo();
 
         //先查询redis
-        UserInfoVO userInfoVOInRedis = redisComponent.getUserInfoVOInRedis(userId);
-        if (userInfoVOInRedis != null)
+        HashMap<String, Integer> statsMap = redisComponent.getUserStatsInfo(userId);
+        if (statsMap != null && !statsMap.isEmpty())
         {
-            //重置时间
-            redisComponent.saveUserInfoVOInRedis(userInfoVOInRedis);
-            return getSuccessResponseVO(userInfoVOInRedis);
+            UserInfoVO userInfoVO = BeanUtil.toBean(tokenUserInfo, UserInfoVO.class);
+            //刷新时间
+            redisComponent.flashUserStatsExpire(userId);
+            userInfoVO.setFocusCount(statsMap.get(UserStatsRedisEnum.USER_FOCUS.getField()));
+            userInfoVO.setFansCount(statsMap.get(UserStatsRedisEnum.USER_FANS.getField()));
+            userInfoVO.setLikeCount(statsMap.get(UserStatsRedisEnum.VIDEO_LIKE.getField()));
+            userInfoVO.setCurrentCoinCount(statsMap.get(UserStatsRedisEnum.USER_COIN.getField()));
+            userInfoVO.setPlayCount(statsMap.get(UserStatsRedisEnum.VIDEO_PLAY.getField()));
+            return getSuccessResponseVO(userInfoVO);
         }
+
         UserInfoVO userInfoVO = BeanUtil.toBean(userInfoDb, UserInfoVO.class);
         userInfoService.setUserInHome(userInfoVO);
         //刷新redis
-        redisComponent.saveUserInfoVOInRedis(userInfoVO);
+        Map<String,Integer> userStatsMap = new HashMap<>(UserStatsRedisEnum.values().length);
+        userStatsMap.put(UserStatsRedisEnum.VIDEO_PLAY.getField(), userInfoVO.getCurrentCoinCount() == null ? 0:userInfoVO.getPlayCount());
+        userStatsMap.put(UserStatsRedisEnum.USER_FANS.getField(), userInfoVO.getFansCount() == null ? 0: userInfoVO.getFansCount());
+        userStatsMap.put(UserStatsRedisEnum.USER_FOCUS.getField(), userInfoVO.getFocusCount() == null ? 0:userInfoVO.getFocusCount());
+        userStatsMap.put(UserStatsRedisEnum.USER_COIN.getField(), userInfoVO.getCurrentCoinCount() == null ? 0 : userInfoVO.getCurrentCoinCount());
+        userStatsMap.put(UserStatsRedisEnum.VIDEO_LIKE.getField(), userInfoVO.getLikeCount() == null ? 0: userInfoVO.getLikeCount());
+        redisComponent.saveUserStatsInfo(userId, userStatsMap);
         return getSuccessResponseVO(userInfoVO);
     }
 

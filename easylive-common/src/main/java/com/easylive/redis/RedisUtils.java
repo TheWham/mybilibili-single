@@ -194,4 +194,61 @@ public class RedisUtils<V> {
     }
 
 
+    /**
+     * 获取 Hash 中所有的键值对 (非常适合用来查用户的关注数、粉丝数、硬币数等全部统计信息)
+     * @param key 键
+     * @return 对应的多个键值
+     */
+    public Map<Object, Object> hmget(String key) {
+        return key == null ? null : redisTemplate.opsForHash().entries(key);
+    }
+
+    /**
+     * 批量放入 Hash 数据，并设置过期时间
+     * @param key 键
+     * @param map 对应多个键值
+     * @param time 时间(毫秒)
+     * @return true成功 false失败
+     */
+    public boolean hmset(String key, Map<String, Object> map, long time) {
+        try {
+            redisTemplate.opsForHash().putAll(key, map);
+            if (time > 0) {
+                expire(key, time);
+            }
+            return true;
+        } catch (Exception e) {
+            logger.error("设置 Hash 失败, key: {}", key, e);
+            return false;
+        }
+    }
+
+    /**
+     * Hash 递增/递减 (核心方法：用于原子加减粉丝数、硬币数等)
+     * @param key 键 (如 easylive:user:stats:1001)
+     * @param item 项 (如 fans_count)
+     * @param by 要增加几 (传正数加，传负数减)
+     * @return 执行后的最新值
+     */
+    public Long hincr(String key, String item, long by) {
+        return redisTemplate.opsForHash().increment(key, item, by);
+    }
+
+    // ============================ Pipeline (流水线) 相关操作 ============================
+
+    /**
+     * 执行 Redis Pipeline (流水线)
+     * 批量执行多条命令，极大降低网络延迟，专治高并发双写
+     * @param sessionCallback 回调接口，里面写具体的命令集
+     * @return 执行结果列表
+     */
+    public List<Object> executePipelined(org.springframework.data.redis.core.SessionCallback<?> sessionCallback) {
+        try {
+            return redisTemplate.executePipelined(sessionCallback);
+        } catch (Exception e) {
+            logger.error("Redis Pipeline 执行失败", e);
+            return Collections.emptyList();
+        }
+    }
+
 }

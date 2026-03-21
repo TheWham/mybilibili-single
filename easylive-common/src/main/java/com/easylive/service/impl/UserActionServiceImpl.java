@@ -3,14 +3,17 @@ package com.easylive.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import com.easylive.component.RedisComponent;
 import com.easylive.constants.Constants;
+import com.easylive.entity.event.UserStatsChangeEvent;
 import com.easylive.entity.po.*;
 import com.easylive.entity.query.*;
 import com.easylive.enums.ResponseCodeEnum;
 import com.easylive.enums.UserActionTypeEnum;
+import com.easylive.enums.UserStatsRedisEnum;
 import com.easylive.exception.BusinessException;
 import com.easylive.mappers.*;
 import com.easylive.service.UserActionService;
 import jakarta.annotation.Resource;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +34,8 @@ public class UserActionServiceImpl implements UserActionService {
     private UserStatsMapper<UserStats, UserStatsQuery> userStatsMapper;
     @Resource
     private RedisComponent redisComponent;
-
+    @Resource
+    private ApplicationEventPublisher eventPublisher;
 
     /**
      * 用户点击点赞
@@ -77,6 +81,9 @@ public class UserActionServiceImpl implements UserActionService {
             case COMMENT_HATE:
                 handleComment(userAction, actionTypeEnum);
                 break;
+
+            default:
+                throw new IllegalStateException("Unexpected value: " + actionTypeEnum);
         }
 
     }
@@ -101,8 +108,11 @@ public class UserActionServiceImpl implements UserActionService {
         videoInfoMapper.updateCount(userAction.getVideoId(), userActionTypeEnum.getField(), count);
 
         if (userActionTypeEnum.equals(UserActionTypeEnum.VIDEO_LIKE) || userActionTypeEnum.equals(UserActionTypeEnum.VIDEO_PLAY)){
+            /**
+             * 可以优化进入定时任务
+             */
             userStatsMapper.insertOrUpdateCount(userAction.getUserId(), userActionTypeEnum.getField(), count);
-            redisComponent.delUserInfoInRedis(userAction.getUserId());
+            eventPublisher.publishEvent(new UserStatsChangeEvent(this, userAction.getUserId(), null,count, UserStatsRedisEnum.VIDEO_LIKE));
         }
 
 
@@ -147,10 +157,11 @@ public class UserActionServiceImpl implements UserActionService {
         userInfoMapper.updateUserCoin(videoUserId, userVideoAction.getActionCount());
         //增加视频硬币数量
         videoInfoMapper.updateCount(userVideoAction.getVideoId(), userActionTypeEnum.getField(), userVideoAction.getActionCount());
-        //更新统计表中用户数量
+        //更新统计表中用户数量 可以优化异步处理
         userStatsMapper.insertOrUpdateCount(videoUserId, UserActionTypeEnum.USER_COIN.getField(), userVideoAction.getActionCount());
         userStatsMapper.insertOrUpdateCount(userId, UserActionTypeEnum.USER_COIN.getField(), -userVideoAction.getActionCount());
-        redisComponent.delUserInfoInRedis(userId);
+        //更新redis
+        eventPublisher.publishEvent(new UserStatsChangeEvent(this, userId, videoUserId, userVideoAction.getActionCount(), UserStatsRedisEnum.USER_COIN));
     }
 
     /**
