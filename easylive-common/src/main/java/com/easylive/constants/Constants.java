@@ -64,7 +64,7 @@ public class Constants {
 
     //用户信息存储
 
-    public static final String REDIS_WEB_USER_INFO_KEY = REDIS_PREFIX + "web:usrInfo:";
+    public static final String REDIS_WEB_USER_INFO_KEY = REDIS_PREFIX + "web:userInfo:showVO:";
     public static final String REDIS_WEB_USER_STATS_KEY = REDIS_PREFIX + "web:userInfo:stats:";
 }
 

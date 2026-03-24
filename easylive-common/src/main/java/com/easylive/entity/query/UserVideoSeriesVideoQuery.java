@@ -26,6 +26,7 @@ public class UserVideoSeriesVideoQuery extends BaseQuery {
 	 */
 	private Integer sort;
 
+
 	public void setSeriesId(Integer seriesId) {
 		this.seriesId = seriesId;
 	}

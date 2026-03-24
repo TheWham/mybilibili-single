@@ -226,6 +226,12 @@
 		from user_video_series v where series_id=#{seriesId}
 	</select>
 
+	<select id="selectMaxSort" resultType="java.lang.Integer">
+		SELECT IFNULL(MAX(sort), 0)
+		FROM user_video_series
+		WHERE user = #{userId}
+	</select>
+
 	<!--根据SeriesId删除 -->
 	<delete id="deleteBySeriesId">
 		delete from user_video_series where series_id=#{seriesId}

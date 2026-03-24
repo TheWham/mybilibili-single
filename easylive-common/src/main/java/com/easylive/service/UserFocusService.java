@@ -63,4 +63,5 @@ public interface UserFocusService {
     void focus(String focusUserId, String userId);
 
     void cancelFocus(String focusUserId, String userId);
+	Integer selectHaveFocus(String userId, String focusUserId);
 }

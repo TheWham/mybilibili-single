@@ -1,15 +1,27 @@
 package com.easylive.service.impl;
 
 import com.easylive.entity.po.UserVideoSeries;
+import com.easylive.entity.po.UserVideoSeriesVideo;
+import com.easylive.entity.po.VideoInfo;
 import com.easylive.entity.query.SimplePage;
 import com.easylive.entity.query.UserVideoSeriesQuery;
+import com.easylive.entity.query.UserVideoSeriesVideoQuery;
+import com.easylive.entity.query.VideoInfoQuery;
 import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.enums.PageSize;
+import com.easylive.enums.ResponseCodeEnum;
+import com.easylive.exception.BusinessException;
 import com.easylive.mappers.UserVideoSeriesMapper;
+import com.easylive.mappers.UserVideoSeriesVideoMapper;
+import com.easylive.mappers.VideoInfoMapper;
 import com.easylive.service.UserVideoSeriesService;
+import com.easylive.utils.StringTools;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 
@@ -23,7 +35,10 @@ import java.util.List;
 public class UserVideoSeriesServiceImpl implements UserVideoSeriesService {
 	@Resource
 	private UserVideoSeriesMapper<UserVideoSeries, UserVideoSeriesQuery> userVideoSeriesMapper;
-
+	@Resource
+	private UserVideoSeriesVideoMapper<UserVideoSeriesVideo, UserVideoSeriesVideoQuery> userVideoSeriesVideoMapper;
+	@Resource
+	private VideoInfoMapper<VideoInfo, VideoInfoQuery> videoInfoMapper;
 	/**
 	 * 根据条件查询
 	 */
@@ -108,6 +123,67 @@ public class UserVideoSeriesServiceImpl implements UserVideoSeriesService {
 	@Override
 	public Integer deleteUserVideoSeriesBySeriesId(Integer seriesId) {
 		return this.userVideoSeriesMapper.deleteBySeriesId(seriesId);
+	}
+
+	@Override
+	public List<VideoInfo> selectAllVideoBySeriesId(Integer seriesId, String userId) {
+		List<VideoInfo> videoInfoList = videoInfoMapper.selectVideoListBySeriesIdAndUserId(seriesId, userId);
+		return videoInfoList;
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void saveUserVideoSeries(Integer seriesId, String seriesName, String seriesDescription, String videoIds, String userId) {
+		if (seriesId == null && StringTools.isEmpty(videoIds))
+			throw new BusinessException(ResponseCodeEnum.CODE_600);
+
+		String[] videoIdList = videoIds.split(",");
+		checkVideoIdsValid(userId, videoIdList);
+		UserVideoSeries userVideoSeries = new UserVideoSeries();
+		userVideoSeries.setSeriesDescription(seriesDescription);
+		userVideoSeries.setSeriesName(seriesName);
+		userVideoSeries.setUserId(userId);
+		userVideoSeries.setSeriesId(seriesId);
+		userVideoSeries.setUpdateTime(new Date());
+		if (seriesId == null)
+		{
+			//表示是新建分类列表
+			Integer maxSort = userVideoSeriesMapper.selectMaxSort(userId);
+			userVideoSeries.setSort(maxSort + 1);
+			userVideoSeriesMapper.insert(userVideoSeries);
+			saveUserVideoSeriesVideo(userVideoSeries.getSeriesId(), videoIdList, userId);
+		}
+		UserVideoSeries oldVideoSeries = userVideoSeriesMapper.selectBySeriesId(seriesId);
+		if (oldVideoSeries == null || !oldVideoSeries.getUserId().equals(userId))
+			throw new BusinessException(ResponseCodeEnum.CODE_600);
+		userVideoSeriesMapper.insertOrUpdate(userVideoSeries);
+	}
+
+	private void checkVideoIdsValid(String userId, String[] videoIdList)
+	{
+		VideoInfoQuery videoInfoQuery = new VideoInfoQuery();
+		videoInfoQuery.setUserId(userId);
+		videoInfoQuery.setArrayIds(videoIdList);
+		Integer count = videoInfoMapper.selectCount(videoInfoQuery);
+		if (count != videoIdList.length)
+			throw new BusinessException(ResponseCodeEnum.CODE_600);
+	}
+
+	private void saveUserVideoSeriesVideo(Integer seriesId, String[] videoIdList, String userId)
+	{
+		if (seriesId == null)
+			throw new BusinessException(ResponseCodeEnum.CODE_600);
+
+		List<UserVideoSeriesVideo> userVideoSeriesVideoList = new ArrayList<>(videoIdList.length);
+		Integer maxSort = userVideoSeriesVideoMapper.selectMaxSort(userId);
+		for (String id : videoIdList) {
+			UserVideoSeriesVideo userVideoSeriesVideo = new UserVideoSeriesVideo();
+			userVideoSeriesVideo.setSeriesId(seriesId);
+			userVideoSeriesVideo.setVideoId(id);
+			userVideoSeriesVideo.setSort(++maxSort);
+			userVideoSeriesVideoList.add(userVideoSeriesVideo);
+		}
+		userVideoSeriesVideoMapper.insertBatch(userVideoSeriesVideoList);
 	}
 
 }

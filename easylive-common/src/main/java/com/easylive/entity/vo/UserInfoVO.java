@@ -28,6 +28,24 @@ public class UserInfoVO implements Serializable {
     private Integer focusCount;
     //硬币总量
     private Integer currentCoinCount;
+    private String personIntroduction;
+    private Integer haveFocus;
+
+    public Integer getHaveFocus() {
+        return haveFocus;
+    }
+
+    public void setHaveFocus(Integer haveFocus) {
+        this.haveFocus = haveFocus;
+    }
+
+    public String getPersonIntroduction() {
+        return personIntroduction;
+    }
+
+    public void setPersonIntroduction(String personIntroduction) {
+        this.personIntroduction = personIntroduction;
+    }
 
     public String getUserId() {
         return userId;

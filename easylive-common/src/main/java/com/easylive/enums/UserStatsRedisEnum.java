@@ -15,6 +15,7 @@ public enum UserStatsRedisEnum {
     USER_FANS(3, "fansCount", "用户粉丝数量"),
     // 用户硬币数量枚举值
     USER_COIN(4, "currentCoinCount", "用户硬币数量");
+
     // 用户行为类型
     private Integer type;
     // 对应数据库字段名

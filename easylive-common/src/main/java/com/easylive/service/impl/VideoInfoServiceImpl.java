@@ -216,6 +216,16 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 		return this.videoInfoMapper.sumVideoCountByUserId(userId);
 	}
 
+	@Override
+	public List<VideoInfo> selectByIds(List<String> userCollectionIds) {
+		return videoInfoMapper.selectByIds(userCollectionIds);
+	}
+
+	@Override
+	public List<VideoInfo> selectVideoListBySeriesIdAndUserId(Integer seriesId, String userId) {
+		return videoInfoMapper.selectVideoListBySeriesIdAndUserId(seriesId, userId);
+	}
+
 	/**
 	 * @description 根据 VideoId查询
 	 */

@@ -1,6 +1,5 @@
 package com.easylive.service.impl;
 
-import com.easylive.component.RedisComponent;
 import com.easylive.constants.Constants;
 import com.easylive.entity.event.UserStatsChangeEvent;
 import com.easylive.entity.po.UserFocus;
@@ -37,8 +36,6 @@ public class UserFocusServiceImpl implements UserFocusService {
 	private UserFocusMapper<UserFocus, UserFocusQuery> userFocusMapper;
     @Resource
 	private UserStatsMapper<UserStats, UserStatsQuery> userStatsMapper;
-	@Resource
-	private RedisComponent redisComponent;
 	@Resource
 	private ApplicationEventPublisher eventPublisher;
 
@@ -159,6 +156,11 @@ public class UserFocusServiceImpl implements UserFocusService {
 		userStatsMapper.insertOrUpdateCount(focusUserId, UserActionTypeEnum.USER_FANS.getField(), -Constants.ONE);
 		//同步redis
 		eventPublisher.publishEvent(new UserStatsChangeEvent(this, userId, focusUserId, -Constants.ONE, UserStatsRedisEnum.USER_FOCUS));
+	}
+
+	@Override
+	public Integer selectHaveFocus(String userId, String focusUserId) {
+		return userFocusMapper.selectHaveFocus(userId, focusUserId);
 	}
 
 }

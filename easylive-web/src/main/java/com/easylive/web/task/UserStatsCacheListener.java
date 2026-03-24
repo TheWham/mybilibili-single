@@ -34,11 +34,9 @@ public class UserStatsCacheListener {
         int count = event.getCount();
         String myKey = Constants.REDIS_WEB_USER_STATS_KEY + myId;
         String upKey = Constants.REDIS_WEB_USER_STATS_KEY + upId;
-
         //看看他们有没有缓存
         boolean isMyKeyExist = redisUtils.keyExists(myKey);
         boolean isUpKeyExist = redisUtils.keyExists(upKey);
-
         // 如果两边都没缓存无需修改
         if (!isMyKeyExist && !isUpKeyExist) {
             return;

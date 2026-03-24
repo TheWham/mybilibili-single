@@ -1,6 +1,7 @@
 package com.easylive.service;
 
 import com.easylive.entity.po.UserVideoSeries;
+import com.easylive.entity.po.VideoInfo;
 import com.easylive.entity.query.UserVideoSeriesQuery;
 import com.easylive.entity.vo.PaginationResultVO;
 
@@ -60,4 +61,7 @@ public interface UserVideoSeriesService {
 	 */
 	Integer deleteUserVideoSeriesBySeriesId(Integer seriesId);
 
+	List<VideoInfo> selectAllVideoBySeriesId(Integer seriesId, String userId);
+
+	void saveUserVideoSeries(Integer seriesId, String seriesName, String seriesDescription, String videoIds, String userId);
 }

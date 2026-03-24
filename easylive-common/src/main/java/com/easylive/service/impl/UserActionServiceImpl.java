@@ -111,8 +111,8 @@ public class UserActionServiceImpl implements UserActionService {
             /**
              * 可以优化进入定时任务
              */
-            userStatsMapper.insertOrUpdateCount(userAction.getUserId(), userActionTypeEnum.getField(), count);
-            eventPublisher.publishEvent(new UserStatsChangeEvent(this, userAction.getUserId(), null,count, UserStatsRedisEnum.VIDEO_LIKE));
+            userStatsMapper.insertOrUpdateCount(userAction.getVideoId(), userActionTypeEnum.getField(), count);
+            eventPublisher.publishEvent(new UserStatsChangeEvent(this, userAction.getVideoId(), null,count, UserStatsRedisEnum.VIDEO_LIKE));
         }
 
 

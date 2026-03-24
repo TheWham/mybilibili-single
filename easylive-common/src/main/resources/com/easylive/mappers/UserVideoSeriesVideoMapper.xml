@@ -177,7 +177,13 @@
 		from user_video_series_video v where series_id=#{seriesId} and video_id=#{videoId}
 	</select>
 
-	<!--根据SeriesIdAndVideoIdAnd删除 -->
+	<select id="selectMaxSort" resultType="java.lang.Integer">
+		SELECT IFNULL(MAX(sort), 0)
+		FROM user_video_series_video
+		WHERE user_id = #{userId}
+	</select>
+
+    <!--根据SeriesIdAndVideoIdAnd删除 -->
 	<delete id="deleteBySeriesIdAndVideoId">
 		delete from user_video_series_video where series_id=#{seriesId} and video_id=#{videoId}
 	</delete>

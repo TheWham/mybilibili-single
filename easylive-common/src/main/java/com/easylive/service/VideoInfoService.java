@@ -69,4 +69,8 @@ public interface VideoInfoService {
 	Integer reportVideoPlayOnline(String fileId, String deviceId);
 
     VideoCountDTO sumVideoCountByUserId(String userId);
+
+    List<VideoInfo> selectByIds(List<String> userCollectionIds);
+
+	List<VideoInfo> selectVideoListBySeriesIdAndUserId(Integer seriesId, String userId);
 }

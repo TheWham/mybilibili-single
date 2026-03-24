@@ -6,21 +6,20 @@ import com.easylive.component.RedisComponent;
 import com.easylive.entity.dto.TokenUserInfoDTO;
 import com.easylive.entity.dto.UserInfoDTO;
 import com.easylive.entity.po.UserInfo;
-import com.easylive.entity.po.UserVideoSeries;
+import com.easylive.entity.po.UserVideoAction;
 import com.easylive.entity.po.VideoInfo;
+import com.easylive.entity.query.UserActionQuery;
 import com.easylive.entity.query.UserFocusQuery;
-import com.easylive.entity.query.UserVideoSeriesQuery;
 import com.easylive.entity.query.VideoInfoQuery;
-import com.easylive.entity.vo.PaginationResultVO;
-import com.easylive.entity.vo.ResponseVO;
-import com.easylive.entity.vo.UserInfoVO;
-import com.easylive.entity.vo.VideoInfoUHomeVO;
+import com.easylive.entity.vo.*;
+import com.easylive.enums.PageSize;
 import com.easylive.enums.ResponseCodeEnum;
+import com.easylive.enums.UserActionTypeEnum;
 import com.easylive.enums.UserStatsRedisEnum;
 import com.easylive.exception.BusinessException;
 import com.easylive.service.UserFocusService;
 import com.easylive.service.UserInfoService;
-import com.easylive.service.UserVideoSeriesService;
+import com.easylive.service.UserVideoActionService;
 import com.easylive.service.VideoInfoService;
 import jakarta.annotation.Resource;
 import jakarta.validation.constraints.Max;
@@ -31,12 +30,11 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("uhome")
+@RequestMapping("/uhome")
 public class UHomeController extends ABaseController{
 
     @Resource
@@ -44,12 +42,11 @@ public class UHomeController extends ABaseController{
     @Resource
     private UserInfoService userInfoService;
     @Resource
-    private UserVideoSeriesService userVideoSeriesService;
-    @Resource
     private UserFocusService userFocusService;
     @Resource
     private RedisComponent redisComponent;
-
+    @Resource
+    private UserVideoActionService userVideoActionService;
 
     @RequestMapping("/loadVideoList")
     public ResponseVO loadVideoList(@NotEmpty String userId, Integer type, Integer pageNo, String videoName, Integer orderType)
@@ -59,17 +56,13 @@ public class UHomeController extends ABaseController{
         videoInfoQuery.setUserId(userId);
         videoInfoQuery.setPageNo(pageNo);
         videoInfoQuery.setVideoName(videoName);
-        String orderDesc = null;
+        if (type != null)
+            videoInfoQuery.setPageSize(PageSize.SIZE10.getSize());
+
         VideoOrderTypeEnum typeEnum = VideoOrderTypeEnum.getEnum(orderType);
-        if (orderType != null && typeEnum != null)
-        {
-            if (typeEnum.equals(VideoOrderTypeEnum.ORDER_POST_TIME))
-                orderDesc = "v.create_time desc";
-            if (typeEnum.equals(VideoOrderTypeEnum.ORDER_PLAY_COUNT))
-                orderDesc = "v.play_count desc";
-            if (typeEnum.equals(VideoOrderTypeEnum.ORDER_COLLECT_COUNT))
-                orderDesc = "v.collect_count desc";
-        }
+        if (typeEnum == null)
+            typeEnum =  VideoOrderTypeEnum.ORDER_POST_TIME;
+        String orderDesc = typeEnum.getField() + " desc";
         videoInfoQuery.setOrderBy(orderDesc);
 
         PaginationResultVO<VideoInfo> listVideo = videoInfoService.findListByPage(videoInfoQuery);
@@ -86,19 +79,22 @@ public class UHomeController extends ABaseController{
     }
 
     @RequestMapping("/getUserInfo")
-    public ResponseVO getUserInfo(@NotEmpty String userId)
-    {
+    public ResponseVO getUserInfo(@NotEmpty String userId) {
         UserInfo userInfoDb = userInfoService.getUserInfoByUserId(userId);
 
         if (userInfoDb == null)
             throw new BusinessException(ResponseCodeEnum.CODE_600);
-        TokenUserInfoDTO tokenUserInfo = getTokenUserInfo();
 
         //先查询redis
         HashMap<String, Integer> statsMap = redisComponent.getUserStatsInfo(userId);
-        if (statsMap != null && !statsMap.isEmpty())
-        {
-            UserInfoVO userInfoVO = BeanUtil.toBean(tokenUserInfo, UserInfoVO.class);
+        UserInfoVO userInfoVO = BeanUtil.toBean(userInfoDb, UserInfoVO.class);
+
+        if (!userId.equals(getTokenUserInfo().getUserId())) {
+            Integer haveFocus = userFocusService.selectHaveFocus(getTokenUserInfo().getUserId(), userId);
+            userInfoVO.setHaveFocus(haveFocus);
+        }
+
+        if (statsMap != null && !statsMap.isEmpty()) {
             //刷新时间
             redisComponent.flashUserStatsExpire(userId);
             userInfoVO.setFocusCount(statsMap.get(UserStatsRedisEnum.USER_FOCUS.getField()));
@@ -109,17 +105,17 @@ public class UHomeController extends ABaseController{
             return getSuccessResponseVO(userInfoVO);
         }
 
-        UserInfoVO userInfoVO = BeanUtil.toBean(userInfoDb, UserInfoVO.class);
         userInfoService.setUserInHome(userInfoVO);
         //刷新redis
-        Map<String,Integer> userStatsMap = new HashMap<>(UserStatsRedisEnum.values().length);
-        userStatsMap.put(UserStatsRedisEnum.VIDEO_PLAY.getField(), userInfoVO.getCurrentCoinCount() == null ? 0:userInfoVO.getPlayCount());
-        userStatsMap.put(UserStatsRedisEnum.USER_FANS.getField(), userInfoVO.getFansCount() == null ? 0: userInfoVO.getFansCount());
-        userStatsMap.put(UserStatsRedisEnum.USER_FOCUS.getField(), userInfoVO.getFocusCount() == null ? 0:userInfoVO.getFocusCount());
+        Map<String, Integer> userStatsMap = new HashMap<>(UserStatsRedisEnum.values().length);
+        userStatsMap.put(UserStatsRedisEnum.VIDEO_PLAY.getField(), userInfoVO.getCurrentCoinCount() == null ? 0 : userInfoVO.getPlayCount());
+        userStatsMap.put(UserStatsRedisEnum.USER_FANS.getField(), userInfoVO.getFansCount() == null ? 0 : userInfoVO.getFansCount());
+        userStatsMap.put(UserStatsRedisEnum.USER_FOCUS.getField(), userInfoVO.getFocusCount() == null ? 0 : userInfoVO.getFocusCount());
         userStatsMap.put(UserStatsRedisEnum.USER_COIN.getField(), userInfoVO.getCurrentCoinCount() == null ? 0 : userInfoVO.getCurrentCoinCount());
-        userStatsMap.put(UserStatsRedisEnum.VIDEO_LIKE.getField(), userInfoVO.getLikeCount() == null ? 0: userInfoVO.getLikeCount());
+        userStatsMap.put(UserStatsRedisEnum.VIDEO_LIKE.getField(), userInfoVO.getLikeCount() == null ? 0 : userInfoVO.getLikeCount());
         redisComponent.saveUserStatsInfo(userId, userStatsMap);
         return getSuccessResponseVO(userInfoVO);
+
     }
 
     @RequestMapping("/updateUserInfo")
@@ -135,21 +131,6 @@ public class UHomeController extends ABaseController{
         return getSuccessResponseVO(null);
     }
 
-    //TODO loadVideoSeriesWithVideo
-    @RequestMapping("/series/loadVideoSeriesWithVideo")
-    public ResponseVO loadVideoSeriesWithVideo(@NotEmpty String userId)
-    {
-        return getSuccessResponseVO(null);
-    }
-
-    @RequestMapping("/series/loadVideoSeries")
-    public ResponseVO loadVideoSeries(@NotEmpty String userId)
-    {
-        UserVideoSeriesQuery videoSeriesQuery= new UserVideoSeriesQuery();
-        videoSeriesQuery.setUserId(userId);
-        PaginationResultVO<UserVideoSeries> videoSeriesList = userVideoSeriesService.findListByPage(videoSeriesQuery);
-        return getSuccessResponseVO(videoSeriesList);
-    }
 
     @RequestMapping("/saveTheme")
     public ResponseVO saveTheme(@Max(10) @Min(1) @NotNull Integer theme)
@@ -212,6 +193,43 @@ public class UHomeController extends ABaseController{
         focusQuery.setUserFocusId(getTokenUserInfo().getUserId());
         focusQuery.setQueryFansDetailInfo(true);
         return getSuccessResponseVO(userFocusService.findListByPage(focusQuery));
+    }
+
+    @RequestMapping("/loadUserCollection")
+    public ResponseVO loadUserCollection(Integer pageNo, @NotEmpty String userId)
+    {
+
+        UserActionQuery actionQuery = new UserActionQuery();
+        actionQuery.setUserId(userId);
+        actionQuery.setPageNo(pageNo);
+        actionQuery.setActionType(UserActionTypeEnum.VIDEO_COLLECT.getType());
+        actionQuery.setOrderBy("v.action_time desc");
+        PaginationResultVO<UserVideoAction> userCollectionVideoPage = userVideoActionService.findListByPage(actionQuery);
+
+        if (userCollectionVideoPage == null || userCollectionVideoPage.getList() == null || userCollectionVideoPage.getList().isEmpty())
+            return getSuccessResponseVO(Collections.emptyList());
+
+        List<UserVideoAction> userCollectionVideoList = userCollectionVideoPage.getList();
+
+        Map<String, Date> videoIdTimeMap = userCollectionVideoList.stream().collect(Collectors.toMap(UserVideoAction::getVideoId, UserVideoAction::getActionTime, (e, r)->e));
+        List<String> userCollectionIds = userCollectionVideoList.stream().map(UserVideoAction::getVideoId).collect(Collectors.toList());
+        // selectByIds ids在in中 查询出的结果是乱序的 需要修正
+        List<VideoInfo> unOrderVideoInfos = videoInfoService.selectByIds(userCollectionIds);
+        Map<String, VideoInfo> videoCollectMap = unOrderVideoInfos.stream().collect(Collectors.toMap(VideoInfo::getVideoId, v -> v));
+        List<VideoInfo> finalOrderVideoList = userCollectionIds.stream().map(videoCollectMap::get).filter(Objects::nonNull).toList();
+
+        //设置video对应的actionTime
+        List<UserCollectionVO> userCollectionVOList = BeanUtil.copyToList(finalOrderVideoList, UserCollectionVO.class);
+        userCollectionVOList.forEach(userCollectionVO -> userCollectionVO.setActionTime(videoIdTimeMap.get(userCollectionVO.getVideoId())));
+
+        PaginationResultVO<UserCollectionVO> userCollectionPage = new PaginationResultVO<>();
+
+        userCollectionPage.setTotalCount(userCollectionVideoPage.getTotalCount());
+        userCollectionPage.setPageTotal(userCollectionVideoPage.getPageTotal());
+        userCollectionPage.setPageSize(userCollectionVideoPage.getPageSize());
+        userCollectionPage.setPageNo(userCollectionVideoPage.getPageNo());
+        userCollectionPage.setList(userCollectionVOList);
+        return getSuccessResponseVO(userCollectionPage);
     }
 
 }

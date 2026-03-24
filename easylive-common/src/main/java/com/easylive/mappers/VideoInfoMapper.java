@@ -3,6 +3,8 @@ package com.easylive.mappers;
 import com.easylive.entity.dto.VideoCountDTO;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
+
 /**
  * @author amani
  * @date 2026/02/09
@@ -40,4 +42,7 @@ public interface VideoInfoMapper<T, R> extends BaseMapper {
 
     VideoCountDTO sumVideoCountByUserId(@Param("userId") String userId);
 
+    List<T> selectByIds(@Param("ids") List<String> userCollectionIds);
+
+    List<T> selectVideoListBySeriesIdAndUserId(@Param("seriesId") Integer seriesId,@Param("userId") String userId);
 }

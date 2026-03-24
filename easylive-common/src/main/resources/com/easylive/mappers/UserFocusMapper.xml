@@ -85,6 +85,14 @@
 		</if>
 	</select>
 
+	<select id="selectHaveFocus" resultType="java.lang.Integer">
+		SELECT COUNT(1)
+		FROM user_focus
+		WHERE user_id = #{userId}
+		  AND user_focus_id = #{focusUserId}
+		LIMIT 1
+	</select>
+
 	<!--查询数量 -->
 	<select id="selectCount" resultType="java.lang.Integer">
 		SELECT count(1) FROM user_focus v 

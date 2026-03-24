@@ -123,6 +123,9 @@
 		<if test="query.lastPlayTime != null and query.lastPlayTime != ''" >
 			<![CDATA[ and v.last_play_time=str_to_date(#{query.lastPlayTime}, '%Y-%m-%d') ]]>
 		</if>
+		 <if test="query.arrayIds != null and query,arrayIds.length > 0">
+			 and video_id in (<foreach collection="query.arrayIds" separator="," item="id">#{id}</foreach>)
+		 </if>
 	</sql>
 
 	<!--通用条件列 -->
@@ -592,6 +595,17 @@
 		    IFNULL(SUM(play_count), 0) AS totalPlayCount
 		FROM video_info
 		WHERE user_id = #{userId}
+	</select>
+    <select id="selectByIds" resultMap="base_result_map">
+		SELECT video_id, video_name, video_cover from video_info where video_id
+		in (<foreach collection="ids" item="id" separator=",">#{id}</foreach>)
+	</select>
+    <select id="selectVideoListBySeriesIdAndUserId" resultMap="base_result_map">
+		SELECT v.video_id, v.video_name, v.video_cover, v.create_time
+		FROM video_info v
+		INNER JOIN user_video_series_video u on u.video_id = v.video_id
+		WHERE v.user_id = #{userId} AND u.series_id = #{seriesId}
+		ORDER BY u.sort DESC
 	</select>
 
     <!--根据VideoId删除 -->
