@@ -57,7 +57,13 @@
 	<select id="selectList" resultMap="base_result_map">
 		SELECT
 		<include refid="base_column_list"/>
-		FROM user_video_series_video v 
+		<if test="query.isQueryVideoInfo">
+		    ,u.video_name, u.video_cover, u.create_time, u.play_count, u.create_time
+		</if>
+		FROM user_video_series_video v
+		<if test="query.isQueryVideoInfo">
+			INNER JOIN video_info u on u.video_id = v.video_id
+		</if>
 		<include refid="query_condition"/>
 		<if test="query.orderBy!=null">
 			order by ${query.orderBy}
@@ -182,10 +188,30 @@
 		FROM user_video_series_video
 		WHERE user_id = #{userId}
 	</select>
+	<select id="selectVideoIdsBySeriesIdAndUserId" resultType="java.lang.String">
+		SELECT video_id
+		FROM user_video_series_video
+		WHERE user_id = #{userId} AND series_id = #{seriesId}
+	</select>
 
-    <!--根据SeriesIdAndVideoIdAnd删除 -->
+	<select id="selectListLimit5" resultType="com.easylive.entity.po.UserVideoSeriesVideo">
+		SELECT
+		<include refid="base_column_list"/>,u.video_name, u.video_cover, u.create_time, u.play_count, u.create_time
+		FROM user_video_series_video v
+		INNER JOIN video_info u on u.video_id = v.video_id
+		WHERE v.series_id = #{seriesId}
+		ORDER BY sort ASC
+		LIMIT 5
+	</select>
+
+	<!--根据SeriesIdAndVideoIdAnd删除 -->
 	<delete id="deleteBySeriesIdAndVideoId">
 		delete from user_video_series_video where series_id=#{seriesId} and video_id=#{videoId}
+	</delete>
+	<delete id="deleteByIds">
+		DELETE FROM user_video_series_video
+		WHERE video_id in (<foreach collection="list" item="id" separator=",">#{id}</foreach>)
+		and user_id = #{userId} and series_id = #{seriesId}
 	</delete>
 
 	<!--根据SeriesIdAndVideoIdAnd更新 -->

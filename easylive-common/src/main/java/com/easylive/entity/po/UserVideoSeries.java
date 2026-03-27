@@ -46,6 +46,16 @@ public class UserVideoSeries implements Serializable {
 	 */
     private String userId;
 
+	private String cover;
+
+	public String getCover() {
+		return cover;
+	}
+
+	public void setCover(String cover) {
+		this.cover = cover;
+	}
+
 	public void setSeriesId(Integer seriesId) {
 		this.seriesId = seriesId;
 	}

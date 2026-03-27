@@ -18,6 +18,13 @@
 		<result column="user_id" property="userId"/>
 	</resultMap>
 
+	<resultMap id="base_result_map_children" type="com.easylive.entity.vo.SeriesWithVideoUHomeVO">
+		<id column="series_id" property="seriesId"/>
+		<result column="series_name" property="seriesName"/>
+		<collection property="videoInfoList" column="series_id" select="com.easylive.mappers.UserVideoSeriesVideoMapper.selectListLimit5"/>
+	</resultMap>
+
+
 	<!--通用查询结果列 -->
 	<sql id="base_column_list">
 		v.series_id,v.series_name,v.series_description,v.sort,v.update_time,v.user_id
@@ -90,6 +97,39 @@
 	<select id="selectCount" resultType="java.lang.Integer">
 		SELECT count(1) FROM user_video_series v 
 		<include refid="query_condition"/>
+	</select>
+
+	<!--根据SeriesId查询 -->
+	<select id="selectBySeriesId" resultMap="base_result_map">
+		select <include refid="base_column_list"/>
+		from user_video_series v where series_id=#{seriesId}
+	</select>
+
+	<select id="selectMaxSort" resultType="java.lang.Integer">
+		SELECT IFNULL(MAX(sort), 0)
+		FROM user_video_series
+		WHERE user_id = #{userId}
+	</select>
+
+	<select id="loadVideoSeries" resultMap="base_result_map">
+		SELECT
+			s.*,
+			v.video_cover as cover
+		FROM
+			user_video_series s
+				LEFT JOIN user_video_series_video sv ON sv.series_id = s.series_id
+				AND sv.sort = ( SELECT min( sort ) FROM user_video_series_video WHERE series_id = s.series_id )
+				LEFT JOIN video_info v ON v.video_id = sv.video_id
+		WHERE
+			s.user_id = #{userId}
+		ORDER BY sort asc
+	</select>
+
+	<select id="selectVideoSeriesWithVideo" resultMap="base_result_map_children">
+		SELECT <include refid="base_column_list"/>
+		FROM user_video_series v
+		WHERE v.user_id = #{userId}
+		ORDER BY v.sort ASC
 	</select>
 
 	<!--插入 -->
@@ -220,21 +260,9 @@
 		series_name = VALUES(series_name),series_description = VALUES(series_description),sort = VALUES(sort),update_time = VALUES(update_time),user_id = VALUES(user_id)
 	</insert>
 
-	<!--根据SeriesId查询 -->
-	<select id="selectBySeriesId" resultMap="base_result_map">
-		select <include refid="base_column_list"/>
-		from user_video_series v where series_id=#{seriesId}
-	</select>
-
-	<select id="selectMaxSort" resultType="java.lang.Integer">
-		SELECT IFNULL(MAX(sort), 0)
-		FROM user_video_series
-		WHERE user = #{userId}
-	</select>
-
 	<!--根据SeriesId删除 -->
-	<delete id="deleteBySeriesId">
-		delete from user_video_series where series_id=#{seriesId}
+	<delete id="deleteBySeriesIdAndUserId">
+		delete from user_video_series where series_id=#{seriesId} and user_id=#{userId}
 	</delete>
 
 	<!--根据SeriesId更新 -->
@@ -263,6 +291,21 @@
 		where series_id=#{seriesId}
 	</update>
 
+	<update id="updateSeriesSortBatch">
+		UPDATE user_video_series
+		<set>
+			<trim prefix="sort = CASE" suffix="END">
+				<foreach collection="list" item="item">
+					WHEN series_id = #{item.seriesId} THEN #{item.sort}
+				</foreach>
+			</trim>
+		</set>
+		WHERE series_id IN
+		<foreach collection="list" item="item" open="(" separator="," close=")">
+			#{item.seriesId}
+		</foreach>
+		AND user_id = #{userId}
+	</update>
 
 
 </mapper>

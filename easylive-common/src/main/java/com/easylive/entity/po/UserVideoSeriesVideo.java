@@ -1,6 +1,7 @@
 package com.easylive.entity.po;
 
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * @author amani
@@ -27,6 +28,42 @@ public class UserVideoSeriesVideo implements Serializable {
 	 * 排序id
 	 */
     private Integer sort;
+	private String videoName;
+	private String videoCover;
+	private Integer playCount;
+	private Date createTime;
+
+	public Date getCreateTime() {
+		return createTime;
+	}
+
+	public void setCreateTime(Date createTime) {
+		this.createTime = createTime;
+	}
+
+	public String getVideoName() {
+		return videoName;
+	}
+
+	public void setVideoName(String videoName) {
+		this.videoName = videoName;
+	}
+
+	public String getVideoCover() {
+		return videoCover;
+	}
+
+	public void setVideoCover(String videoCover) {
+		this.videoCover = videoCover;
+	}
+
+	public Integer getPlayCount() {
+		return playCount;
+	}
+
+	public void setPlayCount(Integer playCount) {
+		this.playCount = playCount;
+	}
 
 	public void setSeriesId(Integer seriesId) {
 		this.seriesId = seriesId;

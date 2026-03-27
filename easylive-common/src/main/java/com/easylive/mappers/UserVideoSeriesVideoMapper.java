@@ -1,6 +1,9 @@
 package com.easylive.mappers;
 
+import com.easylive.entity.po.UserVideoSeriesVideo;
 import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * @author amani
@@ -25,4 +28,10 @@ public interface UserVideoSeriesVideoMapper<T, R> extends BaseMapper {
 	Integer deleteBySeriesIdAndVideoId(@Param("seriesId") Integer seriesId, @Param("videoId") String videoId);
 
     Integer selectMaxSort(@Param("userId") String userId);
+
+	List<String> selectVideoIdsBySeriesIdAndUserId(@Param("seriesId") Integer seriesId, @Param("userId") String userId);
+
+	Integer deleteByIds(@Param("list") List<String> seriesVideoIds, @Param("userId") String userId,@Param("seriesId") Integer seriesId);
+
+	List<UserVideoSeriesVideo> selectListLimit5(@Param("userId") String userId);
 }

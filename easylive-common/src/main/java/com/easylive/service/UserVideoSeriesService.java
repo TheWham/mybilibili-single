@@ -4,6 +4,7 @@ import com.easylive.entity.po.UserVideoSeries;
 import com.easylive.entity.po.VideoInfo;
 import com.easylive.entity.query.UserVideoSeriesQuery;
 import com.easylive.entity.vo.PaginationResultVO;
+import com.easylive.entity.vo.SeriesWithVideoVO;
 
 import java.util.List;
 
@@ -59,9 +60,19 @@ public interface UserVideoSeriesService {
 	/**
 	 * 根据 SeriesId删除
 	 */
-	Integer deleteUserVideoSeriesBySeriesId(Integer seriesId);
+	Integer deleteUserVideoSeriesBySeriesIdAndUserId(Integer seriesId, String userId);
 
-	List<VideoInfo> selectAllVideoBySeriesId(Integer seriesId, String userId);
+	List<VideoInfo> selectAllVideoBySeriesIdAndUserId(Integer seriesId, String userId);
 
-	void saveUserVideoSeries(Integer seriesId, String seriesName, String seriesDescription, String videoIds, String userId);
+	void saveVideoSeries(Integer seriesId, String seriesName, String seriesDescription, String videoIds, String userId);
+
+	void saveSeriesVideo(Integer seriesId,Integer sort, String videoIds, String userId);
+
+	List<UserVideoSeries> loadVideoSeries(String userId);
+
+	void changeVideoSeriesSort(String videoSeriesIds, String userId);
+
+	Integer delVideoSeries(Integer seriesId, String userId);
+
+	List<SeriesWithVideoVO> selectVideoSeriesWithVideo(String userId);
 }

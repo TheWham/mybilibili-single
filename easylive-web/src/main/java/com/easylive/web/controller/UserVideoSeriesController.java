@@ -101,13 +101,4 @@ public class UserVideoSeriesController extends ABaseController {
 		return getSuccessResponseVO(null);
 	}
 
-	/**
-	 * 根据 SeriesId删除
-	 */
-	@RequestMapping("deleteUserVideoSeriesBySeriesId")
-	public ResponseVO deleteUserVideoSeriesBySeriesId(Integer seriesId) {
-		this.userVideoSeriesService.deleteUserVideoSeriesBySeriesId(seriesId);
-		return getSuccessResponseVO(null);
-	}
-
 }

@@ -26,6 +26,15 @@ public class UserVideoSeriesVideoQuery extends BaseQuery {
 	 */
 	private Integer sort;
 
+	private Boolean isQueryVideoInfo;
+
+	public Boolean getQueryVideoInfo() {
+		return isQueryVideoInfo;
+	}
+
+	public void setQueryVideoInfo(Boolean queryVideoInfo) {
+		isQueryVideoInfo = queryVideoInfo;
+	}
 
 	public void setSeriesId(Integer seriesId) {
 		this.seriesId = seriesId;

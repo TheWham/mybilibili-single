@@ -24,6 +24,7 @@ public class UserVideoSeriesVideoServiceImpl implements UserVideoSeriesVideoServ
 	@Resource
 	private UserVideoSeriesVideoMapper<UserVideoSeriesVideo, UserVideoSeriesVideoQuery> userVideoSeriesVideoMapper;
 
+
 	/**
 	 * 根据条件查询
 	 */
@@ -103,7 +104,7 @@ public class UserVideoSeriesVideoServiceImpl implements UserVideoSeriesVideoServ
 	}
 
 	/**
-	 * 根据 SeriesIdAndVideoId删除
+	 * 根据 SeriesIdAndVideoIdAndUserId删除
 	 */
 	@Override
 	public Integer deleteUserVideoSeriesVideoBySeriesIdAndVideoId(Integer seriesId, String videoId) {
