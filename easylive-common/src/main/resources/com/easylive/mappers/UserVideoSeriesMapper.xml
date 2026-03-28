@@ -131,6 +131,12 @@
 		WHERE v.user_id = #{userId}
 		ORDER BY v.sort ASC
 	</select>
+	<select id="selectByIds" resultMap="base_result_map">
+		SELECT <include refid="base_column_list"/>
+		FROM user_video_series v
+		WHERE v.series_id in (<foreach collection="list" item="id" separator=",">#{id}</foreach>)
+		AND v.user_id = #{userId};
+	</select>
 
 	<!--插入 -->
 	<insert id="insert" parameterType="com.easylive.entity.po.UserVideoSeries">

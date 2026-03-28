@@ -8,6 +8,7 @@ import com.easylive.entity.query.UserVideoSeriesQuery;
 import com.easylive.entity.query.UserVideoSeriesVideoQuery;
 import com.easylive.entity.vo.ResponseVO;
 import com.easylive.entity.vo.SeriesVideoVO;
+import com.easylive.entity.vo.SeriesWithVideoUHomeVO;
 import com.easylive.entity.vo.SeriesWithVideoVO;
 import com.easylive.enums.ResponseCodeEnum;
 import com.easylive.exception.BusinessException;
@@ -33,11 +34,10 @@ public class UHomeVideoSeriesController extends ABaseController{
     @Resource
     private UserVideoSeriesVideoService userVideoSeriesVideoService;
 
-    //TODO loadVideoSeriesWithVideo
     @RequestMapping("/loadVideoSeriesWithVideo")
     public ResponseVO loadVideoSeriesWithVideo(@NotEmpty String userId)
     {
-        List<SeriesWithVideoVO> seriesWithVideoVOS = userVideoSeriesService.selectVideoSeriesWithVideo(userId);
+        List<SeriesWithVideoUHomeVO> seriesWithVideoVOS = userVideoSeriesService.selectVideoSeriesWithVideo(userId);
         return getSuccessResponseVO(seriesWithVideoVOS);
     }
 

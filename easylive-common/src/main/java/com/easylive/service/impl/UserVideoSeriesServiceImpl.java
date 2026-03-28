@@ -8,7 +8,7 @@ import com.easylive.entity.query.UserVideoSeriesQuery;
 import com.easylive.entity.query.UserVideoSeriesVideoQuery;
 import com.easylive.entity.query.VideoInfoQuery;
 import com.easylive.entity.vo.PaginationResultVO;
-import com.easylive.entity.vo.SeriesWithVideoVO;
+import com.easylive.entity.vo.SeriesWithVideoUHomeVO;
 import com.easylive.enums.PageSize;
 import com.easylive.enums.ResponseCodeEnum;
 import com.easylive.exception.BusinessException;
@@ -21,10 +21,8 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -246,9 +244,34 @@ public class UserVideoSeriesServiceImpl implements UserVideoSeriesService {
 	}
 
 	@Override
-	public List<SeriesWithVideoVO> selectVideoSeriesWithVideo(String userId) {
-		List<SeriesWithVideoVO> seriesWithVideoVOS = userVideoSeriesMapper.selectVideoSeriesWithVideo(userId);
-		return seriesWithVideoVOS;
+	public List<SeriesWithVideoUHomeVO> selectVideoSeriesWithVideo(String userId) {
+		/*
+		  放弃使用级联查询
+		  List<SeriesWithVideoVO> seriesWithVideoVOS = userVideoSeriesMapper.selectVideoSeriesWithVideo(userId);
+		 */
+		//先查出总seriesVideos 然后进行分类
+		UserVideoSeriesVideoQuery userVideoSeriesVideoQuery = new UserVideoSeriesVideoQuery();
+		userVideoSeriesVideoQuery.setQueryVideoInfo(true);
+		userVideoSeriesVideoQuery.setUserId(userId);
+		userVideoSeriesVideoQuery.setOrderBy("v.sort asc");
+		List<UserVideoSeriesVideo> userVideoSeriesVideoList = userVideoSeriesVideoMapper.selectList(userVideoSeriesVideoQuery);
+		Map<Integer, List<UserVideoSeriesVideo>> map = userVideoSeriesVideoList.stream().collect(Collectors.groupingBy(UserVideoSeriesVideo::getSeriesId));
+
+		List<Integer> seriesList = userVideoSeriesVideoList.stream().map(UserVideoSeriesVideo::getSeriesId).toList();
+		List<UserVideoSeries> userVideoSeries = this.userVideoSeriesMapper.selectByIds(seriesList, userId);
+
+		//组装vo
+		return userVideoSeries.stream().map(series ->{
+			SeriesWithVideoUHomeVO seriesWithVideoUHomeVO = new SeriesWithVideoUHomeVO();
+			seriesWithVideoUHomeVO.setSeriesName(series.getSeriesName());
+			seriesWithVideoUHomeVO.setSeriesId(series.getSeriesId());
+			List<UserVideoSeriesVideo> videos = map.getOrDefault(series.getSeriesId(), Collections.emptyList());
+			seriesWithVideoUHomeVO.setVideoInfoList(videos.stream().limit(PageSize.SIZE5.getSize()).toList());
+
+			return seriesWithVideoUHomeVO;
+		}).collect(Collectors.toList());
+
+
 	}
 
 

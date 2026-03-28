@@ -4,7 +4,7 @@ import com.easylive.entity.po.UserVideoSeries;
 import com.easylive.entity.po.VideoInfo;
 import com.easylive.entity.query.UserVideoSeriesQuery;
 import com.easylive.entity.vo.PaginationResultVO;
-import com.easylive.entity.vo.SeriesWithVideoVO;
+import com.easylive.entity.vo.SeriesWithVideoUHomeVO;
 
 import java.util.List;
 
@@ -74,5 +74,5 @@ public interface UserVideoSeriesService {
 
 	Integer delVideoSeries(Integer seriesId, String userId);
 
-	List<SeriesWithVideoVO> selectVideoSeriesWithVideo(String userId);
+	List<SeriesWithVideoUHomeVO> selectVideoSeriesWithVideo(String userId);
 }

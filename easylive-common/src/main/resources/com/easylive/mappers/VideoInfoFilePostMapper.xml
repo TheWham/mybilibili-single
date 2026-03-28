@@ -426,8 +426,12 @@
 	<delete id="deleteByUploadIdAndUserId">
 		delete from video_info_file_post where upload_id=#{uploadId} and user_id=#{userId}
 	</delete>
+	<!--根据条件删除-->
+	<delete id="deleteByCondition">
+		delete from video_info_file_post <include refid="query_condition"/>
+	</delete>
 
-	<!--根据UploadIdAndUserIdAnd更新 -->
+    <!--根据UploadIdAndUserIdAnd更新 -->
 	<update id="updateByUploadIdAndUserId" parameterType="com.easylive.entity.po.VideoInfoFilePost">
 		update video_info_file_post
 		<set>

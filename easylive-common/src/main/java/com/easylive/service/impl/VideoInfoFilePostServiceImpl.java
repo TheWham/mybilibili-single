@@ -4,16 +4,23 @@ import com.easylive.component.RedisComponent;
 import com.easylive.config.AdminConfig;
 import com.easylive.constants.Constants;
 import com.easylive.entity.dto.UploadingFileDTO;
+import com.easylive.entity.po.VideoInfo;
+import com.easylive.entity.po.VideoInfoFile;
 import com.easylive.entity.po.VideoInfoFilePost;
 import com.easylive.entity.po.VideoInfoPost;
 import com.easylive.entity.query.SimplePage;
 import com.easylive.entity.query.VideoInfoFilePostQuery;
+import com.easylive.entity.query.VideoInfoFileQuery;
+import com.easylive.entity.query.VideoInfoQuery;
 import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.enums.PageSize;
+import com.easylive.enums.ResponseCodeEnum;
 import com.easylive.enums.VideoFileTransferResultEnum;
 import com.easylive.enums.VideoStatusEnum;
 import com.easylive.exception.BusinessException;
+import com.easylive.mappers.VideoInfoFileMapper;
 import com.easylive.mappers.VideoInfoFilePostMapper;
+import com.easylive.mappers.VideoInfoMapper;
 import com.easylive.mappers.VideoInfoPostMapper;
 import com.easylive.service.VideoInfoFilePostService;
 import com.easylive.utils.FFmpegUtils;
@@ -21,10 +28,14 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 /**
@@ -36,6 +47,8 @@ import java.util.List;
 @Slf4j
 @Service("VideoInfoFilePostService")
 public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
+
+	private static ExecutorService executorService = Executors.newFixedThreadPool(10);
 	@Resource
 	private VideoInfoFilePostMapper<VideoInfoFilePost, VideoInfoFilePostQuery> videoInfoFilePostMapper;
 	@Resource
@@ -46,6 +59,12 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 	private VideoInfoPostMapper videoInfoPostMapper;
 	@Resource
 	private FFmpegUtils fFmpegUtils;
+	@Resource
+	private VideoInfoMapper<VideoInfo, VideoInfoQuery> videoInfoMapper;
+    @Resource
+    private VideoInfoFileMapper<VideoInfoFile, VideoInfoFileQuery> videoInfoFileMapper;
+
+
 	/**
 	 * @description 根据条件查询
 	 */
@@ -277,31 +296,38 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 		}
 	}
 
-    public void deleVideo(List<VideoInfoPost> needDeleteVideos, String videoId, String userId) {
-		if (needDeleteVideos == null || needDeleteVideos.isEmpty())
-			return;
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+    public void deleVideo(String videoId, String userId) {
+		VideoInfo videoInfo = videoInfoMapper.selectByVideoId(videoId);
+		if (videoInfo == null || !videoInfo.getUserId().equals(userId))
+			throw new BusinessException(ResponseCodeEnum.CODE_404);
 
-		if (needDeleteVideos.getFirst().getStatus().equals(VideoStatusEnum.STATUS_3.getStatus()))
-		{
-			videoInfoPostMapper.deleteByVideoId(videoId);
-		}else{
-			//删除videoInfoPost信息
-			videoInfoPostMapper.deleteByVideoId(videoId);
-			//删除videoInfoFile信息
-			VideoInfoFilePostQuery filePostQuery = new VideoInfoFilePostQuery();
-			filePostQuery.setVideoId(videoId);
-			filePostQuery.setUserId(userId);
-			List<VideoInfoFilePost> videoList = this.findListByParam(filePostQuery);
-			List<String> fileIds = videoList.stream().map(VideoInfoFilePost::getFileId).toList();
-			//TODO 批量删除videoInfoFile信息
-			//    videoInfoFilePostService.deleteBatchByIds(fileIds);
-			//删除redis信息
-			videoList.forEach(videoFile->{
-				String completePath = adminConfig.getProjectFolder() + Constants.FILE_PATH_FOLDER + videoFile.getFilePath();
-				//占用io可以放到消息队列
-				new File(completePath).delete();
-				redisComponent.delUploadVideoInfo(userId, videoFile.getUploadId());
-			});
-		}
-    }
+		videoInfoMapper.deleteByVideoId(videoId);
+		videoInfoPostMapper.deleteByVideoId(videoId);
+		//TODO 进去用户加硬币
+		//TODO 删除es信息
+
+		executorService.submit(()-> {
+			VideoInfoFileQuery fileQuery = new VideoInfoFileQuery();
+			fileQuery.setUserId(userId);
+			fileQuery.setVideoId(videoId);
+			videoInfoFileMapper.deleteByCondition(fileQuery);
+			VideoInfoFilePostQuery videoInfoFilePostQuery = new VideoInfoFilePostQuery();
+			videoInfoFilePostQuery.setVideoId(videoId);
+			videoInfoFilePostQuery.setUserId(userId);
+			List<VideoInfoFilePost> postList = videoInfoFilePostMapper.selectList(videoInfoFilePostQuery);
+			videoInfoFilePostMapper.deleteByCondition(videoInfoFilePostQuery);
+			//删除文件
+			postList.forEach(item ->{
+				String filePath = adminConfig.getProjectFolder() + Constants.FILE_PATH_FOLDER + item.getFilePath();
+                try {
+                    FileUtils.deleteDirectory(new File(filePath));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+		});
+
+	}
 }

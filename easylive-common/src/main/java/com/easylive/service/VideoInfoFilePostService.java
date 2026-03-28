@@ -1,7 +1,6 @@
 package com.easylive.service;
 
 import com.easylive.entity.po.VideoInfoFilePost;
-import com.easylive.entity.po.VideoInfoPost;
 import com.easylive.entity.query.VideoInfoFilePostQuery;
 import com.easylive.entity.vo.PaginationResultVO;
 
@@ -79,6 +78,5 @@ public interface VideoInfoFilePostService {
 
     void transferVideo(VideoInfoFilePost transferVideo);
 
-	//TODO test api
-    void deleVideo(List<VideoInfoPost> needDeleteVideos,String videoId, String userId);
+    void deleVideo(String videoId, String userId);
 }

@@ -34,4 +34,6 @@ public interface UserVideoSeriesMapper<T, R> extends BaseMapper {
 	Integer updateSeriesSortBatch(@Param("list") List<T> updateList,@Param("userId") String userId);
 
 	List<SeriesWithVideoVO> selectVideoSeriesWithVideo(@Param("userId") String userId);
+
+	List<T> selectByIds(@Param("list") List<Integer> seriesList, @Param("userId") String userId);
 }

@@ -277,7 +277,7 @@ public class VideoInfoPostServiceImpl implements VideoInfoPostService {
 		VideoInfoPost currentVideoInfo = videoInfoPostMapper.selectByVideoId(videoInfoPost.getVideoId());
 		// 简介, 标签, 标题, 封面
 		return !currentVideoInfo.getTags().equals(videoInfoPost.getTags())
-				|| !currentVideoInfo.getIntroduction().equals(videoInfoPost.getIntroduction())
+				|| !(currentVideoInfo.getIntroduction() == null ? "": currentVideoInfo.getIntroduction()).equals(videoInfoPost.getIntroduction() == null ? "" : videoInfoPost.getIntroduction())
 				|| !currentVideoInfo.getVideoCover().equals(videoInfoPost.getVideoCover())
 				|| !currentVideoInfo.getVideoName().equals(videoInfoPost.getVideoName());
 	}

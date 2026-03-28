@@ -43,4 +43,6 @@ public interface VideoInfoFilePostMapper<T, R> extends BaseMapper {
     Integer getSumDuration(@Param("videoId") String videoId);
 
 	Integer updateByCondition(@Param("bean")T videoInfoFilePost,@Param("query") R filePostQuery);
+
+    Integer deleteByCondition(@Param("query") R videoInfoFilePostQuery);
 }
