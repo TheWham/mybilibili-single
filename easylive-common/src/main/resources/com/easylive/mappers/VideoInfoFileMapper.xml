@@ -276,7 +276,10 @@
 
 	<!--根据条件删除-->
 	<delete id="deleteByCondition">
-		delete from video_info_file <include refid="query_condition"/>
+		delete from video_info_file v
+		<where>
+			<include refid="base_query_condition" />
+		</where>
 	</delete>
 
 	<!--根据FileId更新 -->

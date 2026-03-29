@@ -23,7 +23,7 @@ public class ExecuteTransferQueueTask {
     @Resource
     private VideoInfoFilePostService videoInfoFilePostService;
 
-   // @PostConstruct
+   //@PostConstruct
     public void executeTransferQueue()
     {
         executorService.execute(()->{

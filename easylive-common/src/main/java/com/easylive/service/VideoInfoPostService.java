@@ -67,4 +67,6 @@ public interface VideoInfoPostService {
     Integer updateByCondition(VideoInfoPost updateInfoPost, VideoInfoPostQuery postQuery);
 
     VideoAuditCountVO getVideoCountInfo(String userId);
+
+	void saveVideoInteraction(VideoInfoPost videoInfoPost);
 }

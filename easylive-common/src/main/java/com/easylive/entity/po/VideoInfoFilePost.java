@@ -133,17 +133,17 @@ public class VideoInfoFilePost implements Serializable {
 	@Override
 	public String toString() {
 		return "VideoInfoFilePost{" +
-				"fileId='" + fileId + 
-				", uploadId='" + uploadId + '\'' + 
-				", userId='" + userId + '\'' + 
-				", videoId='" + videoId + '\'' + 
-				", fileName='" + fileName + '\'' + 
-				", fileIndex='" + fileIndex + '\'' + 
-				", fileSize='" + fileSize + '\'' + 
-				", filePath='" + filePath + '\'' + 
-				", transferResult='" + transferResult + '\'' + 
-				", updateType='" + updateType + '\'' + 
-				", duration='" + duration + '\'' + 
+				"fileId='" + fileId + '\'' +  // 补上引号
+				", uploadId='" + uploadId + '\'' +
+				", userId='" + userId + '\'' +
+				", videoId='" + videoId + '\'' +
+				", fileName='" + fileName + '\'' +
+				", fileIndex=" + fileIndex +   // 数字类型通常不加单引号
+				", fileSize=" + fileSize +
+				", filePath='" + filePath + '\'' +
+				", transferResult=" + transferResult +
+				", updateType=" + updateType +
+				", duration=" + duration +
 				'}';
 	}
 

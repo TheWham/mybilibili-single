@@ -29,4 +29,5 @@ public interface VideoCommentMapper<T, R> extends BaseMapper {
     List<T> selectListWithChildren(@Param("query") R query);
 
 	Integer updateCount(@Param("commentId") Integer commentId,@Param("likeDiff") Integer likeDiff, @Param("hateDiff") Integer hateDiff);
+
 }

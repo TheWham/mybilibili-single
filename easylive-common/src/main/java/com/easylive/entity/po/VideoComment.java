@@ -89,8 +89,34 @@ public class VideoComment implements Serializable {
 	private String replyNickName;
 
 	private Integer replyCommentId;
+	private String videoName;
+	private String videoCover;
 
 	private List<VideoComment> children;
+
+	public Integer getpCommentId() {
+		return pCommentId;
+	}
+
+	public void setpCommentId(Integer pCommentId) {
+		this.pCommentId = pCommentId;
+	}
+
+	public String getVideoName() {
+		return videoName;
+	}
+
+	public void setVideoName(String videoName) {
+		this.videoName = videoName;
+	}
+
+	public String getVideoCover() {
+		return videoCover;
+	}
+
+	public void setVideoCover(String videoCover) {
+		this.videoCover = videoCover;
+	}
 
 	public List<VideoComment> getChildren() {
 		return children;

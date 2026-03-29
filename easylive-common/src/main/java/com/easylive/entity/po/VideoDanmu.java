@@ -60,6 +60,15 @@ public class VideoDanmu implements Serializable {
 	 * 展示时间
 	 */
     private Integer time;
+	private String nickName;
+
+	public String getNickName() {
+		return nickName;
+	}
+
+	public void setNickName(String nickName) {
+		this.nickName = nickName;
+	}
 
 	public void setDanmuId(Integer danmuId) {
 		this.danmuId = danmuId;

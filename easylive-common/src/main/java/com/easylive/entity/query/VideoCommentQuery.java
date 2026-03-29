@@ -74,6 +74,15 @@ public class VideoCommentQuery extends BaseQuery {
 	 */
 	private Boolean isQueryChildren;
 
+	private Boolean isQueryUserInfo;
+
+	public Boolean getQueryUserInfo() {
+		return isQueryUserInfo;
+	}
+
+	public void setQueryUserInfo(Boolean queryUserInfo) {
+		isQueryUserInfo = queryUserInfo;
+	}
 
 	public Integer getpCommentId() {
 		return pCommentId;

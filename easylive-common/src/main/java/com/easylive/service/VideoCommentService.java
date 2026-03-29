@@ -57,4 +57,6 @@ public interface VideoCommentService {
 	List<VideoComment> selectListWithChildren(VideoCommentQuery param);
 
 	VideoCommentVO loadComment(String videoId, Integer pageNo, Integer orderType, TokenUserInfoDTO tokenUserInfoDTO);
+
+	List<VideoComment> loadCommentUCenter(VideoCommentQuery videoCommentQuery);
 }

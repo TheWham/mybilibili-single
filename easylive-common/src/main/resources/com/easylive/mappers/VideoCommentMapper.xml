@@ -141,7 +141,15 @@
 	<select id="selectList" resultMap="base_result_map">
 		SELECT
 		<include refid="base_column_list"/>
+		<if test="query.isQueryUserInfo">
+			,u.nick_name nickName, u.avatar avatar, u2.nick_name replyNickName, vb.video_name, vb.video_cover
+		</if>
 		FROM video_comment v
+		<if test="query.isQueryUserInfo">
+			INNER JOIN user_info u on u.user_id = v.user_id
+			LEFT JOIN user_info u2 on u2.user_id = v.reply_user_id
+			LEFT JOIN video_info vb on vb.video_id = v.video_id
+		</if>
 		<include refid="query_condition"/>
 		<if test="query.orderBy!=null">
 			order by ${query.orderBy}
@@ -380,9 +388,6 @@
 		select <include refid="base_column_list"/>
 		from video_comment v where comment_id=#{commentId}
 	</select>
-
-
-
 
 	<!--根据CommentId删除 -->
 	<delete id="deleteByCommentId">

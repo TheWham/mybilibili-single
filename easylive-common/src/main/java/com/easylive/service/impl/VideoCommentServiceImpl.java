@@ -55,7 +55,7 @@ public class VideoCommentServiceImpl implements VideoCommentService {
 		if (param.getQueryChildren())
 			list = this.selectListWithChildren(param);
 		else
-			list = this.findListByParam(param);
+			list = this.videoCommentMapper.selectList(param);
 		return list;
 	}
 
@@ -82,7 +82,7 @@ public class VideoCommentServiceImpl implements VideoCommentService {
 		if (param.getQueryChildren())
 			list = this.selectListWithChildren(param);
 		else
-			list = this.findListByParam(param);
+			list = this.videoCommentMapper.selectList(param);
 
 		PaginationResultVO<VideoComment> result = new PaginationResultVO(count, page.getPageSize(), page.getPageNo(), page.getPageTotal(), list);
 		return result;
@@ -176,7 +176,7 @@ public class VideoCommentServiceImpl implements VideoCommentService {
 		if (videoInfo == null)
 			throw new BusinessException(ResponseCodeEnum.CODE_600);
 
-		if (videoInfo.getInteraction() != null && videoInfo.getInteraction().contains(Constants.ZERO.toString())){
+		if (videoInfo.getInteraction() != null && videoInfo.getInteraction().contains(Constants.ONE.toString())){
 			return new VideoCommentVO();
 		}
 
@@ -215,6 +215,11 @@ public class VideoCommentServiceImpl implements VideoCommentService {
 		}
 
 		return videoCommentVO;
+	}
+
+	@Override
+	public List<VideoComment> loadCommentUCenter(VideoCommentQuery videoCommentQuery) {
+		return videoCommentMapper.selectList(videoCommentQuery);
 	}
 
 	private List<VideoComment> getTopComment(String videoId)

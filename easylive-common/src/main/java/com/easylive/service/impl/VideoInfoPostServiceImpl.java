@@ -4,23 +4,27 @@ import cn.hutool.core.bean.BeanUtil;
 import com.easylive.component.RedisComponent;
 import com.easylive.constants.Constants;
 import com.easylive.entity.dto.VideoInfoPostDTO;
+import com.easylive.entity.po.VideoInfo;
 import com.easylive.entity.po.VideoInfoFilePost;
 import com.easylive.entity.po.VideoInfoPost;
 import com.easylive.entity.query.SimplePage;
 import com.easylive.entity.query.VideoInfoFilePostQuery;
 import com.easylive.entity.query.VideoInfoPostQuery;
+import com.easylive.entity.query.VideoInfoQuery;
 import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.entity.vo.VideoAuditCountVO;
 import com.easylive.enums.*;
 import com.easylive.exception.BusinessException;
+import com.easylive.mappers.VideoInfoFilePostMapper;
+import com.easylive.mappers.VideoInfoMapper;
 import com.easylive.mappers.VideoInfoPostMapper;
-import com.easylive.service.VideoInfoFilePostService;
 import com.easylive.service.VideoInfoPostService;
 import com.easylive.utils.JsonUtils;
 import com.easylive.utils.StringTools;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -45,8 +49,10 @@ public class VideoInfoPostServiceImpl implements VideoInfoPostService {
 	private RedisComponent redisComponent;
 
 	@Resource
-	private VideoInfoFilePostService videoInfoFilePostService;
+	private VideoInfoFilePostMapper<VideoInfoFilePost, VideoInfoFilePostQuery> videoInfoFilePostMapper;
 
+	@Resource
+	private VideoInfoMapper<VideoInfo, VideoInfoQuery> videoInfoMapper;
 	/**
 	 * @description 根据条件查询
 	 */
@@ -164,7 +170,7 @@ public class VideoInfoPostServiceImpl implements VideoInfoPostService {
 			query.setUserId(videoInfoPostDTO.getUserId());
 
 			//在数据库中找到已存到数据库中视频列表
-			List<VideoInfoFilePost> filesInfoInPostDb = videoInfoFilePostService.findListByParam(query);
+			List<VideoInfoFilePost> filesInfoInPostDb = videoInfoFilePostMapper.selectList(query);
 
 			//将修改后文件列表
 			Map<String, VideoInfoFilePost> videoInfoFileReflect = uploadFilesInfo.stream()
@@ -224,7 +230,7 @@ public class VideoInfoPostServiceImpl implements VideoInfoPostService {
 			}
 		}
 
-		this.videoInfoFilePostService.addOrUpdateBatch(uploadFilesInfo);
+		videoInfoFilePostMapper.insertOrUpdateBatch(uploadFilesInfo);
 		if (deleteList != null && !deleteList.isEmpty())
 		{
 			List<String> deleteListIds = deleteList.stream().map(VideoInfoFilePost::getFileId).collect(Collectors.toList());
@@ -270,6 +276,25 @@ public class VideoInfoPostServiceImpl implements VideoInfoPostService {
 		videoAuditCountVO.setInProgress(inProgress);
 		videoAuditCountVO.setAuditPassCount(auditPassCount);
 		return videoAuditCountVO;
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void saveVideoInteraction(VideoInfoPost videoInfoPost) {
+		//更新infoPost, info
+		VideoInfoPostQuery videoInfoPostQuery = new VideoInfoPostQuery();
+		videoInfoPostQuery.setVideoId(videoInfoPost.getVideoId());
+		videoInfoPostQuery.setUserId(videoInfoPostQuery.getUserId());
+		videoInfoPostMapper.updateByCondition(videoInfoPost, videoInfoPostQuery);
+
+		VideoInfoQuery videoInfoQuery = new VideoInfoQuery();
+		VideoInfo videoInfo = videoInfoMapper.selectByVideoId(videoInfoPost.getVideoId());
+		if (videoInfo == null)
+			return;
+		videoInfo.setInteraction(videoInfoPost.getInteraction());
+		videoInfoQuery.setVideoId(videoInfo.getVideoId());
+		videoInfoQuery.setUserId(videoInfo.getUserId());
+		videoInfoMapper.updateByCondition(videoInfo, videoInfoQuery);
 	}
 
 	private Boolean isChangeVideoInfoPost(VideoInfoPostDTO videoInfoPost)

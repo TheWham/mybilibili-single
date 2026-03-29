@@ -29,6 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -299,7 +301,7 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 	@Override
 	@Transactional(rollbackFor = Exception.class)
     public void deleVideo(String videoId, String userId) {
-		VideoInfo videoInfo = videoInfoMapper.selectByVideoId(videoId);
+		VideoInfoPost videoInfo = (VideoInfoPost)videoInfoPostMapper.selectByVideoId(videoId);
 		if (videoInfo == null || !videoInfo.getUserId().equals(userId))
 			throw new BusinessException(ResponseCodeEnum.CODE_404);
 
@@ -308,25 +310,35 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 		//TODO 进去用户加硬币
 		//TODO 删除es信息
 
-		executorService.submit(()-> {
-			VideoInfoFileQuery fileQuery = new VideoInfoFileQuery();
-			fileQuery.setUserId(userId);
-			fileQuery.setVideoId(videoId);
-			videoInfoFileMapper.deleteByCondition(fileQuery);
-			VideoInfoFilePostQuery videoInfoFilePostQuery = new VideoInfoFilePostQuery();
-			videoInfoFilePostQuery.setVideoId(videoId);
-			videoInfoFilePostQuery.setUserId(userId);
-			List<VideoInfoFilePost> postList = videoInfoFilePostMapper.selectList(videoInfoFilePostQuery);
-			videoInfoFilePostMapper.deleteByCondition(videoInfoFilePostQuery);
-			//删除文件
-			postList.forEach(item ->{
-				String filePath = adminConfig.getProjectFolder() + Constants.FILE_PATH_FOLDER + item.getFilePath();
-                try {
-                    FileUtils.deleteDirectory(new File(filePath));
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
+
+		//TODO 清理任务持久化
+
+		// 2. 注册一个事务同步回调：只有当事务成功提交（COMMIT）后，才触发异步逻辑
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				executorService.submit(()-> {
+					VideoInfoFileQuery fileQuery = new VideoInfoFileQuery();
+					fileQuery.setUserId(userId);
+					fileQuery.setVideoId(videoId);
+					videoInfoFileMapper.deleteByCondition(fileQuery);
+					VideoInfoFilePostQuery videoInfoFilePostQuery = new VideoInfoFilePostQuery();
+					videoInfoFilePostQuery.setVideoId(videoId);
+					videoInfoFilePostQuery.setUserId(userId);
+					List<VideoInfoFilePost> postList = videoInfoFilePostMapper.selectList(videoInfoFilePostQuery);
+					videoInfoFilePostMapper.deleteByCondition(videoInfoFilePostQuery);
+					//删除文件
+					postList.forEach(item ->{
+						String filePath = adminConfig.getProjectFolder() + Constants.FILE_PATH_FOLDER + item.getFilePath();
+						try {
+							FileUtils.deleteDirectory(new File(filePath));
+						} catch (IOException e) {
+							throw new RuntimeException(e);
+						}
+					});
+					log.error("删除完成");
+				});
+			}
 		});
 
 	}
