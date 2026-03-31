@@ -11,12 +11,8 @@ import com.easylive.entity.po.UserInfo;
 import com.easylive.entity.po.UserStats;
 import com.easylive.entity.po.VideoInfo;
 import com.easylive.entity.query.*;
-import com.easylive.entity.vo.PaginationResultVO;
-import com.easylive.entity.vo.UserCountVO;
-import com.easylive.entity.vo.UserInfoVO;
-import com.easylive.enums.PageSize;
-import com.easylive.enums.SexEnum;
-import com.easylive.enums.StatusEnum;
+import com.easylive.entity.vo.*;
+import com.easylive.enums.*;
 import com.easylive.exception.BusinessException;
 import com.easylive.mappers.UserFocusMapper;
 import com.easylive.mappers.UserInfoMapper;
@@ -29,8 +25,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -256,6 +256,7 @@ public class UserInfoServiceImpl implements UserInfoService {
 		userInfoVO.setLikeCount(userStats.getLikeCount());
 		userInfoVO.setFansCount(userStats.getFansCount());
 		userInfoVO.setFocusCount(userStats.getFocusCount());
+
 	}
 
 	@Override
@@ -299,12 +300,42 @@ public class UserInfoServiceImpl implements UserInfoService {
 	@Override
 	public UserCountVO getUserCountInfo(String userId) {
 		UserInfoVO userInfoVOInRedis = redisComponent.getUserInfoVOInRedis(userId);
+
+		UserCountVO userCountVO = null;
 		if (userInfoVOInRedis != null)
 		{
-			UserCountVO userCountVO = BeanUtil.toBean(userInfoVOInRedis, UserCountVO.class);
+			 userCountVO = BeanUtil.toBean(userInfoVOInRedis, UserCountVO.class);
 			return userCountVO;
 		}
-		UserCountVO userCountVO = userInfoMapper.selectUserCountInfo(userId);
+		userCountVO = userInfoMapper.selectUserCountInfo(userId);
 		return userCountVO;
+	}
+
+	@Override
+	public UCenterVideoDateVO getActualTimeStatisticsInfo(String userId) {
+		//TODO 设计定时任务
+		UserInfo userInfo = userInfoMapper.selectByUserId(userId);
+		Optional.ofNullable(userInfo).orElseThrow(() -> new BusinessException(ResponseCodeEnum.CODE_600));
+		String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		HashMap<String, Integer> userStatsInfoMap = redisComponent.getUserStatsInfo(userId, date);
+		UCenterVideoDateVO uCenterVideoDateVO = new UCenterVideoDateVO();
+		TotalCountInfoVO totalCountInfoVO = new TotalCountInfoVO();
+		if (userStatsInfoMap != null && !userStatsInfoMap.isEmpty())
+		{
+			fillTotalCountInfo(totalCountInfoVO, userStatsInfoMap);
+
+		}
+		return null;
+	}
+
+	private void fillTotalCountInfo(TotalCountInfoVO totalCountInfoVO, HashMap<String, Integer> userStatsInfoMap)
+	{
+		totalCountInfoVO.setCoinCount(userStatsInfoMap.getOrDefault(UserStatsRedisEnum.USER_COIN.getField(), 0));
+		totalCountInfoVO.setCommentCount(userStatsInfoMap.getOrDefault(UserStatsRedisEnum.USER_COMMENT_COUNT.getField(), 0));
+		totalCountInfoVO.setLikeCount(userStatsInfoMap.getOrDefault(UserStatsRedisEnum.VIDEO_LIKE.getField(), 0));
+		totalCountInfoVO.setCollectCount(userStatsInfoMap.getOrDefault(UserStatsRedisEnum.USER_COLLECT_COUNT.getField(), 0));
+		totalCountInfoVO.setDanmuCount(userStatsInfoMap.getOrDefault(UserStatsRedisEnum.VIDEO_DANMU.getField(), 0));
+		totalCountInfoVO.setPlayCount(userStatsInfoMap.getOrDefault(UserStatsRedisEnum.VIDEO_PLAY.getField(), 0));
+		totalCountInfoVO.setFansCount(userStatsInfoMap.getOrDefault(UserStatsRedisEnum.USER_FANS.getField(), 0));
 	}
 }

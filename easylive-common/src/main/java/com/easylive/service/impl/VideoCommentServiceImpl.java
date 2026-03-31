@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -220,6 +221,18 @@ public class VideoCommentServiceImpl implements VideoCommentService {
 	@Override
 	public List<VideoComment> loadCommentUCenter(VideoCommentQuery videoCommentQuery) {
 		return videoCommentMapper.selectList(videoCommentQuery);
+	}
+
+	@Override
+	public Integer deleteByCommentId(Integer commentId, Boolean isAdmin, String userId) {
+		VideoComment videoComment = Optional.ofNullable(this.videoCommentMapper.selectByCommentId(commentId))
+				.orElseThrow(() -> new BusinessException(ResponseCodeEnum.CODE_600));
+
+		boolean canDirectDelete = Boolean.TRUE.equals(isAdmin) || videoComment.getUserId().equals(userId) || videoComment.getVideoUserId().equals(userId);
+
+		if (!canDirectDelete)
+			throw new BusinessException(ResponseCodeEnum.CODE_600);
+        return this.videoCommentMapper.deleteByCommentId(commentId);
 	}
 
 	private List<VideoComment> getTopComment(String videoId)

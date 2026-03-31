@@ -1,5 +1,7 @@
 package com.easylive.entity.query;
 
+import java.util.Date;
+
 /**
  * @author amani
  * @since 2026/03/21
@@ -35,6 +37,52 @@ public class UserStatsQuery extends BaseQuery {
 	 * 粉丝数量
 	 */
 	private Integer fansCount;
+	/**
+	 * 收藏量
+	 */
+	private Integer collectCount;
+	/**
+	 * 弹幕量
+	 */
+	private Integer danmuCount;
+	/**
+	 * 评论数量
+	 */
+	private Integer commentCount;
+
+	private Date statsDay;
+
+	public Date getStatsDay() {
+		return statsDay;
+	}
+
+	public void setStatsDay(Date statsDay) {
+		this.statsDay = statsDay;
+	}
+
+	public Integer getCollectCount() {
+		return collectCount;
+	}
+
+	public void setCollectCount(Integer collectCount) {
+		this.collectCount = collectCount;
+	}
+
+	public Integer getDanmuCount() {
+		return danmuCount;
+	}
+
+	public void setDanmuCount(Integer danmuCount) {
+		this.danmuCount = danmuCount;
+	}
+
+	public Integer getCommentCount() {
+		return commentCount;
+	}
+
+	public void setCommentCount(Integer commentCount) {
+		this.commentCount = commentCount;
+	}
 
 	public void setUserId(String userId) {
 		this.userId = userId;

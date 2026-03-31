@@ -16,11 +16,19 @@
 		<result column="focus_count" property="focusCount"/>
 		<!-- 粉丝数量-->
 		<result column="fans_count" property="fansCount"/>
+		<!-- 弹幕数量-->
+		<result column="danmu_count" property="danmuCount"/>
+		<!-- 评论数量-->
+		<result column="comment_count" property="commentCount"/>
+		<!-- 收藏数量-->
+		<result column="collect_count" property="collectCount"/>
+		<!-- 统计日期-->
+		<result column="stats_day" property="statsDay"/>
 	</resultMap>
 
 	<!--通用查询结果列 -->
 	<sql id="base_column_list">
-		v.user_id,v.play_count,v.like_count,v.current_coin_count,v.focus_count,v.fans_count
+		v.user_id,v.play_count,v.like_count,v.current_coin_count,v.focus_count,v.fans_count,v.collect_count,v.stats_day,v.danmu_count,v.comment_count
 	</sql>
 
 	<!--基础查询条件 -->
@@ -42,6 +50,18 @@
 		</if>
 		<if test="query.fansCount != null" >
 			and v.fans_count = #{query.fansCount}
+		</if>
+		<if test="query.collectCount != null" >
+			and v.collect_count = #{query.collectCount}
+		</if>
+		<if test="query.commentCount != null" >
+			and v.comment_count = #{query.commentCount}
+		</if>
+		<if test="query.statsDay != null and query.statsDay != ''" >
+			<![CDATA[ and v.stats_day=str_to_date(#{query.statsDay}, '%Y-%m-%d') ]]>
+		</if>
+		<if test="query.danmuCount!= null" >
+			and v.danmu_count = #{query.danmuCount}
 		</if>
 	</sql>
 
@@ -102,6 +122,18 @@
 			<if test="bean.fansCount != null">
 				fans_count,
 			</if>
+			<if test="bean.collectCount != null">
+				collect_count,
+			</if>
+			<if test="bean.commentCount != null">
+				comment_count,
+			</if>
+			<if test="bean.danmuCount != null">
+				danmu_count,
+			</if>
+			<if test="bean.statsDay != null">
+				stats_day,
+			</if>
 		</trim>
 		<trim prefix="values (" suffix=")" suffixOverrides=",">
 			<if test="bean.userId != null">
@@ -121,6 +153,18 @@
 			</if>
 			<if test="bean.fansCount != null">
 				#{bean.fansCount},
+			</if>
+			<if test="bean.collectCount != null">
+				#{bean.collectCount},
+			</if>
+			<if test="bean.commentCount != null">
+				#{bean.commentCount},
+			</if>
+			<if test="bean.danmuCount != null">
+				#{bean.danmuCount},
+			</if>
+			<if test="bean.statsDay != null">
+				#{bean.statsDay},
 			</if>
 		</trim>
 
@@ -148,6 +192,18 @@
 			<if test="bean.fansCount != null">
 				fans_count,
 			</if>
+			<if test="bean.collectCount != null">
+				collect_count,
+			</if>
+			<if test="bean.commentCount != null">
+				comment_count,
+			</if>
+			<if test="bean.danmuCount != null">
+				danmu_count,
+			</if>
+			<if test="bean.statsDay != null">
+				stats_day,
+			</if>
 		</trim>
 		<trim prefix="values (" suffix=")" suffixOverrides=",">
 			<if test="bean.userId != null">
@@ -168,6 +224,18 @@
 			<if test="bean.fansCount != null">
 				#{bean.fansCount},
 			</if>
+			<if test="bean.collectCount != null">
+				#{bean.collectCount},
+			</if>
+			<if test="bean.commentCount != null">
+				#{bean.commentCount},
+			</if>
+			<if test="bean.danmuCount != null">
+				#{bean.danmuCount},
+			</if>
+			<if test="bean.statsDay != null">
+				#{bean.statsDay},
+			</if>
 		</trim>
 		on DUPLICATE key update
 		<trim prefix="" suffix="" suffixOverrides=",">
@@ -186,6 +254,18 @@
 			<if test="bean.fansCount != null">
 				fans_count = VALUES(fans_count),
 			</if>
+			<if test="bean.collectCount != null">
+				collect_count = VALUES(collect_count),
+			</if>
+			<if test="bean.commentCount != null">
+				comment_count = VALUES(comment_count),
+			</if>
+			<if test="bean.danmuCount != null">
+				danmu_count = VALUES(danmu_count),
+			</if>
+			<if test="bean.statsDay != null">
+				stats_day = VALUES(stats_day),
+			</if>
 		</trim>
 	</insert>
 
@@ -198,24 +278,27 @@
 
 	<!--批量添加 -->
 	<insert id="insertBatch" parameterType="com.easylive.entity.po.UserStats"  useGeneratedKeys="true" keyProperty="userId">
-		INSERT INTO user_stats(user_id,play_count,like_count,current_coin_count,focus_count,fans_count) values
+		INSERT INTO user_stats(user_id,play_count,like_count,current_coin_count,focus_count,fans_count,collect_count,comment_count,danmu_count,stats_day) values
 		<foreach collection="list" item="item" separator=",">
 			(
-			#{item.userId},#{item.playCount},#{item.likeCount},#{item.currentCoinCount},#{item.focusCount},#{item.fansCount}
+			#{item.userId},#{item.playCount},#{item.likeCount},#{item.currentCoinCount},#{item.focusCount},#{item.fansCount},
+			#{item.collectCount},#{item.commentCount},#{item.danmuCount},#{item.statsDay}
 			)
 		</foreach>
 	</insert>
 
 	<!--批量新增修改 (没有过滤掉唯一索引字段)-->
 	<insert id="insertOrUpdateBatch" parameterType="com.easylive.entity.po.UserStats">
-		INSERT INTO user_stats(user_id,play_count,like_count,current_coin_count,focus_count,fans_count) values
+		INSERT INTO user_stats(user_id,play_count,like_count,current_coin_count,focus_count,fans_count,collect_count,comment_count,danmu_count,stats_day) values
 		<foreach collection="list" item="item" separator=",">
 			(
-			#{item.userId},#{item.playCount},#{item.likeCount},#{item.currentCoinCount},#{item.focusCount},#{item.fansCount}
+			#{item.userId},#{item.playCount},#{item.likeCount},#{item.currentCoinCount},#{item.focusCount},#{item.fansCount},
+			#{item.collectCount},#{item.commentCount},#{item.danmuCount},#{item.statsDay}
 			)
 		</foreach>
 		on DUPLICATE key update
-		play_count = VALUES(play_count),like_count = VALUES(like_count),current_coin_count = VALUES(current_coin_count),focus_count = VALUES(focus_count),fans_count = VALUES(fans_count)
+		play_count = VALUES(play_count),like_count = VALUES(like_count),current_coin_count = VALUES(current_coin_count),focus_count = VALUES(focus_count),fans_count = VALUES(fans_count),
+		collect_count = VALUES(collect_count),comment_count = VALUES(comment_count),danmu_count = VALUES(danmu_count),stats_day = VALUES(stats_day)
 	</insert>
 
 	<!--根据UserId查询 -->
@@ -250,6 +333,18 @@
 			</if>
 			<if test="bean.fansCount != null">
 				fans_count = #{bean.fansCount},
+			</if>
+			<if test="bean.collectCount != null">
+				collect_count = #{bean.collectCount},
+			</if>
+			<if test="bean.commentCount != null">
+				comment_count = #{bean.commentCount},
+			</if>
+			<if test="bean.danmuCount != null">
+				danmu_count = #{bean.danmuCount},
+			</if>
+			<if test="bean.statsDay != null">
+				stats_day = #{bean.statsDay},
 			</if>
 		</set>
 		where user_id=#{userId}

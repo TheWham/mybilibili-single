@@ -217,15 +217,16 @@ public class RedisComponent {
         redisUtils.delete(Constants.REDIS_WEB_USER_INFO_KEY + userId);
     }
 
-    public void saveUserStatsInfo(String userId, Map<String, Integer> userStatsInfo) {
-        redisUtils.hmset(Constants.REDIS_WEB_USER_STATS_KEY + userId, userStatsInfo, Constants.REDIS_EXPIRE_TIME_ONE_MINUTE * Constants.LENGTH_30);
+    public void saveUserStatsInfo(String userId, Map<String, Integer> userStatsInfo, String date) {
+        redisUtils.hmset(Constants.REDIS_WEB_USER_STATS_KEY + date + ":" + userId, userStatsInfo, Constants.REDIS_EXPIRE_TIME_ONE_MINUTE * Constants.LENGTH_30);
     }
 
-    public void flashUserStatsExpire(String userId) {
-        redisUtils.expire(Constants.REDIS_WEB_USER_STATS_KEY + userId, Constants.REDIS_EXPIRE_TIME_ONE_MINUTE * Constants.LENGTH_30);
+    //设置过期时间为两天避免昨天数据过期
+    public void flashUserStatsExpire(String userId, String date) {
+        redisUtils.expire(Constants.REDIS_WEB_USER_STATS_KEY + date + ":" + userId, Constants.REDIS_EXPIRE_TIME_ONE_DAY * Constants.LENGTH_2);
     }
 
-    public HashMap<String, Integer> getUserStatsInfo(String userId) {
-        return (HashMap<String, Integer>) redisUtils.hmget(Constants.REDIS_WEB_USER_STATS_KEY + userId);
+    public HashMap<String, Integer> getUserStatsInfo(String userId, String date) {
+        return (HashMap<String, Integer>) redisUtils.hmget(Constants.REDIS_WEB_USER_STATS_KEY + date + ":" + userId);
     }
 }

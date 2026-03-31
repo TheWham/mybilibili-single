@@ -8,19 +8,14 @@ import com.easylive.entity.dto.UserInfoDTO;
 import com.easylive.entity.po.UserInfo;
 import com.easylive.entity.po.UserVideoAction;
 import com.easylive.entity.po.VideoInfo;
-import com.easylive.entity.query.UserActionQuery;
-import com.easylive.entity.query.UserFocusQuery;
-import com.easylive.entity.query.VideoInfoQuery;
+import com.easylive.entity.query.*;
 import com.easylive.entity.vo.*;
 import com.easylive.enums.PageSize;
 import com.easylive.enums.ResponseCodeEnum;
 import com.easylive.enums.UserActionTypeEnum;
 import com.easylive.enums.UserStatsRedisEnum;
 import com.easylive.exception.BusinessException;
-import com.easylive.service.UserFocusService;
-import com.easylive.service.UserInfoService;
-import com.easylive.service.UserVideoActionService;
-import com.easylive.service.VideoInfoService;
+import com.easylive.service.*;
 import jakarta.annotation.Resource;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -30,6 +25,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -47,6 +44,10 @@ public class UHomeController extends ABaseController{
     private RedisComponent redisComponent;
     @Resource
     private UserVideoActionService userVideoActionService;
+    @Resource
+    private VideoCommentService videoCommentService;
+    @Resource
+    private VideoDanmuService videoDanmuService;
 
     @RequestMapping("/loadVideoList")
     public ResponseVO loadVideoList(@NotEmpty String userId, Integer type, Integer pageNo, String videoName, Integer orderType)
@@ -80,42 +81,71 @@ public class UHomeController extends ABaseController{
 
     @RequestMapping("/getUserInfo")
     public ResponseVO getUserInfo(@NotEmpty String userId) {
+        // 获取基本信息
         UserInfo userInfoDb = userInfoService.getUserInfoByUserId(userId);
-
-        if (userInfoDb == null)
+        if (userInfoDb == null) {
             throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
 
-        //先查询redis
-        HashMap<String, Integer> statsMap = redisComponent.getUserStatsInfo(userId);
         UserInfoVO userInfoVO = BeanUtil.toBean(userInfoDb, UserInfoVO.class);
 
-        if (!userId.equals(getTokenUserInfo().getUserId())) {
-            Integer haveFocus = userFocusService.selectHaveFocus(getTokenUserInfo().getUserId(), userId);
+        TokenUserInfoDTO currentUser = getTokenUserInfo();
+        if (currentUser != null && !userId.equals(currentUser.getUserId())) {
+            Integer haveFocus = userFocusService.selectHaveFocus(currentUser.getUserId(), userId);
             userInfoVO.setHaveFocus(haveFocus);
         }
 
+        String formattedDate =  LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        // 尝试从 Redis 获取统计数据
+        Map<String, Integer> statsMap = redisComponent.getUserStatsInfo(userId, formattedDate);
+
         if (statsMap != null && !statsMap.isEmpty()) {
-            //刷新时间
-            redisComponent.flashUserStatsExpire(userId);
-            userInfoVO.setFocusCount(statsMap.get(UserStatsRedisEnum.USER_FOCUS.getField()));
-            userInfoVO.setFansCount(statsMap.get(UserStatsRedisEnum.USER_FANS.getField()));
-            userInfoVO.setLikeCount(statsMap.get(UserStatsRedisEnum.VIDEO_LIKE.getField()));
-            userInfoVO.setCurrentCoinCount(statsMap.get(UserStatsRedisEnum.USER_COIN.getField()));
-            userInfoVO.setPlayCount(statsMap.get(UserStatsRedisEnum.VIDEO_PLAY.getField()));
-            return getSuccessResponseVO(userInfoVO);
+            // 刷新过期时间
+            redisComponent.flashUserStatsExpire(userId, formattedDate);
+            fillStatsToVO(userInfoVO, statsMap);
+        } else {
+            // Redis 失效，从数据库聚合数据
+            userInfoService.setUserInHome(userInfoVO);
+            // 重新同步回 Redis
+            syncStatsToRedis(userId, userInfoVO);
         }
-
-        userInfoService.setUserInHome(userInfoVO);
-        //刷新redis
-        Map<String, Integer> userStatsMap = new HashMap<>(UserStatsRedisEnum.values().length);
-        userStatsMap.put(UserStatsRedisEnum.VIDEO_PLAY.getField(), userInfoVO.getCurrentCoinCount() == null ? 0 : userInfoVO.getPlayCount());
-        userStatsMap.put(UserStatsRedisEnum.USER_FANS.getField(), userInfoVO.getFansCount() == null ? 0 : userInfoVO.getFansCount());
-        userStatsMap.put(UserStatsRedisEnum.USER_FOCUS.getField(), userInfoVO.getFocusCount() == null ? 0 : userInfoVO.getFocusCount());
-        userStatsMap.put(UserStatsRedisEnum.USER_COIN.getField(), userInfoVO.getCurrentCoinCount() == null ? 0 : userInfoVO.getCurrentCoinCount());
-        userStatsMap.put(UserStatsRedisEnum.VIDEO_LIKE.getField(), userInfoVO.getLikeCount() == null ? 0 : userInfoVO.getLikeCount());
-        redisComponent.saveUserStatsInfo(userId, userStatsMap);
         return getSuccessResponseVO(userInfoVO);
+    }
 
+    /**
+     * 封装：从 Map 填充到 VO
+     */
+    private void fillStatsToVO(UserInfoVO vo, Map<String, Integer> map) {
+        vo.setFocusCount(map.getOrDefault(UserStatsRedisEnum.USER_FOCUS.getField(), 0));
+        vo.setFansCount(map.getOrDefault(UserStatsRedisEnum.USER_FANS.getField(), 0));
+        vo.setLikeCount(map.getOrDefault(UserStatsRedisEnum.VIDEO_LIKE.getField(), 0));
+        vo.setCurrentCoinCount(map.getOrDefault(UserStatsRedisEnum.USER_COIN.getField(), 0));
+        vo.setPlayCount(map.getOrDefault(UserStatsRedisEnum.VIDEO_PLAY.getField(), 0));
+    }
+
+    /**
+     * 封装：同步到 Redis
+     */
+    private void syncStatsToRedis(String userId, UserInfoVO vo) {
+        Map<String, Integer> map = new HashMap<>();
+        map.put(UserStatsRedisEnum.VIDEO_PLAY.getField(), Optional.ofNullable(vo.getPlayCount()).orElse(0));
+        map.put(UserStatsRedisEnum.USER_FANS.getField(), Optional.ofNullable(vo.getFansCount()).orElse(0));
+        map.put(UserStatsRedisEnum.USER_FOCUS.getField(), Optional.ofNullable(vo.getFocusCount()).orElse(0));
+        map.put(UserStatsRedisEnum.USER_COIN.getField(), Optional.ofNullable(vo.getCurrentCoinCount()).orElse(0));
+        map.put(UserStatsRedisEnum.VIDEO_LIKE.getField(), Optional.ofNullable(vo.getLikeCount()).orElse(0));
+
+        VideoCommentQuery videoCommentQuery = new VideoCommentQuery();
+        videoCommentQuery.setVideoUserId(userId);
+        Integer commentCount = videoCommentService.findCountByParam(videoCommentQuery);
+        map.put(UserStatsRedisEnum.USER_COMMENT_COUNT.getField(), Optional.ofNullable(commentCount).orElse(0));
+        VideoDanmuQuery videoDanmuQuery = new VideoDanmuQuery();
+        videoDanmuQuery.setVideoUserId(userId);
+        Integer danmuCount = videoDanmuService.findCountByParam(videoDanmuQuery);
+        map.put(UserStatsRedisEnum.VIDEO_DANMU.getField(), Optional.ofNullable(danmuCount).orElse(0));
+        //TODO 修改控制台用户数量逻辑
+        map.put(UserStatsRedisEnum.USER_COLLECT_COUNT.getField(), Optional.ofNullable(vo.getLikeCount()).orElse(0));
+        String formattedDate =  LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        redisComponent.saveUserStatsInfo(userId, map, formattedDate);
     }
 
     @RequestMapping("/updateUserInfo")

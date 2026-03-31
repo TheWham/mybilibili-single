@@ -391,7 +391,8 @@
 
 	<!--根据CommentId删除 -->
 	<delete id="deleteByCommentId">
-		delete from video_comment where comment_id=#{commentId}
+		delete from video_comment
+		where comment_id=#{commentId} or p_comment_id = #{commentId}
 	</delete>
 
 	<!--根据CommentId更新 -->

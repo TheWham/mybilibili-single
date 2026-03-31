@@ -58,7 +58,7 @@ public interface VideoDanmuService {
 	/**
 	 * 根据 DanmuId删除
 	 */
-	Integer deleteVideoDanmuByDanmuId(Integer danmuId);
+	Integer deleteVideoDanmuByDanmuId(Integer danmuId, Boolean isAdmin, String userId);
 
 	/**
 	 * 发送弹幕

@@ -98,7 +98,7 @@
 		SELECT
 		<include refid="base_column_list"/>
 		<if test="query.isQueryUserInfo">
-			,u.nick_name
+			,u.nick_name, vb.video_name
 		</if>
 		FROM video_danmu v
 		<if test="query.isQueryUserInfo">
@@ -301,7 +301,7 @@
 	<!--根据DanmuId查询 -->
 	<select id="selectByDanmuId" resultMap="base_result_map">
 		select <include refid="base_column_list"/>
-		from video_danmu where danmu_id=#{danmuId}
+		from video_danmu v where v.danmu_id=#{danmuId}
 	</select>
 
 	<!--根据DanmuId删除 -->

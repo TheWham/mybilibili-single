@@ -14,7 +14,7 @@ import com.easylive.exception.BusinessException;
 import com.easylive.service.*;
 import jakarta.annotation.Resource;
 import jakarta.validation.constraints.NotEmpty;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,9 +34,11 @@ public class UCenterController extends ABaseController{
     private VideoInfoService videoInfoService;
     @Resource
     private VideoCommentService videoCommentService;
-    @Autowired
     @Resource
     private VideoDanmuService videoDanmuService;
+    @Resource
+    private UserInfoService userInfoService;
+
 
     //getVideoCountInfo
     @RequestMapping("loadVideoList")
@@ -158,6 +160,27 @@ public class UCenterController extends ABaseController{
         PaginationResultVO<VideoDanmu> list = videoDanmuService.findListByPage(videoDanmuQuery);
         return getSuccessResponseVO(list);
     }
+    @RequestMapping("/delComment")
+    public ResponseVO delComment(@NotNull Integer commentId)
+    {
+        videoCommentService.deleteByCommentId(commentId, false, getTokenUserInfo().getUserId());
+        return getSuccessResponseVO(null);
+    }
+
+    @RequestMapping("/delDanmu")
+    public ResponseVO delDanmu(@NotNull Integer danmuId)
+    {
+        videoDanmuService.deleteVideoDanmuByDanmuId(danmuId, false, getTokenUserInfo().getUserId());
+        return getSuccessResponseVO(null);
+    }
+
+    @RequestMapping("/getActualTimeStatisticsInfo")
+    public ResponseVO getActualTimeStatisticsInfo()
+    {
+        userInfoService.getActualTimeStatisticsInfo(getTokenUserInfo().getUserId());
+        return getSuccessResponseVO(null);
+    }
+
 
 }
 

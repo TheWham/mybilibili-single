@@ -6,6 +6,7 @@ import com.easylive.entity.dto.WebLoginDTO;
 import com.easylive.entity.po.UserInfo;
 import com.easylive.entity.query.UserInfoQuery;
 import com.easylive.entity.vo.PaginationResultVO;
+import com.easylive.entity.vo.UCenterVideoDateVO;
 import com.easylive.entity.vo.UserCountVO;
 import com.easylive.entity.vo.UserInfoVO;
 import com.easylive.exception.BusinessException;
@@ -122,4 +123,6 @@ public interface UserInfoService {
 
 
 	UserCountVO getUserCountInfo(String userId);
+
+    UCenterVideoDateVO getActualTimeStatisticsInfo(String userId);
 }

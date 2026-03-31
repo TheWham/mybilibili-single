@@ -21,6 +21,7 @@ import com.easylive.mappers.VideoInfoFileMapper;
 import com.easylive.mappers.VideoInfoFilePostMapper;
 import com.easylive.mappers.VideoInfoMapper;
 import com.easylive.mappers.VideoInfoPostMapper;
+import com.easylive.service.VideoEsService;
 import com.easylive.service.VideoInfoService;
 import jakarta.annotation.Resource;
 import org.apache.commons.io.FileUtils;
@@ -55,7 +56,8 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 	private RedisComponent redisComponent;
 	@Resource
 	private AdminConfig adminConfig;
-
+	@Resource
+	private VideoEsService videoEsService;
 
 	/**
 	 * @description 根据条件查询
@@ -200,8 +202,8 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 		}
 		//清空缓存
 		redisComponent.cleanDelFilePaths(videoId);
-
-		//TODO 将发布信息存入es
+		//保存到es
+		videoEsService.saveDoc(videoInfo);
 
 	}
 

@@ -72,4 +72,11 @@ public class VideoCommentController extends ABaseController {
 		return getSuccessResponseVO(videoComment);
 	}
 
+	@RequestMapping("/userDelComment")
+	public ResponseVO userDelComment(@NotNull Integer commentId)
+	{
+		 videoCommentService.deleteByCommentId(commentId, false, getTokenUserInfo().getUserId());
+		 return getSuccessResponseVO(null);
+	}
+
 }

@@ -59,4 +59,6 @@ public interface VideoCommentService {
 	VideoCommentVO loadComment(String videoId, Integer pageNo, Integer orderType, TokenUserInfoDTO tokenUserInfoDTO);
 
 	List<VideoComment> loadCommentUCenter(VideoCommentQuery videoCommentQuery);
+
+	Integer deleteByCommentId(Integer commentId, Boolean isAdmin, String userId);
 }

@@ -48,11 +48,11 @@ public class UserStatsCacheListener {
             public Object execute(RedisOperations operations) {
 
                 switch (typeEnum) {
-                    case USER_FOCUS -> handleFocusCache(isMyKeyExist, isUpKeyExist,myKey, upKey, typeEnum.getField(), count, operations);
+                    case USER_FOCUS -> handleFocusCache(myKey, upKey, typeEnum.getField(), count, operations);
 
-                    case USER_COIN  -> handleCoinCache(isMyKeyExist, isUpKeyExist,myKey, upKey, typeEnum.getField(), count, operations);
+                    case USER_COIN  -> handleCoinCache(myKey, upKey, typeEnum.getField(), count, operations);
 
-                    case VIDEO_LIKE -> handleVideoLikeCache(isMyKeyExist, myKey, typeEnum.getField(), count, operations);
+                    case VIDEO_LIKE -> handleVideoLikeCache(myKey, typeEnum.getField(), count, operations);
 
                     default -> throw new IllegalStateException("未知的操作类型: " + typeEnum);
                 }
@@ -62,30 +62,27 @@ public class UserStatsCacheListener {
         });
         }
 
-    private void handleFocusCache(boolean isMyKeyExist, boolean isUpKeyExist, String myKey, String upKey, String field, Integer count, RedisOperations operations)
+    private void handleFocusCache(String myKey, String upKey, String field, Integer count, RedisOperations operations)
     {
         //操作关注数
-        if (isMyKeyExist) {
-            operations.opsForHash().increment(myKey, field, count);
-        }
-        if (isUpKeyExist) {
-            operations.opsForHash().increment(upKey, UserStatsRedisEnum.USER_FANS.getField(), count);
-        }
+
+        operations.opsForHash().increment(myKey, field, count);
+
+        operations.opsForHash().increment(upKey, UserStatsRedisEnum.USER_FANS.getField(), count);
     }
 
-    private void handleCoinCache(boolean isMyKeyExist, boolean isUpKeyExist, String myKey, String upKey, String field, Integer count, RedisOperations operations)
+    private void handleCoinCache(String myKey, String upKey, String field, Integer count, RedisOperations operations)
     {
         //操作硬币
-        if (isMyKeyExist)
-            operations.opsForHash().increment(myKey, field, -count);
-        if (isUpKeyExist)
-            operations.opsForHash().increment(upKey, field, count);
+
+        operations.opsForHash().increment(myKey, field, -count);
+
+        operations.opsForHash().increment(upKey, field, count);
     }
 
-    private void handleVideoLikeCache(boolean isMyKeyExist, String myKey,String field, Integer count, RedisOperations operations)
+    private void handleVideoLikeCache(String myKey,String field, Integer count, RedisOperations operations)
     {
         //操作视频点赞
-        if (isMyKeyExist)
-            operations.opsForHash().increment(myKey, field, count);
+        operations.opsForHash().increment(myKey, field, count);
     }
 }

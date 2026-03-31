@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -121,7 +122,27 @@ public class VideoDanmuServiceImpl implements VideoDanmuService {
 	 * 根据 DanmuId删除
 	 */
 	@Override
-	public Integer deleteVideoDanmuByDanmuId(Integer danmuId) {
+	@Transactional(rollbackFor = Exception.class)
+	public Integer deleteVideoDanmuByDanmuId(Integer danmuId, Boolean isAdmin, String userId) {
+		// 1. 校验弹幕是否存在（保命符，防止后面逻辑崩掉）
+		VideoDanmu danmu = Optional.ofNullable(videoDanmuMapper.selectByDanmuId(danmuId))
+				.orElseThrow(() -> new BusinessException(ResponseCodeEnum.CODE_600));
+
+		// 2. 权限判定（利用短路逻辑优化性能）
+		// 如果是管理员，或者是弹幕作者，直接通过，不查视频表
+		boolean canDirectDelete = Boolean.TRUE.equals(isAdmin) || danmu.getUserId().equals(userId);
+
+		if (!canDirectDelete) {
+			// 查视频表看是不是 UP 主
+			VideoInfo videoInfo = Optional.ofNullable(videoInfoMapper.selectByVideoId(danmu.getVideoId()))
+					.orElseThrow(() -> new BusinessException(ResponseCodeEnum.CODE_600));
+
+			if (!videoInfo.getUserId().equals(userId)) {
+				throw new BusinessException(ResponseCodeEnum.CODE_600);
+			}
+		}
+
+		// 3. 执行删除并返回结果
 		return this.videoDanmuMapper.deleteByDanmuId(danmuId);
 	}
 

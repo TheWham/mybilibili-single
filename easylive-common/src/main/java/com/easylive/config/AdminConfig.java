@@ -18,6 +18,20 @@ public class AdminConfig {
     @Value("${showFFmpegLog:true}")
     private Boolean showFFmpegLog;
 
+    @Value("${es.index.video.name:easylive_video}")
+    private String esIndexVideoName;
+
+    @Value("${es.host.port:127.0.0.1:9201}")
+    private String esHostPort;
+
+    public String getEsIndexVideoName() {
+        return esIndexVideoName;
+    }
+
+    public String getEsHostPort() {
+        return esHostPort;
+    }
+
     public Boolean getShowFFmpegLog() {
         return showFFmpegLog;
     }

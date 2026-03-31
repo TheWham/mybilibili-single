@@ -13,7 +13,7 @@ public class SysSettingDTO implements Serializable {
 
     private Integer registerCoinCount = 10;
     private Integer postVideoCoinCount = 5;
-    private Integer videoSize = 5;
+    private Integer videoSize = 10;
     private Integer videoPCount = 10;
     private Integer videoCount = 10;
     private Integer commentCount = 20;
