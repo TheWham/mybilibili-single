@@ -5,6 +5,7 @@ import com.easylive.constants.Constants;
 import com.easylive.entity.dto.SysSettingDTO;
 import com.easylive.entity.dto.TokenUserInfoDTO;
 import com.easylive.entity.dto.UploadingFileDTO;
+import com.easylive.entity.dto.UserActionSyncDTO;
 import com.easylive.entity.po.CategoryInfo;
 import com.easylive.entity.po.VideoInfoFilePost;
 import com.easylive.entity.vo.UserInfoVO;
@@ -218,7 +219,8 @@ public class RedisComponent {
     }
 
     public void saveUserStatsInfo(String userId, Map<String, Integer> userStatsInfo, String date) {
-        redisUtils.hmset(Constants.REDIS_WEB_USER_STATS_KEY + date + ":" + userId, userStatsInfo, Constants.REDIS_EXPIRE_TIME_ONE_MINUTE * Constants.LENGTH_30);
+        Map<String, Object> statsMap = new HashMap<>(userStatsInfo);
+        redisUtils.hmset(Constants.REDIS_WEB_USER_STATS_KEY + date + ":" + userId, statsMap, Constants.REDIS_EXPIRE_TIME_ONE_DAY * Constants.LENGTH_2);
     }
 
     //设置过期时间为两天避免昨天数据过期
@@ -228,5 +230,96 @@ public class RedisComponent {
 
     public HashMap<String, Integer> getUserStatsInfo(String userId, String date) {
         return (HashMap<String, Integer>) redisUtils.hmget(Constants.REDIS_WEB_USER_STATS_KEY + date + ":" + userId);
+    }
+
+    public void saveVideoActionStatus(String userId, String videoId, Integer actionType, Integer actionCount) {
+        redisUtils.set(buildVideoActionStatusKey(userId, videoId, actionType), actionCount);
+    }
+
+    public boolean hasVideoActionStatus(String userId, String videoId, Integer actionType) {
+        return redisUtils.keyExists(buildVideoActionStatusKey(userId, videoId, actionType));
+    }
+
+    public void removeVideoActionStatus(String userId, String videoId, Integer actionType) {
+        redisUtils.delete(buildVideoActionStatusKey(userId, videoId, actionType));
+    }
+
+    public void saveCommentActionStatus(String userId, Integer commentId, Integer actionType) {
+        redisUtils.set(buildCommentActionStatusKey(userId, commentId), actionType);
+    }
+
+    public Integer getCommentActionStatus(String userId, Integer commentId) {
+        Object value = redisUtils.get(buildCommentActionStatusKey(userId, commentId));
+        if (value == null) {
+            return null;
+        }
+        return Integer.parseInt(value.toString());
+    }
+
+    public void removeCommentActionStatus(String userId, Integer commentId) {
+        redisUtils.delete(buildCommentActionStatusKey(userId, commentId));
+    }
+
+    public void addUserActionQueue(String queueKey, UserActionSyncDTO actionSyncDTO) {
+        redisUtils.lpush(queueKey, actionSyncDTO, 0L);
+    }
+
+    public UserActionSyncDTO getNextUserActionQueue(String queueKey) {
+        return (UserActionSyncDTO) redisUtils.rpop(queueKey);
+    }
+
+    public Long incrementUserStats(String userId, String field, long count) {
+        String key = Constants.REDIS_WEB_USER_STATS_KEY + userId;
+        Long value = redisUtils.hincr(key, field, count);
+        redisUtils.expire(key, Constants.REDIS_EXPIRE_TIME_ONE_DAY * Constants.REDIS_USER_STATS_CACHE_TTL_DAYS);
+        return value;
+    }
+
+    public Integer getUserStatsValue(String userId, String field) {
+        Object value = redisUtils.hget(Constants.REDIS_WEB_USER_STATS_KEY + userId, field);
+        if (value == null) {
+            return null;
+        }
+        return Integer.parseInt(value.toString());
+    }
+
+    public void setUserStatsValue(String userId, String field, Integer value) {
+        Map<String, Object> statsMap = new HashMap<>();
+        statsMap.put(field, value);
+        redisUtils.hmset(Constants.REDIS_WEB_USER_STATS_KEY + userId, statsMap, Constants.REDIS_EXPIRE_TIME_ONE_DAY * Constants.REDIS_USER_STATS_CACHE_TTL_DAYS);
+    }
+
+    public void saveRealtimeUserStatsInfo(String userId, Map<String, Integer> userStatsInfo) {
+        Map<String, Object> statsMap = new HashMap<>(userStatsInfo);
+        redisUtils.hmset(Constants.REDIS_WEB_USER_STATS_KEY + userId, statsMap, Constants.REDIS_EXPIRE_TIME_ONE_DAY * Constants.REDIS_USER_STATS_CACHE_TTL_DAYS);
+    }
+
+    public HashMap<String, Integer> getRealtimeUserStatsInfo(String userId) {
+        return (HashMap<String, Integer>) redisUtils.hmget(Constants.REDIS_WEB_USER_STATS_KEY + userId);
+    }
+
+    public void refreshRealtimeUserStatsExpire(String userId) {
+        redisUtils.expire(Constants.REDIS_WEB_USER_STATS_KEY + userId, Constants.REDIS_EXPIRE_TIME_ONE_DAY * Constants.REDIS_USER_STATS_CACHE_TTL_DAYS);
+    }
+
+    public void saveUserStatsSnapshot(String userId, String statsDay, Map<String, Integer> userStatsInfo) {
+        Map<String, Object> statsMap = new HashMap<>(userStatsInfo);
+        redisUtils.hmset(Constants.REDIS_WEB_USER_STATS_SNAPSHOT_KEY + statsDay + ":" + userId, statsMap, Constants.REDIS_EXPIRE_TIME_ONE_DAY * Constants.LENGTH_2);
+    }
+
+    public HashMap<String, Integer> getUserStatsSnapshot(String userId, String statsDay) {
+        return (HashMap<String, Integer>) redisUtils.hmget(Constants.REDIS_WEB_USER_STATS_SNAPSHOT_KEY + statsDay + ":" + userId);
+    }
+
+    public Set<String> getUserStatsSnapshotKeys(String statsDay) {
+        return redisUtils.getByKeyPrefix(Constants.REDIS_WEB_USER_STATS_SNAPSHOT_KEY + statsDay + ":");
+    }
+
+    private String buildVideoActionStatusKey(String userId, String videoId, Integer actionType) {
+        return Constants.REDIS_WEB_ACTION_VIDEO_STATUS_KEY + userId + ":" + videoId + ":" + actionType;
+    }
+
+    private String buildCommentActionStatusKey(String userId, Integer commentId) {
+        return Constants.REDIS_WEB_ACTION_COMMENT_STATUS_KEY + userId + ":" + commentId;
     }
 }

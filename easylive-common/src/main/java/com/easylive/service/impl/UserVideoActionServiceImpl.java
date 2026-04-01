@@ -137,4 +137,9 @@ public class UserVideoActionServiceImpl implements UserVideoActionService {
 		return userVideoActionMapper.selectActionTypeList(actionQuery);
 	}
 
+	@Override
+	public Integer sumCoinCount(String userId) {
+		return userVideoActionMapper.sumCoinCount(userId);
+	}
+
 }

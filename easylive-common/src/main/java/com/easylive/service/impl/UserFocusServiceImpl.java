@@ -1,22 +1,17 @@
 package com.easylive.service.impl;
 
+import com.easylive.component.RedisComponent;
 import com.easylive.constants.Constants;
-import com.easylive.entity.event.UserStatsChangeEvent;
 import com.easylive.entity.po.UserFocus;
-import com.easylive.entity.po.UserStats;
 import com.easylive.entity.query.SimplePage;
 import com.easylive.entity.query.UserFocusQuery;
-import com.easylive.entity.query.UserStatsQuery;
 import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.enums.PageSize;
-import com.easylive.enums.UserActionTypeEnum;
 import com.easylive.enums.UserStatsRedisEnum;
 import com.easylive.exception.BusinessException;
 import com.easylive.mappers.UserFocusMapper;
-import com.easylive.mappers.UserStatsMapper;
 import com.easylive.service.UserFocusService;
 import jakarta.annotation.Resource;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,10 +29,8 @@ import java.util.List;
 public class UserFocusServiceImpl implements UserFocusService {
 	@Resource
 	private UserFocusMapper<UserFocus, UserFocusQuery> userFocusMapper;
-    @Resource
-	private UserStatsMapper<UserStats, UserStatsQuery> userStatsMapper;
 	@Resource
-	private ApplicationEventPublisher eventPublisher;
+	private RedisComponent redisComponent;
 
 	/**
 	 * 根据条件查询
@@ -128,7 +121,6 @@ public class UserFocusServiceImpl implements UserFocusService {
 	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public void focus(String focusUserId, String userId) {
-		//查询是否关注已关注 则取消
 		UserFocus userFocus = new UserFocus();
 		userFocus.setFocusTime(new Date());
 		userFocus.setUserId(userId);
@@ -139,10 +131,8 @@ public class UserFocusServiceImpl implements UserFocusService {
 			//插入失败表示已经关注
 			throw new BusinessException("不能重复关注");
 		}
-		userStatsMapper.insertOrUpdateCount(userId, UserActionTypeEnum.USER_FOCUS.getField(), Constants.ONE);
-		userStatsMapper.insertOrUpdateCount(focusUserId, UserActionTypeEnum.USER_FANS.getField(), Constants.ONE);
-		//同步redis
-		eventPublisher.publishEvent(new UserStatsChangeEvent(this, userId, focusUserId, Constants.ONE, UserStatsRedisEnum.USER_FOCUS));
+		redisComponent.incrementUserStats(userId, UserStatsRedisEnum.USER_FOCUS.getField(), Constants.ONE);
+		redisComponent.incrementUserStats(focusUserId, UserStatsRedisEnum.USER_FANS.getField(), Constants.ONE);
 	}
 
 	@Override
@@ -152,10 +142,8 @@ public class UserFocusServiceImpl implements UserFocusService {
 		Integer count = userFocusMapper.deleteByUserIdAndUserFocusId(userId, focusUserId);
 		if (count == 0)
 			throw new BusinessException("取关失败");
-		userStatsMapper.insertOrUpdateCount(userId, UserActionTypeEnum.USER_FOCUS.getField(), -Constants.ONE);
-		userStatsMapper.insertOrUpdateCount(focusUserId, UserActionTypeEnum.USER_FANS.getField(), -Constants.ONE);
-		//同步redis
-		eventPublisher.publishEvent(new UserStatsChangeEvent(this, userId, focusUserId, -Constants.ONE, UserStatsRedisEnum.USER_FOCUS));
+		redisComponent.incrementUserStats(userId, UserStatsRedisEnum.USER_FOCUS.getField(), -Constants.ONE);
+		redisComponent.incrementUserStats(focusUserId, UserStatsRedisEnum.USER_FANS.getField(), -Constants.ONE);
 	}
 
 	@Override

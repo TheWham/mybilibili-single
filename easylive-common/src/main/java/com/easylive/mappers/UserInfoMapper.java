@@ -1,7 +1,9 @@
 package com.easylive.mappers;
 
-import com.easylive.entity.vo.UserCountVO;
+import com.easylive.entity.dto.UserCoinCountUpdateDTO;
 import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * @author amani
@@ -62,5 +64,5 @@ public interface UserInfoMapper<T, R> extends BaseMapper {
 
     Integer selectTotalCoinCount(@Param("userId") String userId);
 
-	UserCountVO selectUserCountInfo(@Param("userId") String userId);
+    Integer updateCountBatch(@Param("list") List<UserCoinCountUpdateDTO> updateList);
 }

@@ -41,5 +41,21 @@ public class StringTools {
         return suffix;
     }
 
+    public static String upperCaseFirstLetter(String str) {
+        // 判空保护，许皇您在工作中一定要养成这个习惯
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
+
+        // 如果首字母已经是大写，直接返回原字符串，减少不必要的内存分配
+        if (Character.isUpperCase(str.charAt(0))) {
+            return str;
+        }
+
+        return new StringBuilder(str.length())
+                .append(Character.toUpperCase(str.charAt(0)))
+                .append(str.substring(1))
+                .toString();
+    }
 
 }

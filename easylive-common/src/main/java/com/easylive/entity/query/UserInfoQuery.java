@@ -92,6 +92,15 @@ public class UserInfoQuery extends BaseQuery {
 	 */
 	private Integer theme;
 	private String avatar;
+	private String avatarFuzzy;
+
+	public String getAvatarFuzzy() {
+		return avatarFuzzy;
+	}
+
+	public void setAvatarFuzzy(String avatarFuzzy) {
+		this.avatarFuzzy = avatarFuzzy;
+	}
 
 	public String getAvatar() {
 		return avatar;

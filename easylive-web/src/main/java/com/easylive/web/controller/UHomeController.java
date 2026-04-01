@@ -136,13 +136,18 @@ public class UHomeController extends ABaseController{
 
         VideoCommentQuery videoCommentQuery = new VideoCommentQuery();
         videoCommentQuery.setVideoUserId(userId);
+        //添加评论数量
         Integer commentCount = videoCommentService.findCountByParam(videoCommentQuery);
         map.put(UserStatsRedisEnum.USER_COMMENT_COUNT.getField(), Optional.ofNullable(commentCount).orElse(0));
         VideoDanmuQuery videoDanmuQuery = new VideoDanmuQuery();
         videoDanmuQuery.setVideoUserId(userId);
+        //添加弹幕数量
         Integer danmuCount = videoDanmuService.findCountByParam(videoDanmuQuery);
         map.put(UserStatsRedisEnum.VIDEO_DANMU.getField(), Optional.ofNullable(danmuCount).orElse(0));
-        //TODO 修改控制台用户数量逻辑
+        //添加用户投币数量
+        Integer coinCount = userVideoActionService.sumCoinCount(userId);
+        map.put(UserStatsRedisEnum.VIDEO_COIN.getField(), Optional.ofNullable(coinCount).orElse(0));
+        //查询收藏
         map.put(UserStatsRedisEnum.USER_COLLECT_COUNT.getField(), Optional.ofNullable(vo.getLikeCount()).orElse(0));
         String formattedDate =  LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         redisComponent.saveUserStatsInfo(userId, map, formattedDate);

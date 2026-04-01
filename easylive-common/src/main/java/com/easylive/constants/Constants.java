@@ -42,6 +42,7 @@ public class Constants {
     public static final String REDIS_WEB_UPLOADING_FILE_INFO_KEY = REDIS_PREFIX + "uploadFileInfo:";
     public static final Long MB_SIZE = 1024 * 1024L;
     public static final String REDIS_SYS_SETTING_KEY = REDIS_PREFIX + "sysSetting:";
+    //消息队列
 
     public static final String REDIS_WEB_ADD_DEL_QUEUE_KEY = REDIS_PREFIX + "queue:del:file:list:";
     public static final Integer LENGTH_20 = 20;
@@ -52,6 +53,14 @@ public class Constants {
     public static final String FILE_VIDEO_TEMP_SUFFIX = "_temp";
     public static final String TS_NAME = "index.ts";
     public static final String M3U8_NAME = "index.m3u8";
+
+    public static final String REDIS_WEB_ACTION_VIDEO_COMMENT_QUEUE_KEY = REDIS_PREFIX + "queue:action:video:comment:list:";
+    public static final String REDIS_WEB_ACTION_VIDEO_COIN_QUEUE_KEY = REDIS_PREFIX + "queue:action:video:coin:list:";
+    public static final String REDIS_WEB_ACTION_VIDEO_COLLECT_QUEUE_KEY = REDIS_PREFIX + "queue:action:video:collect:list:";
+    public static final String REDIS_WEB_ACTION_VIDEO_LIKE_QUEUE_KEY = REDIS_PREFIX + "queue:action:video:like:list:";
+    public static final String REDIS_WEB_ACTION_VIDEO_STATUS_KEY = REDIS_PREFIX + "action:video:status:";
+    public static final String REDIS_WEB_ACTION_COMMENT_STATUS_KEY = REDIS_PREFIX + "action:comment:status:";
+
 
     //在线播放人数
 
@@ -66,5 +75,7 @@ public class Constants {
 
     public static final String REDIS_WEB_USER_INFO_KEY = REDIS_PREFIX + "web:userInfo:showVO:";
     public static final String REDIS_WEB_USER_STATS_KEY = REDIS_PREFIX + "web:userInfo:stats:";
+    public static final String REDIS_WEB_USER_STATS_SNAPSHOT_KEY = REDIS_PREFIX + "web:userInfo:stats:snapshot:";
+    public static final Integer REDIS_USER_STATS_CACHE_TTL_DAYS = 15;
 }
 

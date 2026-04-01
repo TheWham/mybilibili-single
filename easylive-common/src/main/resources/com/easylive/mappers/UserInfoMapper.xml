@@ -154,7 +154,7 @@
 			and notice_info like concat('%', #{query.noticeInfoFuzzy}, '%')
 		</if>
 		<if test="query.avatarFuzzy != null and query.avatarFuzzy != ''" >
-			and notice_info like concat('%', #{query.avatarFuzzy}, '%')
+			and avatar like concat('%', #{query.avatarFuzzy}, '%')
 		</if>
 	</sql>
 
@@ -617,10 +617,6 @@
 		SELECT total_coin_count from user_info where user_id = #{userId}
 	</select>
 
-	<select id="selectUserCountInfo" resultType="com.easylive.entity.vo.UserCountVO">
-		select
-	</select>
-
 	<!--根据NickName删除 -->
 	<delete id="deleteByNickName">
 		delete from user_info where nick_name=#{nickName}
@@ -694,5 +690,24 @@
 		where current_coin_count + #{coinCount} >= 0 and user_id=#{userId}
 	</update>
 
+	<update id="updateCountBatch">
+		update user_info
+		set total_coin_count =
+		case user_id
+		<foreach collection="list" item="item">
+			when #{item.userId} then total_coin_count + #{item.totalCoinCount}
+		</foreach>
+		end,
+		current_coin_count =
+		case user_id
+		<foreach collection="list" item="item">
+			when #{item.userId} then current_coin_count + #{item.currentCoinCount}
+		</foreach>
+		end
+		where user_id in
+		<foreach collection="list" item="item" open="(" separator="," close=")">
+			#{item.userId}
+		</foreach>
+	</update>
 
 </mapper>

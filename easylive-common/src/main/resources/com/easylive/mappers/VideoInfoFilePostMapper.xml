@@ -434,6 +434,12 @@
 		</where>
 	</delete>
 
+	<delete id="delBatchByIds">
+		delete from video_info_file_post
+		where file_id in(<foreach separator="," collection="fileIds" item="item">#{item}</foreach>)
+		and user_id=#{userId}
+	</delete>
+
     <!--根据UploadIdAndUserIdAnd更新 -->
 	<update id="updateByUploadIdAndUserId" parameterType="com.easylive.entity.po.VideoInfoFilePost">
 		update video_info_file_post

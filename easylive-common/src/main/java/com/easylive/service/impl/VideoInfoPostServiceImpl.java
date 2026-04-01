@@ -149,6 +149,7 @@ public class VideoInfoPostServiceImpl implements VideoInfoPostService {
 
 		if (uploadFilesInfo == null || uploadFilesInfo.size() > redisComponent.getSysSetting().getVideoCount())
 			throw new BusinessException(ResponseCodeEnum.CODE_600);
+
 		//删除列表
 		List<VideoInfoFilePost> deleteList = new ArrayList<>();
 		//新增列表
@@ -182,10 +183,19 @@ public class VideoInfoPostServiceImpl implements VideoInfoPostService {
 				VideoInfoFilePost isInDb = videoInfoFileReflect.get(filePost.getUploadId());
 				//在修改视频文件列表中找出被删除了视频文件
 				if (isInDb == null)
-					deleteList.add(isInDb);
+				{
+					deleteList.add(filePost);
+					continue;
+				}
+
 				//判断是否有文件名改变
-				if (!isInDb.getFileName().equals(filePost.getFileName()))
+				if (isInDb != null && !isInDb.getFileName().equals(videoInfoFileReflect.get(isInDb.getUploadId()).getFileName()))
+				{
 					isUpdateFileName = true;
+				}
+				isInDb.setUpdateType(filePost.getUpdateType());
+				isInDb.setTransferResult(filePost.getTransferResult());
+				isInDb.setDuration(filePost.getDuration());
 			}
 			//判断是否改变了文件信息
 			Boolean changeVideoInfoPost = isChangeVideoInfoPost(videoInfoPostDTO);
@@ -234,7 +244,7 @@ public class VideoInfoPostServiceImpl implements VideoInfoPostService {
 		if (deleteList != null && !deleteList.isEmpty())
 		{
 			List<String> deleteListIds = deleteList.stream().map(VideoInfoFilePost::getFileId).collect(Collectors.toList());
-			videoInfoPostMapper.delBatchByIds(deleteListIds, userId);
+			videoInfoFilePostMapper.delBatchByIds(deleteListIds, userId);
 			List<String> filePathList = deleteList.stream().map(VideoInfoFilePost::getFilePath).toList();
 			redisComponent.addFileList2DelQueue(videoID, filePathList);
 		}

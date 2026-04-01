@@ -204,7 +204,6 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 		redisComponent.cleanDelFilePaths(videoId);
 		//保存到es
 		videoEsService.saveDoc(videoInfo);
-
 	}
 
 	@Override

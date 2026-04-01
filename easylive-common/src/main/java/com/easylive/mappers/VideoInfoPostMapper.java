@@ -2,8 +2,6 @@ package com.easylive.mappers;
 
 import org.apache.ibatis.annotations.Param;
 
-import java.util.List;
-
 /**
  * @author amani
  * @date 2026/02/13
@@ -26,7 +24,6 @@ public interface VideoInfoPostMapper<T, R> extends BaseMapper {
 	 */
 	Integer deleteByVideoId(@Param("videoId") String videoId);
 
-	void delBatchByIds(@Param("fileIds") List<String> deleteList,@Param("userId") String userId);
 
     Integer updateByCondition(@Param("bean")T updateInfoPost,@Param("query") R postQuery);
 }

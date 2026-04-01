@@ -300,7 +300,11 @@
 	<select id="selectActionTypeList" resultMap="action_type_map">
 		select v.action_type from user_video_action v <include refid="query_condition"/>
 	</select>
-
+	<select id="sumCoinCount" resultType="java.lang.Integer">
+		SELECT IFNULL(SUM(action_count), 0)
+		FROM user_video_action
+		WHERE video_user_id = #{videoUserId}
+	</select>
 	<!--根据VideoIdAndActionTypeAndUserIdAnd删除 -->
 	<delete id="deleteByVideoIdAndActionTypeAndUserId">
 		delete from user_video_action v

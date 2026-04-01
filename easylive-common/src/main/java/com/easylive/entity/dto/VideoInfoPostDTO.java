@@ -26,6 +26,33 @@ public class VideoInfoPostDTO {
     private String uploadFileList;
     private String userId;
     private String videoId;
+    private Integer transferResult;
+    private Integer updateType;
+    private Integer duration;
+
+    public Integer getTransferResult() {
+        return transferResult;
+    }
+
+    public void setTransferResult(Integer transferResult) {
+        this.transferResult = transferResult;
+    }
+
+    public Integer getUpdateType() {
+        return updateType;
+    }
+
+    public void setUpdateType(Integer updateType) {
+        this.updateType = updateType;
+    }
+
+    public Integer getDuration() {
+        return duration;
+    }
+
+    public void setDuration(Integer duration) {
+        this.duration = duration;
+    }
 
     public String getUserId() {
         return userId;

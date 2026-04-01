@@ -10,14 +10,15 @@ public enum UserStatsRedisEnum {
     // 视频播放量枚举值
     VIDEO_PLAY(1, "playCount", "视频播放量"),
     VIDEO_DANMU(2, "danmuCount", "弹幕数量"),
+    VIDEO_COIN(3, "coinCount","投币数量"),
     //关注数量枚举
-    USER_FOCUS(3, "focusCount", "用户关注数量"),
+    USER_FOCUS(4, "focusCount", "用户关注数量"),
     //粉丝数量枚举
-    USER_FANS(4, "fansCount", "用户粉丝数量"),
+    USER_FANS(5, "fansCount", "用户粉丝数量"),
     // 用户硬币数量枚举值
-    USER_COIN(5, "currentCoinCount", "用户硬币数量"),
-    USER_COMMENT_COUNT(6, "commentCount", "用户评论量"),
-    USER_COLLECT_COUNT(7,"collectCount", "用户收藏量");
+    USER_COIN(6, "currentCoinCount", "用户硬币数量"),
+    USER_COMMENT_COUNT(7, "commentCount", "用户评论量"),
+    USER_COLLECT_COUNT(8,"collectCount", "用户收藏量");
 
     // 用户行为类型
     private Integer type;
