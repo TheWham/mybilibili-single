@@ -774,5 +774,22 @@
 		where video_id=#{videoId}
 	</update>
 
+	<update id="updateCountBatch">
+		update video_info
+		set ${field} =
+		case video_id
+			<foreach collection="list" item="item">
+				when #{item.videoId} then ${field} + #{item.count}
+			</foreach>
+		end
+		<if test="field=='play_count'">
+			,last_play_time = now()
+		</if>
+		where video_id in
+		<foreach collection="list" item="item" open="(" separator="," close=")">
+			#{item.videoId}
+		</foreach>
+	</update>
+
 
 </mapper>

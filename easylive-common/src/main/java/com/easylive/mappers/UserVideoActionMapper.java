@@ -43,4 +43,6 @@ public interface UserVideoActionMapper<T, R> extends BaseMapper {
 	Integer insertIgnore(@Param("bean") T t);
 
 	List<UserActionVO> selectActionTypeList(@Param("query") R actionQuery);
+
+    Integer sumCoinCount(@Param("videoUserId") String videoUserId);
 }

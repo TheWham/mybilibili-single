@@ -77,4 +77,6 @@ public interface UserVideoActionService {
 	 * @return 符合所有action类型
 	 */
 	List<UserActionVO> getUserActionTypeList(UserActionQuery actionQuery);
+
+    Integer sumCoinCount(String userId);
 }

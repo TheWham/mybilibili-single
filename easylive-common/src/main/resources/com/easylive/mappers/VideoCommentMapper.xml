@@ -445,5 +445,25 @@
 		where comment_id = #{commentId}
 	</update>
 
+	<update id="updateCountBatch">
+		update video_comment
+		set like_count =
+		case comment_id
+			<foreach collection="list" item="item">
+				when #{item.commentId} then like_count + #{item.likeDiff}
+			</foreach>
+		end,
+		hate_count =
+		case comment_id
+			<foreach collection="list" item="item">
+				when #{item.commentId} then hate_count + #{item.hateDiff}
+			</foreach>
+		end
+		where comment_id in
+		<foreach collection="list" item="item" open="(" separator="," close=")">
+			#{item.commentId}
+		</foreach>
+	</update>
+
 
 </mapper>

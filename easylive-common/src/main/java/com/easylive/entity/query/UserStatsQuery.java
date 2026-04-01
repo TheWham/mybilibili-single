@@ -49,8 +49,20 @@ public class UserStatsQuery extends BaseQuery {
 	 * 评论数量
 	 */
 	private Integer commentCount;
+	/**
+	 * 用户投币数量
+	 */
+	private Integer coinCount;
 
 	private Date statsDay;
+
+	public Integer getCoinCount() {
+		return coinCount;
+	}
+
+	public void setCoinCount(Integer coinCount) {
+		this.coinCount = coinCount;
+	}
 
 	public Date getStatsDay() {
 		return statsDay;

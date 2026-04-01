@@ -203,6 +203,10 @@ public class RedisUtils<V> {
         return key == null ? null : redisTemplate.opsForHash().entries(key);
     }
 
+    public Object hget(String key, String item) {
+        return key == null ? null : redisTemplate.opsForHash().get(key, item);
+    }
+
     /**
      * 批量放入 Hash 数据，并设置过期时间
      * @param key 键

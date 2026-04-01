@@ -3,19 +3,25 @@ package com.easylive.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import com.easylive.component.RedisComponent;
 import com.easylive.constants.Constants;
-import com.easylive.entity.event.UserStatsChangeEvent;
+import com.easylive.entity.dto.UserActionSyncDTO;
 import com.easylive.entity.po.*;
-import com.easylive.entity.query.*;
+import com.easylive.entity.query.UserActionQuery;
+import com.easylive.entity.query.UserInfoQuery;
+import com.easylive.entity.query.VideoInfoQuery;
 import com.easylive.enums.ResponseCodeEnum;
 import com.easylive.enums.UserActionTypeEnum;
 import com.easylive.enums.UserStatsRedisEnum;
 import com.easylive.exception.BusinessException;
-import com.easylive.mappers.*;
+import com.easylive.mappers.UserCommentActionMapper;
+import com.easylive.mappers.UserInfoMapper;
+import com.easylive.mappers.VideoInfoMapper;
 import com.easylive.service.UserActionService;
 import jakarta.annotation.Resource;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 @Service("UserActionService")
 public class UserActionServiceImpl implements UserActionService {
@@ -25,17 +31,9 @@ public class UserActionServiceImpl implements UserActionService {
     @Resource
     private UserInfoMapper<UserInfo, UserInfoQuery> userInfoMapper;
     @Resource
-    private VideoCommentMapper<VideoComment, VideoCommentQuery> videoCommentMapper;
-    @Resource
-    private UserVideoActionMapper<UserVideoAction, UserActionQuery> userVideoActionMapper;
-    @Resource
     private UserCommentActionMapper<UserCommentAction, UserActionQuery> userCommentActionMapper;
     @Resource
-    private UserStatsMapper<UserStats, UserStatsQuery> userStatsMapper;
-    @Resource
     private RedisComponent redisComponent;
-    @Resource
-    private ApplicationEventPublisher eventPublisher;
 
     /**
      * 用户点击点赞
@@ -55,9 +53,9 @@ public class UserActionServiceImpl implements UserActionService {
      */
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void doAction(UserAction userAction)
     {
+
         VideoInfo videoInfo = videoInfoMapper.selectByVideoId(userAction.getVideoId());
         UserActionTypeEnum actionTypeEnum = UserActionTypeEnum.getEnum(userAction.getActionType());
 
@@ -65,6 +63,7 @@ public class UserActionServiceImpl implements UserActionService {
             throw new BusinessException(ResponseCodeEnum.CODE_600);
 
         userAction.setVideoUserId(videoInfo.getUserId());
+        userAction.setActionTime(new Date());
         //TODO 引入redis存储点赞数量异步放到MQ处理消息
 
         switch (actionTypeEnum) {
@@ -90,36 +89,31 @@ public class UserActionServiceImpl implements UserActionService {
 
     private void handleToggleAction(UserAction userAction, UserActionTypeEnum userActionTypeEnum)
     {
-        UserVideoAction userVideoAction = BeanUtil.toBean(userAction, UserVideoAction.class);
-        // 因为已经加入了unique字段索引 所以插入成功表示原先不存在
-        Integer insertRows = userVideoActionMapper.insertIgnore(userVideoAction);
-        boolean liked = insertRows > 0;
+        int actionCount = normalizeActionCount(userAction.getActionCount());
+        boolean isActive = !redisComponent.hasVideoActionStatus(userAction.getUserId(), userAction.getVideoId(), userAction.getActionType());
 
-        if (!liked) {
-            //插入失败需要进行删除
-            this.userVideoActionMapper.deleteByVideoIdAndActionTypeAndUserId(
-                    userVideoAction.getVideoId(),
-                    userVideoAction.getActionType(),
-                    userVideoAction.getUserId()
-            );
+        if (isActive) {
+            redisComponent.saveVideoActionStatus(userAction.getUserId(), userAction.getVideoId(), userAction.getActionType(), actionCount);
+        } else {
+            redisComponent.removeVideoActionStatus(userAction.getUserId(), userAction.getVideoId(), userAction.getActionType());
         }
 
-        int count = liked ? userAction.getActionCount(): -userAction.getActionCount();
-        videoInfoMapper.updateCount(userAction.getVideoId(), userActionTypeEnum.getField(), count);
+        int delta = isActive ? actionCount : -actionCount;
+        String statsField = userActionTypeEnum.equals(UserActionTypeEnum.VIDEO_LIKE)
+                ? UserStatsRedisEnum.VIDEO_LIKE.getField()
+                : UserStatsRedisEnum.USER_COLLECT_COUNT.getField();
+        redisComponent.incrementUserStats(userAction.getVideoUserId(), statsField, delta);
+        redisComponent.incrementUserStatsByDay(
+                userAction.getVideoUserId(),
+                buildStatsDay(),
+                statsField,
+                delta
+        );
 
-        if (userActionTypeEnum.equals(UserActionTypeEnum.VIDEO_LIKE) || userActionTypeEnum.equals(UserActionTypeEnum.VIDEO_PLAY)){
-            /**
-             * 可以优化进入定时任务
-             */
-            userStatsMapper.insertOrUpdateCount(userAction.getUserId(), userActionTypeEnum.getField(), count);
-            eventPublisher.publishEvent(new UserStatsChangeEvent(this, userAction.getUserId(), null,count, UserStatsRedisEnum.VIDEO_LIKE));
-        }
-
-
-        if (userActionTypeEnum.equals(UserActionTypeEnum.VIDEO_COLLECT))
-        {
-            //TODO 将收藏数量更新到es
-        }
+        UserActionSyncDTO actionSyncDTO = buildBaseSyncDTO(userAction);
+        actionSyncDTO.setActive(isActive);
+        actionSyncDTO.setActionCount(delta);
+        redisComponent.addUserActionQueue(getQueueKey(userActionTypeEnum), actionSyncDTO);
     }
 
     /**
@@ -134,34 +128,30 @@ public class UserActionServiceImpl implements UserActionService {
         if (userId.equals(videoUserId))
             throw new BusinessException("不能给自己投币");
 
-        // 因为已经加入了unique字段索引 所以插入成功表示原先不存在
-        Integer insertRows = userVideoActionMapper.insertIgnore(userVideoAction);
-        boolean hasNoCoinEver = insertRows > 0;
+        if (redisComponent.hasVideoActionStatus(userId, userVideoAction.getVideoId(), userVideoAction.getActionType())) {
+            throw new BusinessException("已经投过币了");
+        }
 
-        if (!hasNoCoinEver)
-            throw new BusinessException("已经投过币了");;
-
-        //扣除投币用户硬币
-        Integer updateRows = userInfoMapper.updateUserCoin(userId, -userVideoAction.getActionCount());
-        boolean isDecreaseSuccess = updateRows > 0;
-
-        if (!isDecreaseSuccess)
-        {
+        int actionCount = normalizeActionCount(userVideoAction.getActionCount());
+        ensureCurrentCoinLoaded(userId);
+        ensureCurrentCoinLoaded(videoUserId);
+        Long remainCoin = redisComponent.incrementUserStats(userId, UserStatsRedisEnum.USER_COIN.getField(), -actionCount);
+        if (remainCoin < 0) {
+            redisComponent.incrementUserStats(userId, UserStatsRedisEnum.USER_COIN.getField(), actionCount);
             throw new BusinessException("投币失败,硬币不足");
         }
 
-        /**
-         * 后续要进行优化成高并发模式
-         */
-        //增加发布视频用户硬币
-        userInfoMapper.updateUserCoin(videoUserId, userVideoAction.getActionCount());
-        //增加视频硬币数量
-        videoInfoMapper.updateCount(userVideoAction.getVideoId(), userActionTypeEnum.getField(), userVideoAction.getActionCount());
-        //更新统计表中用户数量 可以优化异步处理
-        userStatsMapper.insertOrUpdateCount(videoUserId, UserActionTypeEnum.USER_COIN.getField(), userVideoAction.getActionCount());
-        userStatsMapper.insertOrUpdateCount(userId, UserActionTypeEnum.USER_COIN.getField(), -userVideoAction.getActionCount());
-        //更新redis
-        eventPublisher.publishEvent(new UserStatsChangeEvent(this, userId, videoUserId, userVideoAction.getActionCount(), UserStatsRedisEnum.USER_COIN));
+        redisComponent.incrementUserStats(videoUserId, UserStatsRedisEnum.USER_COIN.getField(), actionCount);
+        redisComponent.incrementUserStats(videoUserId, UserStatsRedisEnum.VIDEO_COIN.getField(), actionCount);
+        redisComponent.incrementUserStatsByDay(userId, buildStatsDay(), UserStatsRedisEnum.USER_COIN.getField(), -actionCount);
+        redisComponent.incrementUserStatsByDay(videoUserId, buildStatsDay(), UserStatsRedisEnum.USER_COIN.getField(), actionCount);
+        redisComponent.incrementUserStatsByDay(videoUserId, buildStatsDay(), UserStatsRedisEnum.VIDEO_COIN.getField(), actionCount);
+        redisComponent.saveVideoActionStatus(userId, userVideoAction.getVideoId(), userVideoAction.getActionType(), actionCount);
+
+        UserActionSyncDTO actionSyncDTO = buildBaseSyncDTO(userAction);
+        actionSyncDTO.setActive(true);
+        actionSyncDTO.setActionCount(actionCount);
+        redisComponent.addUserActionQueue(getQueueKey(userActionTypeEnum), actionSyncDTO);
     }
 
     /**
@@ -170,8 +160,6 @@ public class UserActionServiceImpl implements UserActionService {
      */
     private void handleComment(UserAction userAction, UserActionTypeEnum typeEnum)
     {
-        UserCommentAction userCommentAction = BeanUtil.toBean(userAction, UserCommentAction.class);
-        //检查评论是否存在
         Integer commentId = userAction.getCommentId();
 
         if (commentId == null) {
@@ -179,12 +167,15 @@ public class UserActionServiceImpl implements UserActionService {
         }
 
         String userId = userAction.getUserId();
-        Integer actionCount = userAction.getActionCount();
-
-        actionCount = actionCount > Constants.ONE ? Constants.ONE : actionCount;
-
-        //先用悲观锁 解决并发问题
-        Integer oldActionType = userCommentActionMapper.selectActionTypeForUpdate(commentId, userId);
+        Integer actionCount = normalizeActionCount(userAction.getActionCount());
+        Integer oldActionType = redisComponent.getCommentActionStatus(userId, commentId);
+        if (oldActionType == null) {
+            UserCommentAction oldAction = userCommentActionMapper.selectByCommentIdAndUserId(commentId, userId);
+            oldActionType = oldAction == null ? null : oldAction.getActionType();
+            if (oldActionType != null) {
+                redisComponent.saveCommentActionStatus(userId, commentId, oldActionType);
+            }
+        }
 
         Integer likeDiff = 0, hateDiff = 0;
         boolean isCancel = false;
@@ -217,15 +208,62 @@ public class UserActionServiceImpl implements UserActionService {
         }
 
         if (isCancel){
-            userCommentActionMapper.deleteByCommentIdAndUserId(commentId, userId);
+            redisComponent.removeCommentActionStatus(userId, commentId);
         }else {
-            userCommentActionMapper.insertOrUpdate(userCommentAction);
+            redisComponent.saveCommentActionStatus(userId, commentId, typeEnum.getType());
         }
 
-        Integer rows = videoCommentMapper.updateCount(commentId, likeDiff, hateDiff);
-        if (rows == 0) {
+        UserActionSyncDTO actionSyncDTO = buildBaseSyncDTO(userAction);
+        actionSyncDTO.setActive(!isCancel);
+        actionSyncDTO.setActionCount(actionCount);
+        actionSyncDTO.setLikeDiff(likeDiff);
+        actionSyncDTO.setHateDiff(hateDiff);
+        redisComponent.addUserActionQueue(Constants.REDIS_WEB_ACTION_VIDEO_COMMENT_QUEUE_KEY, actionSyncDTO);
+    }
+
+    private int normalizeActionCount(Integer actionCount) {
+        if (actionCount == null || actionCount <= 0) {
+            return Constants.ONE;
+        }
+        return Math.min(actionCount, Constants.TWO);
+    }
+
+    private void ensureCurrentCoinLoaded(String userId) {
+        Integer currentCoin = redisComponent.getUserStatsValue(userId, UserStatsRedisEnum.USER_COIN.getField());
+        if (currentCoin != null) {
+            return;
+        }
+        UserInfo userInfo = userInfoMapper.selectByUserId(userId);
+        if (userInfo == null) {
             throw new BusinessException(ResponseCodeEnum.CODE_600);
         }
+        redisComponent.setUserStatsValue(userId, UserStatsRedisEnum.USER_COIN.getField(), userInfo.getCurrentCoinCount());
+    }
+
+    private UserActionSyncDTO buildBaseSyncDTO(UserAction userAction) {
+        UserActionSyncDTO actionSyncDTO = new UserActionSyncDTO();
+        actionSyncDTO.setUserId(userAction.getUserId());
+        actionSyncDTO.setVideoId(userAction.getVideoId());
+        actionSyncDTO.setVideoUserId(userAction.getVideoUserId());
+        actionSyncDTO.setCommentId(userAction.getCommentId());
+        actionSyncDTO.setActionType(userAction.getActionType());
+        actionSyncDTO.setActionTime(userAction.getActionTime());
+        actionSyncDTO.setStatsDay(buildStatsDay());
+        return actionSyncDTO;
+    }
+
+    private String buildStatsDay() {
+        return LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+    }
+
+    private String getQueueKey(UserActionTypeEnum actionTypeEnum) {
+        return switch (actionTypeEnum) {
+            case VIDEO_LIKE -> Constants.REDIS_WEB_ACTION_VIDEO_LIKE_QUEUE_KEY;
+            case VIDEO_COLLECT -> Constants.REDIS_WEB_ACTION_VIDEO_COLLECT_QUEUE_KEY;
+            case VIDEO_COIN -> Constants.REDIS_WEB_ACTION_VIDEO_COIN_QUEUE_KEY;
+            case COMMENT_LIKE, COMMENT_HATE -> Constants.REDIS_WEB_ACTION_VIDEO_COMMENT_QUEUE_KEY;
+            default -> throw new IllegalStateException("Unexpected value: " + actionTypeEnum);
+        };
     }
 
 }

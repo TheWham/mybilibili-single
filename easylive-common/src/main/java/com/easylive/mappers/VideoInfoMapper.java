@@ -1,6 +1,7 @@
 package com.easylive.mappers;
 
 import com.easylive.entity.dto.VideoCountDTO;
+import com.easylive.entity.dto.VideoCountUpdateDTO;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -37,6 +38,8 @@ public interface VideoInfoMapper<T, R> extends BaseMapper {
     Integer updateByCondition(@Param("bean") T videoInfo,@Param("query") R videoInfoQuery);
 
     Integer updateCount(@Param("videoId") String videoId,@Param("field") String field, @Param("count")Integer count);
+
+    Integer updateCountBatch(@Param("field") String field, @Param("list") List<VideoCountUpdateDTO> list);
 
 	String selectUserIdByVideoId(@Param("videoId") String videoId);
 

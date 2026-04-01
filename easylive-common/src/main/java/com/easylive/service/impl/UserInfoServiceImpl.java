@@ -2,9 +2,11 @@ package com.easylive.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.easylive.component.RedisComponent;
+import com.easylive.component.UserStatsCacheAsyncComponent;
 import com.easylive.constants.Constants;
 import com.easylive.entity.dto.RegisterDTO;
 import com.easylive.entity.dto.TokenUserInfoDTO;
+import com.easylive.entity.dto.VideoCountDTO;
 import com.easylive.entity.dto.WebLoginDTO;
 import com.easylive.entity.po.UserFocus;
 import com.easylive.entity.po.UserInfo;
@@ -50,6 +52,8 @@ public class UserInfoServiceImpl implements UserInfoService {
 	private UserFocusMapper<UserFocus, UserFocusQuery> userFocusMapper;
 	@Resource
 	private RedisComponent redisComponent;
+	@Resource
+	private UserStatsCacheAsyncComponent userStatsCacheAsyncComponent;
 	@Resource
 	private UserStatsMapper<UserStats, UserStatsQuery> userStatsMapper;
 	/**
@@ -242,9 +246,10 @@ public class UserInfoServiceImpl implements UserInfoService {
 		if (tokenId != null) {
 			redisComponent.cleanExistToken(userId);
 		}
-
 		redisComponent.saveTokenIdByUserId(userInfo.getUserId(), tokenUserInfoDTO.getTokenId());
-
+		//刷新用户统计数量缓存
+		redisComponent.refreshRealtimeUserStatsExpire(userInfo.getUserId());
+		userStatsCacheAsyncComponent.refreshRealtimeUserStatsCache(userInfo.getUserId());
 		return tokenUserInfoDTO;
 	}
 
@@ -299,15 +304,51 @@ public class UserInfoServiceImpl implements UserInfoService {
 
 	@Override
 	public UserCountVO getUserCountInfo(String userId) {
-		UserInfoVO userInfoVOInRedis = redisComponent.getUserInfoVOInRedis(userId);
+		HashMap<String, Integer> userStatsMap = redisComponent.getRealtimeUserStatsInfo(userId);
+		if (userStatsMap != null && !userStatsMap.isEmpty()) {
+			redisComponent.refreshRealtimeUserStatsExpire(userId);
+			return buildUserCountVO(userStatsMap);
+		}
 
-		UserCountVO userCountVO = null;
-		if (userInfoVOInRedis != null)
-		{
-			 userCountVO = BeanUtil.toBean(userInfoVOInRedis, UserCountVO.class);
+		UserInfo userInfo = userInfoMapper.selectByUserId(userId);
+		if (userInfo == null) {
+			return null;
+		}
+		//异步刷新缓存
+		userStatsCacheAsyncComponent.refreshRealtimeUserStatsCache(userId);
+		return buildUserCountVO(userId, userInfo);
+	}
+
+	private UserCountVO buildUserCountVO(HashMap<String, Integer> userStatsMap) {
+		UserCountVO userCountVO = new UserCountVO();
+		userCountVO.setFocusCount(userStatsMap.getOrDefault(UserStatsRedisEnum.USER_FOCUS.getField(), 0));
+		userCountVO.setFansCount(userStatsMap.getOrDefault(UserStatsRedisEnum.USER_FANS.getField(), 0));
+		userCountVO.setCurrentCoinCount(userStatsMap.getOrDefault(UserStatsRedisEnum.USER_COIN.getField(), 0));
+		userCountVO.setLikeCount(userStatsMap.getOrDefault(UserStatsRedisEnum.VIDEO_LIKE.getField(), 0));
+		userCountVO.setPlayCount(userStatsMap.getOrDefault(UserStatsRedisEnum.VIDEO_PLAY.getField(), 0));
+		return userCountVO;
+	}
+
+	private UserCountVO buildUserCountVO(String userId, UserInfo userInfo) {
+		UserCountVO userCountVO = new UserCountVO();
+		userCountVO.setCurrentCoinCount(Optional.ofNullable(userInfo.getCurrentCoinCount()).orElse(0));
+
+		UserFocusQuery focusQuery = new UserFocusQuery();
+		focusQuery.setUserId(userId);
+		userCountVO.setFocusCount(Optional.ofNullable(userFocusMapper.selectCount(focusQuery)).orElse(0));
+
+		UserFocusQuery fansQuery = new UserFocusQuery();
+		fansQuery.setUserFocusId(userId);
+		userCountVO.setFansCount(Optional.ofNullable(userFocusMapper.selectCount(fansQuery)).orElse(0));
+
+		VideoCountDTO videoCountDTO = videoInfoMapper.sumVideoCountByUserId(userId);
+		if (videoCountDTO == null) {
+			userCountVO.setLikeCount(0);
+			userCountVO.setPlayCount(0);
 			return userCountVO;
 		}
-		userCountVO = userInfoMapper.selectUserCountInfo(userId);
+		userCountVO.setLikeCount(Optional.ofNullable(videoCountDTO.getTotalLikeCount()).orElse(0));
+		userCountVO.setPlayCount(Optional.ofNullable(videoCountDTO.getTotalPlayCount()).orElse(0));
 		return userCountVO;
 	}
 
@@ -330,7 +371,7 @@ public class UserInfoServiceImpl implements UserInfoService {
 
 	private void fillTotalCountInfo(TotalCountInfoVO totalCountInfoVO, HashMap<String, Integer> userStatsInfoMap)
 	{
-		totalCountInfoVO.setCoinCount(userStatsInfoMap.getOrDefault(UserStatsRedisEnum.USER_COIN.getField(), 0));
+		totalCountInfoVO.setCoinCount(userStatsInfoMap.getOrDefault(UserStatsRedisEnum.VIDEO_COIN.getField(), 0));
 		totalCountInfoVO.setCommentCount(userStatsInfoMap.getOrDefault(UserStatsRedisEnum.USER_COMMENT_COUNT.getField(), 0));
 		totalCountInfoVO.setLikeCount(userStatsInfoMap.getOrDefault(UserStatsRedisEnum.VIDEO_LIKE.getField(), 0));
 		totalCountInfoVO.setCollectCount(userStatsInfoMap.getOrDefault(UserStatsRedisEnum.USER_COLLECT_COUNT.getField(), 0));

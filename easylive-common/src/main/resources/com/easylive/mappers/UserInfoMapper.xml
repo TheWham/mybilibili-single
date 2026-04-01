@@ -693,6 +693,23 @@
 		 </if>
 		where current_coin_count + #{coinCount} >= 0 and user_id=#{userId}
 	</update>
-
-
+	<update id="updateCountBatch">
+		update user_info
+		set total_coin_count =
+		case user_id
+		<foreach collection="list" item="item">
+			when #{item.userId} then totalCoinCount + #{item.totalCoinCount}
+		</foreach>
+		end,
+		current_coin_count =
+		case user_id
+		<foreach collection="list" item="item">
+			when #{item.userId} then current_coin_count + #{item.currentCoinCount}
+		</foreach>
+		end
+		where user_id in
+		<foreach collection="list" item="item" open="(" separator="," close=")">
+			#{item.userId}
+		</foreach>
+	</update>
 </mapper>

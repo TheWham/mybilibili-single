@@ -5,3 +5,6 @@
 logs/
 
 */src/test
+.tmp-awesome-claude-skills/
+file/
+AGENTS.md

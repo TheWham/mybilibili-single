@@ -59,6 +59,18 @@ public class UserStats implements Serializable {
 	@JsonFormat(pattern = "yyyy-MM-dd")
 	private Date statsDay;
 
+	/**
+	 * 用户投币量
+	 */
+	private Integer coinCount;
+
+	public Integer getCoinCount() {
+		return coinCount;
+	}
+
+	public void setCoinCount(Integer coinCount) {
+		this.coinCount = coinCount;
+	}
 
 	public Date getStatsDay() {
 		return statsDay;

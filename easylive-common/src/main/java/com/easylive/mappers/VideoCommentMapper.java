@@ -1,5 +1,6 @@
 package com.easylive.mappers;
 
+import com.easylive.entity.dto.CommentCountUpdateDTO;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -29,5 +30,7 @@ public interface VideoCommentMapper<T, R> extends BaseMapper {
     List<T> selectListWithChildren(@Param("query") R query);
 
 	Integer updateCount(@Param("commentId") Integer commentId,@Param("likeDiff") Integer likeDiff, @Param("hateDiff") Integer hateDiff);
+
+	Integer updateCountBatch(@Param("list") List<CommentCountUpdateDTO> list);
 
 }
