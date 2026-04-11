@@ -1,6 +1,7 @@
 package com.easylive.web.controller;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.easylive.annotaion.GlobalInterceptor;
 import com.easylive.constants.Constants;
 import com.easylive.entity.dto.UserActionDTO;
 import com.easylive.entity.po.UserAction;
@@ -27,6 +28,7 @@ public class UserActionController extends ABaseController {
 
 
 	@RequestMapping("/doAction")
+	@GlobalInterceptor(checkLogin = true)
 	public ResponseVO doAction(@Validated UserActionDTO userActionDTO)
 	{
 		UserAction userAction = BeanUtil.toBean(userActionDTO, UserAction.class);

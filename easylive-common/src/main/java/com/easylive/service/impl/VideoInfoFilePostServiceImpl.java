@@ -22,6 +22,7 @@ import com.easylive.mappers.VideoInfoFileMapper;
 import com.easylive.mappers.VideoInfoFilePostMapper;
 import com.easylive.mappers.VideoInfoMapper;
 import com.easylive.mappers.VideoInfoPostMapper;
+import com.easylive.service.VideoEsService;
 import com.easylive.service.VideoInfoFilePostService;
 import com.easylive.utils.FFmpegUtils;
 import jakarta.annotation.Resource;
@@ -65,7 +66,8 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 	private VideoInfoMapper<VideoInfo, VideoInfoQuery> videoInfoMapper;
     @Resource
     private VideoInfoFileMapper<VideoInfoFile, VideoInfoFileQuery> videoInfoFileMapper;
-
+	@Resource
+	private VideoEsService videoEsService;
 
 	/**
 	 * @description 根据条件查询
@@ -308,9 +310,9 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 		videoInfoMapper.deleteByVideoId(videoId);
 		videoInfoPostMapper.deleteByVideoId(videoId);
 		//TODO 进去用户加硬币
-		//TODO 删除es信息
 
 
+		videoEsService.deleteDoc(adminConfig.getEsIndexVideoName(),videoId);
 		//TODO 清理任务持久化
 
 		// 2. 注册一个事务同步回调：只有当事务成功提交（COMMIT）后，才触发异步逻辑

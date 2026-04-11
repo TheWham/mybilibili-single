@@ -1,4 +1,4 @@
-package com.easylive.web.controller;
+package com.easylive.enums;
 
 /**
  * @author amani

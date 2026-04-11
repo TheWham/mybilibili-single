@@ -1,6 +1,8 @@
 package com.easylive.web.controller;
 
 
+import com.easylive.component.RedisComponent;
+import com.easylive.constants.Constants;
 import com.easylive.entity.po.VideoInfo;
 import com.easylive.entity.po.VideoInfoFile;
 import com.easylive.entity.query.UserActionQuery;
@@ -10,11 +12,10 @@ import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.entity.vo.ResponseVO;
 import com.easylive.entity.vo.UserActionVO;
 import com.easylive.entity.vo.VideoInfoResultVO;
-import com.easylive.enums.ResponseCodeEnum;
-import com.easylive.enums.UserActionTypeEnum;
-import com.easylive.enums.VideoRecommendEnum;
+import com.easylive.enums.*;
 import com.easylive.exception.BusinessException;
 import com.easylive.service.UserVideoActionService;
+import com.easylive.service.VideoEsService;
 import com.easylive.service.VideoInfoFileService;
 import com.easylive.service.VideoInfoService;
 import jakarta.annotation.Resource;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/video")
@@ -36,6 +38,10 @@ public class VideoShowController extends ABaseController{
 
     @Resource
     private UserVideoActionService userVideoActionService;
+    @Resource
+    private VideoEsService videoEsService;
+    @Resource
+    private RedisComponent redisComponent;
 
     @RequestMapping("/loadVideo")
     public ResponseVO loadVideo(Integer pageNo, Integer pCategoryId, Integer categoryId)
@@ -91,11 +97,11 @@ public class VideoShowController extends ABaseController{
         return getSuccessResponseVO(pList);
     }
 
-    //TODO getSearchKeywordTop
     @RequestMapping("/getSearchKeywordTop")
     public ResponseVO getSearchKeywordTop()
     {
-        return getSuccessResponseVO(null);
+        List<String> keywordTopList = redisComponent.getSearchKeywordTop(Constants.LENGTH_10);
+        return getSuccessResponseVO(keywordTopList);
     }
 
     @RequestMapping("/reportVideoPlayOnline")
@@ -104,5 +110,34 @@ public class VideoShowController extends ABaseController{
         Integer count = videoInfoService.reportVideoPlayOnline(fileId, deviceId);
         return getSuccessResponseVO(count);
     }
+
+    @RequestMapping("/search")
+    public ResponseVO search(Integer pageNo, @NotEmpty String keyword, Integer orderType)
+    {
+        redisComponent.saveKeyword(keyword);
+        PaginationResultVO<VideoInfo> search = videoEsService.search(true, keyword, orderType, pageNo, PageSize.SIZE30.getSize());
+        return getSuccessResponseVO(search);
+    }
+
+    @RequestMapping("/getVideoRecommend")
+    public ResponseVO getVideoRecommend(@NotEmpty String keyword, @NotEmpty String videoId)
+    {
+        List<VideoInfo> search = videoEsService.search(false, keyword, SearchOrderTypeEnum.VIDEO_PLAY.getStatus(), 1, PageSize.SIZE30.getSize()).getList();
+        List<VideoInfo> list = search.stream().filter(video -> !video.getVideoId().equals(videoId)).collect(Collectors.toList());
+        return getSuccessResponseVO(list);
+    }
+
+    @RequestMapping("/loadHotVideoList")
+    public ResponseVO loadHotVideoList(Integer pageNo)
+    {
+        VideoInfoQuery videoInfoQuery = new VideoInfoQuery();
+        videoInfoQuery.setPageNo(pageNo);
+        videoInfoQuery.setQueryUserInfo(true);
+        videoInfoQuery.setOrderBy("play_count desc");
+        videoInfoQuery.setLastPlayHour(Constants.HOUR_24);
+        PaginationResultVO<VideoInfo> list = videoInfoService.findListByPage(videoInfoQuery);
+        return getSuccessResponseVO(list);
+    }
+
 }
 

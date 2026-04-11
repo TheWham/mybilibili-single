@@ -11,6 +11,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+
 @Component("redisUtils")
 public class RedisUtils<V> {
 
@@ -77,6 +78,21 @@ public class RedisUtils<V> {
             return true;
         } catch (Exception e) {
             logger.error("设置redisKey:{},value:{}失败", key, value);
+            return false;
+        }
+    }
+
+    public boolean setIfAbsent(String key, V value, long time) {
+        try {
+            Boolean result;
+            if (time > 0) {
+                result = redisTemplate.opsForValue().setIfAbsent(key, value, time, TimeUnit.MILLISECONDS);
+            } else {
+                result = redisTemplate.opsForValue().setIfAbsent(key, value);
+            }
+            return Boolean.TRUE.equals(result);
+        } catch (Exception e) {
+            logger.error("设置redisKey:{},value:{}失败", key, value, e);
             return false;
         }
     }
@@ -187,10 +203,33 @@ public class RedisUtils<V> {
     }
 
 
+    public void zaddCount4VideoHistory(String key, V v, double score)
+    {
+        redisTemplate.opsForZSet().add(key, v, score);
+    }
+
+
     public List<V> getZSetList(String key, Integer count) {
         Set<V> topElements = redisTemplate.opsForZSet().reverseRange(key, 0, count);
+        if (topElements == null || topElements.isEmpty()) {
+            return Collections.emptyList();
+        }
         List<V> list = new ArrayList<>(topElements);
         return list;
+    }
+
+    public Set<V> getSetMembers(String key) {
+        Set<V> members = redisTemplate.opsForSet().members(key);
+        return members == null ? Collections.emptySet() : members;
+    }
+
+    public Long removeSetMember(String key, V value) {
+        try {
+            return redisTemplate.opsForSet().remove(key, value);
+        } catch (Exception e) {
+            logger.error("Redis SREM 异常，key: {}, value: {}", key, value, e);
+            return 0L;
+        }
     }
 
 
@@ -238,11 +277,20 @@ public class RedisUtils<V> {
         return redisTemplate.opsForHash().increment(key, item, by);
     }
 
+    public Long hdel(String key, Object... fields) {
+        try {
+            return redisTemplate.opsForHash().delete(key, fields);
+        } catch (Exception e) {
+            logger.error("删除 Hash 字段失败, key: {}", key, e);
+            return 0L;
+        }
+    }
+
     // ============================ Pipeline (流水线) 相关操作 ============================
 
     /**
      * 执行 Redis Pipeline (流水线)
-     * 批量执行多条命令，极大降低网络延迟，专治高并发双写
+     * 批量执行多条命令，极大降低网络延迟
      * @param sessionCallback 回调接口，里面写具体的命令集
      * @return 执行结果列表
      */
@@ -255,4 +303,28 @@ public class RedisUtils<V> {
         }
     }
 
+    public Long saveVideoPlayCount2HLL(String key, V userId, int ttl) {
+        Long addCount = redisTemplate.opsForHyperLogLog().add(key, userId);
+        expire(key, ttl);
+        return addCount == null ? 0L : addCount;
+    }
+
+    public void zaddVideoId(String key, V videoId) {
+        try {
+            // opsForSet() 专门处理集合类型
+            redisTemplate.opsForSet().add(key, videoId);
+        } catch (Exception e) {
+            logger.error("Redis SADD 异常，key: {}, values: {}", key, videoId, e);
+        }
+    }
+
+    public Long zaddUserId(String key, V values) {
+        try {
+            // opsForSet() 专门处理集合类型
+            return redisTemplate.opsForSet().add(key, values);
+        } catch (Exception e) {
+            logger.error("Redis SADD 异常，key: {}, values: {}", key, values, e);
+            return 0L;
+        }
+    }
 }

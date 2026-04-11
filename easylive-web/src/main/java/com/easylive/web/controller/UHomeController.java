@@ -2,6 +2,7 @@ package com.easylive.web.controller;
 
 
 import cn.hutool.core.bean.BeanUtil;
+import com.easylive.annotaion.GlobalInterceptor;
 import com.easylive.component.RedisComponent;
 import com.easylive.entity.dto.TokenUserInfoDTO;
 import com.easylive.entity.dto.UserInfoDTO;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/uhome")
+@GlobalInterceptor(checkLogin = true)
 public class UHomeController extends ABaseController{
 
     @Resource
@@ -60,9 +62,9 @@ public class UHomeController extends ABaseController{
         if (type != null)
             videoInfoQuery.setPageSize(PageSize.SIZE10.getSize());
 
-        VideoOrderTypeEnum typeEnum = VideoOrderTypeEnum.getEnum(orderType);
+        com.easylive.enums.VideoOrderTypeEnum typeEnum = com.easylive.enums.VideoOrderTypeEnum.getEnum(orderType);
         if (typeEnum == null)
-            typeEnum =  VideoOrderTypeEnum.ORDER_POST_TIME;
+            typeEnum =  com.easylive.enums.VideoOrderTypeEnum.ORDER_POST_TIME;
         String orderDesc = typeEnum.getField() + " desc";
         videoInfoQuery.setOrderBy(orderDesc);
 
@@ -251,7 +253,10 @@ public class UHomeController extends ABaseController{
         // selectByIds ids在in中 查询出的结果是乱序的 需要修正
         List<VideoInfo> unOrderVideoInfos = videoInfoService.selectByIds(userCollectionIds);
         Map<String, VideoInfo> videoCollectMap = unOrderVideoInfos.stream().collect(Collectors.toMap(VideoInfo::getVideoId, v -> v));
-        List<VideoInfo> finalOrderVideoList = userCollectionIds.stream().map(videoCollectMap::get).filter(Objects::nonNull).toList();
+        List<VideoInfo> finalOrderVideoList = userCollectionIds.stream()
+                .map(videoCollectMap::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
 
         //设置video对应的actionTime
         List<UserCollectionVO> userCollectionVOList = BeanUtil.copyToList(finalOrderVideoList, UserCollectionVO.class);

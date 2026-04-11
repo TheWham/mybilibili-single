@@ -156,6 +156,9 @@
 		<if test="query.avatarFuzzy != null and query.avatarFuzzy != ''" >
 			and avatar like concat('%', #{query.avatarFuzzy}, '%')
 		</if>
+		<if test="query.userIds != null and query.userIds.size() > 0">
+			and user_id in(<foreach collection="query.userIds" separator="," item="id">#{id}</foreach>)
+		</if>
 	</sql>
 
 	<!--通用查询列表 -->

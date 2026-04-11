@@ -20,6 +20,7 @@ public class Constants {
     public final static String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
     public static final String REDIS_WEB_TOKEN_KEY = REDIS_PREFIX + "web:redisToken:";
     public static final Integer REDIS_EXPIRE_TIME_ONE_DAY = REDIS_EXPIRE_TIME_ONE_MINUTE * 60 * 24;
+    public static final Integer REDIS_EXPIRE_TIME_TWO_DAY = REDIS_EXPIRE_TIME_ONE_MINUTE * 60 * 24 * 2;
     public static final Integer REDIS_EXPIRE_TIME_DAY_COUNT = 7;
     public static final Integer WEB_EXPIRE_TIME_DAY_COUNT = 7;
     public static final String WEB_TOKEN_KEY = "token";
@@ -39,6 +40,7 @@ public class Constants {
     public static final String IMAGE_THUMBNAIL_SUFFIX = "_thumbnail";
     public static final Integer LENGTH_15 = 15;
     public static final Integer LENGTH_10 = 10;
+    public static final Integer LENGTH_1000 = 1000;
     public static final String REDIS_WEB_UPLOADING_FILE_INFO_KEY = REDIS_PREFIX + "uploadFileInfo:";
     public static final Long MB_SIZE = 1024 * 1024L;
     public static final String REDIS_SYS_SETTING_KEY = REDIS_PREFIX + "sysSetting:";
@@ -58,9 +60,9 @@ public class Constants {
     public static final String REDIS_WEB_ACTION_VIDEO_COIN_QUEUE_KEY = REDIS_PREFIX + "queue:action:video:coin:list:";
     public static final String REDIS_WEB_ACTION_VIDEO_COLLECT_QUEUE_KEY = REDIS_PREFIX + "queue:action:video:collect:list:";
     public static final String REDIS_WEB_ACTION_VIDEO_LIKE_QUEUE_KEY = REDIS_PREFIX + "queue:action:video:like:list:";
+    public static final String REDIS_WEB_VIDEO_PLAY_QUEUE_KEY = REDIS_PREFIX + "queue:video:play:";
     public static final String REDIS_WEB_ACTION_VIDEO_STATUS_KEY = REDIS_PREFIX + "action:video:status:";
     public static final String REDIS_WEB_ACTION_COMMENT_STATUS_KEY = REDIS_PREFIX + "action:comment:status:";
-
 
     //在线播放人数
 
@@ -70,12 +72,21 @@ public class Constants {
     public static final String REDIS_KEY_VIDEO_PLAY_COUNT_USER = REDIS_KEY_VIDEO_PLAY_COUNT_ONLINE_PREIFX + REDIS_KEY_VIDEO_PLAY_COUNT_USER_PREFIX + "%s:%s";
     public static final Integer REDIS_EXPIRE_TIME_ONE_SECOND = 1000;
     public static final Integer UPDATE_NAME_COIN = 3;
-
+    public static final String REDIS_KEY_VIDEO_PLAY_HISTORY = REDIS_PREFIX + "video:history:play:";
+    public static final String REDIS_KEY_VIDEO_PLAY_COUNT = REDIS_PREFIX + "video:play:uv:";
+    public static final String REDIS_KEY_VIDEO_PLAY_EFFECTIVE = REDIS_PREFIX + "video:play:effective:";
+    public static final String REDIS_KEY_DIRTY_HISTORY_USER = REDIS_PREFIX + "video:history:user:";
+    public static final String REDIS_KEY_VIDEO_PLAY_COUNT_DELTA = REDIS_PREFIX + "video:play:delta";
+    public static final Integer REDIS_VIDEO_PLAY_EFFECTIVE_EXPIRE_MINUTES = 30;
     //用户信息存储
 
     public static final String REDIS_WEB_USER_INFO_KEY = REDIS_PREFIX + "web:userInfo:showVO:";
     public static final String REDIS_WEB_USER_STATS_KEY = REDIS_PREFIX + "web:userInfo:stats:";
     public static final String REDIS_WEB_USER_STATS_SNAPSHOT_KEY = REDIS_PREFIX + "web:userInfo:stats:snapshot:";
     public static final Integer REDIS_USER_STATS_CACHE_TTL_DAYS = 15;
+    //热词key
+
+    public static final String REDIS_KEY_VIDEO_SEARCH_COUNT = REDIS_PREFIX + "video:search:";
+    public static final Integer HOUR_24 = 24;
 }
 

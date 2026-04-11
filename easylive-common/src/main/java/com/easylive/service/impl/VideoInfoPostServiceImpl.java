@@ -201,7 +201,7 @@ public class VideoInfoPostServiceImpl implements VideoInfoPostService {
 			Boolean changeVideoInfoPost = isChangeVideoInfoPost(videoInfoPostDTO);
 
 			//通过新提交的文件中找到没有fileId的新增文件
-			addList = uploadFilesInfo.stream().filter(fileInfo -> fileInfo.getFileId() == null).toList();
+			addList = uploadFilesInfo.stream().filter(fileInfo -> fileInfo.getFileId() == null).collect(Collectors.toList());
 
 			if (addList != null && addList.isEmpty())
 			{
@@ -245,7 +245,7 @@ public class VideoInfoPostServiceImpl implements VideoInfoPostService {
 		{
 			List<String> deleteListIds = deleteList.stream().map(VideoInfoFilePost::getFileId).collect(Collectors.toList());
 			videoInfoFilePostMapper.delBatchByIds(deleteListIds, userId);
-			List<String> filePathList = deleteList.stream().map(VideoInfoFilePost::getFilePath).toList();
+			List<String> filePathList = deleteList.stream().map(VideoInfoFilePost::getFilePath).collect(Collectors.toList());
 			redisComponent.addFileList2DelQueue(videoID, filePathList);
 		}
 

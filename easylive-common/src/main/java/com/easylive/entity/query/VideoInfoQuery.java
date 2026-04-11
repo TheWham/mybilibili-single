@@ -123,6 +123,7 @@ public class VideoInfoQuery extends BaseQuery {
 	private String lastPlayTimeEnd;
 	private boolean isQueryUserInfo;
 	private String[] arrayIds;
+	private Integer lastPlayHour;
 
 	public void setVideoId(String videoId) {
 		this.videoId = videoId;
@@ -355,5 +356,13 @@ public class VideoInfoQuery extends BaseQuery {
 
     public String[] getArrayIds() {
         return arrayIds;
+    }
+
+    public void setLastPlayHour(Integer lastPlayHour) {
+        this.lastPlayHour = lastPlayHour;
+    }
+
+    public Integer getLastPlayHour() {
+        return lastPlayHour;
     }
 }

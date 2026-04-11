@@ -1,6 +1,7 @@
 package com.easylive.web.controller;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.easylive.annotaion.GlobalInterceptor;
 import com.easylive.entity.dto.VideoDanmuDTO;
 import com.easylive.entity.po.VideoDanmu;
 import com.easylive.entity.vo.ResponseVO;
@@ -27,6 +28,7 @@ public class VideoDanmuController extends ABaseController {
 	private VideoDanmuService videoDanmuService;
 
 	@RequestMapping("/postDanmu")
+	@GlobalInterceptor(checkLogin = true)
 	public ResponseVO postDanmu(@Validated VideoDanmuDTO videoDanmuDTO)
 	{
 		VideoDanmu videoDanmu = BeanUtil.toBean(videoDanmuDTO, VideoDanmu.class);

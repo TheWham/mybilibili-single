@@ -236,7 +236,7 @@ public class UserVideoSeriesServiceImpl implements UserVideoSeriesService {
 
 		if (seriesVideoList != null && !seriesVideoList.isEmpty())
 		{
-			List<String> seriesVideoIds = seriesVideoList.stream().map(UserVideoSeriesVideo::getVideoId).toList();
+			List<String> seriesVideoIds = seriesVideoList.stream().map(UserVideoSeriesVideo::getVideoId).collect(Collectors.toList());
 			userVideoSeriesVideoMapper.deleteByIds(seriesVideoIds, userId, seriesId);
 		}
 
@@ -257,7 +257,7 @@ public class UserVideoSeriesServiceImpl implements UserVideoSeriesService {
 		List<UserVideoSeriesVideo> userVideoSeriesVideoList = userVideoSeriesVideoMapper.selectList(userVideoSeriesVideoQuery);
 		Map<Integer, List<UserVideoSeriesVideo>> map = userVideoSeriesVideoList.stream().collect(Collectors.groupingBy(UserVideoSeriesVideo::getSeriesId));
 
-		List<Integer> seriesList = userVideoSeriesVideoList.stream().map(UserVideoSeriesVideo::getSeriesId).toList();
+		List<Integer> seriesList = userVideoSeriesVideoList.stream().map(UserVideoSeriesVideo::getSeriesId).collect(Collectors.toList());
 		List<UserVideoSeries> userVideoSeries = this.userVideoSeriesMapper.selectByIds(seriesList, userId);
 
 		//组装vo
@@ -266,7 +266,7 @@ public class UserVideoSeriesServiceImpl implements UserVideoSeriesService {
 			seriesWithVideoUHomeVO.setSeriesName(series.getSeriesName());
 			seriesWithVideoUHomeVO.setSeriesId(series.getSeriesId());
 			List<UserVideoSeriesVideo> videos = map.getOrDefault(series.getSeriesId(), Collections.emptyList());
-			seriesWithVideoUHomeVO.setVideoInfoList(videos.stream().limit(PageSize.SIZE5.getSize()).toList());
+			seriesWithVideoUHomeVO.setVideoInfoList(videos.stream().limit(PageSize.SIZE5.getSize()).collect(Collectors.toList()));
 
 			return seriesWithVideoUHomeVO;
 		}).collect(Collectors.toList());
@@ -294,9 +294,9 @@ public class UserVideoSeriesServiceImpl implements UserVideoSeriesService {
 		if (videoIdList == null || videoIdList.length == 0)
 			throw new BusinessException("未发布视频");
 		List<String> videoIdsInDB = userVideoSeriesVideoMapper.selectVideoIdsBySeriesIdAndUserId(seriesId, userId);
-		List<String> newAddVideoIdList = List.of(videoIdList);
+		List<String> newAddVideoIdList = Arrays.asList(videoIdList);
 	   //用户可能选到已经添加过的视频
-		List<String> newIds = newAddVideoIdList.stream().filter(id -> !videoIdsInDB.contains(id)).distinct().toList();
+		List<String> newIds = newAddVideoIdList.stream().filter(id -> !videoIdsInDB.contains(id)).distinct().collect(Collectors.toList());
 
 		if (newIds == null || newIds.isEmpty())
 		{

@@ -2,6 +2,7 @@ package com.easylive.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.easylive.component.RedisComponent;
+import com.easylive.config.AdminConfig;
 import com.easylive.constants.Constants;
 import com.easylive.entity.dto.UserActionSyncDTO;
 import com.easylive.entity.po.*;
@@ -9,6 +10,7 @@ import com.easylive.entity.query.UserActionQuery;
 import com.easylive.entity.query.UserInfoQuery;
 import com.easylive.entity.query.VideoInfoQuery;
 import com.easylive.enums.ResponseCodeEnum;
+import com.easylive.enums.SearchOrderTypeEnum;
 import com.easylive.enums.UserActionTypeEnum;
 import com.easylive.enums.UserStatsRedisEnum;
 import com.easylive.exception.BusinessException;
@@ -16,6 +18,7 @@ import com.easylive.mappers.UserCommentActionMapper;
 import com.easylive.mappers.UserInfoMapper;
 import com.easylive.mappers.VideoInfoMapper;
 import com.easylive.service.UserActionService;
+import com.easylive.service.VideoEsService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +35,10 @@ public class UserActionServiceImpl implements UserActionService {
     private UserCommentActionMapper<UserCommentAction, UserActionQuery> userCommentActionMapper;
     @Resource
     private RedisComponent redisComponent;
-
+    @Resource
+    private VideoEsService videoEsService;
+    @Resource
+    private AdminConfig adminConfig;
     /**
      * 用户点击点赞
      *    ↓
@@ -106,6 +112,8 @@ public class UserActionServiceImpl implements UserActionService {
         actionSyncDTO.setActive(isActive);
         actionSyncDTO.setActionCount(delta);
         redisComponent.addUserActionQueue(getQueueKey(userActionTypeEnum), actionSyncDTO);
+        //添加到es
+        videoEsService.updateCount(adminConfig.getEsIndexVideoName(), userAction.getVideoId(), delta, SearchOrderTypeEnum.VIDEO_COLLECT.getField());
     }
 
     /**

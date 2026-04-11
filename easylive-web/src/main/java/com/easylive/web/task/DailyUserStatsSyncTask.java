@@ -78,18 +78,21 @@ public class DailyUserStatsSyncTask {
             log.info("syncYesterdayUserStats finished, statsDay={}, count={}", statsDay, syncCount);
         }
     }
-
     private int freezeUserStatsSnapshot(String statsDay) {
         Integer totalCount = userInfoMapper.selectCount(new UserInfoQuery());
         if (totalCount == null || totalCount == 0) {
             return 0;
         }
+
         int snapshotCount = 0;
-        int pageNo = 1;
-        while (true) {
+        // 提前算好总页数
+        int pageTotal = (totalCount + SNAPSHOT_BATCH_SIZE - 1) / SNAPSHOT_BATCH_SIZE;
+
+        for (int pageNo = 1; pageNo <= pageTotal; pageNo++) {
             UserInfoQuery userInfoQuery = new UserInfoQuery();
             userInfoQuery.setOrderBy("user_id asc");
             userInfoQuery.setSimplePage(new SimplePage(pageNo, totalCount, SNAPSHOT_BATCH_SIZE));
+
             List<UserInfo> userInfoList = userInfoMapper.selectList(userInfoQuery);
             if (userInfoList == null || userInfoList.isEmpty()) {
                 break;
@@ -110,7 +113,7 @@ public class DailyUserStatsSyncTask {
                 redisComponent.saveUserStatsSnapshot(userId, statsDay, new HashMap<>(statsMap));
                 snapshotCount++;
             }
-            pageNo++;
+
         }
         return snapshotCount;
     }

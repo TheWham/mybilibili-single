@@ -24,6 +24,7 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -197,13 +198,13 @@ public class VideoCommentServiceImpl implements VideoCommentService {
 		if (allCommentData != null && !allCommentData.isEmpty() && topComment != null && !topComment.isEmpty())
 		{
 			List<VideoComment> finalList = allCommentData.stream()
-					.filter(item -> !item.getCommentId().equals(topComment.getFirst().getCommentId()))
-					.collect(Collectors.toList());;
+					.filter(item -> !item.getCommentId().equals(topComment.get(0).getCommentId()))
+					.collect(Collectors.toList());
 			finalList.addAll(0, topComment);
 			commentData.setList(finalList);
 		}
 		videoCommentVO.setCommentData(commentData);
-		videoCommentVO.setUserActionList(List.of());
+		videoCommentVO.setUserActionList(Collections.emptyList());
 
 		if (tokenUserInfo != null)
 		{

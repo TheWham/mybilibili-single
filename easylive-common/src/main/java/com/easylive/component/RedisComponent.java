@@ -15,6 +15,8 @@ import jakarta.annotation.Resource;
 import jakarta.validation.constraints.NotEmpty;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static com.easylive.constants.Constants.REDIS_EXPIRE_TIME_DAY_COUNT;
@@ -322,4 +324,100 @@ public class RedisComponent {
     private String buildCommentActionStatusKey(String userId, Integer commentId) {
         return Constants.REDIS_WEB_ACTION_COMMENT_STATUS_KEY + userId + ":" + commentId;
     }
+
+    public void saveKeyword(String keyword)
+    {
+        redisUtils.zaddCount(Constants.REDIS_KEY_VIDEO_SEARCH_COUNT, keyword);
+    }
+
+    public List<String> getSearchKeywordTop(Integer top) {
+        return redisUtils.getZSetList(Constants.REDIS_KEY_VIDEO_SEARCH_COUNT, top - 1);
+    }
+
+    /**
+     * 保存播放历史记录
+     * @param videoId 视频id
+     * @param userId 观看用户id
+     * @param fileIndex 视频批号
+     */
+    public void saveVideoHistory(String videoId, String userId, Integer fileIndex) {
+        //  获取绝对时间戳 保证排序正确
+        long timestamp = System.currentTimeMillis();
+
+
+        String key = Constants.REDIS_KEY_VIDEO_PLAY_HISTORY + userId;
+
+
+        String member = videoId + ":" + (fileIndex == null ? 1 : fileIndex);
+
+        // --- 开始 Redis 原子操作 (建议封装进 redisUtils) ---
+
+        // 写入ZSet（Score 是时间戳，保证了最新看的永远最大）
+        redisUtils.zaddCount4VideoHistory(key, member, (double) timestamp);
+
+        //只保留最新的 1000 条，删掉排名靠后的旧数据
+        // 索引 0 到 -1001 之间的全部删掉（即保留最后 1000 个）
+    //    redisUtils.zremRangeByRank(key, 0, -1001);
+
+        //设置 30 天过期（TTL）
+        redisUtils.expire(key, Constants.REDIS_EXPIRE_TIME_ONE_DAY * Constants.LENGTH_30);
+
+        // 把该 userId 放入一个待同步 Set 集合中
+        redisUtils.zaddUserId(Constants.REDIS_KEY_DIRTY_HISTORY_USER, userId);
+    }
+
+    /**
+     * 保存播放量到hll
+     * @param videoId 视频id
+     * @param userId 观看用户id
+     */
+    public boolean saveVideoPlayCount2HLL(String videoId, String userId)
+    {
+        String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        String key = Constants.REDIS_KEY_VIDEO_PLAY_COUNT + dateStr + ":" + videoId;
+        Long addCount = redisUtils.saveVideoPlayCount2HLL(key, userId, Constants.REDIS_EXPIRE_TIME_ONE_DAY * 2);
+        return addCount != null && addCount > 0;
+    }
+
+    public boolean saveVideoEffectivePlay(String videoId, String userId) {
+        String key = Constants.REDIS_KEY_VIDEO_PLAY_EFFECTIVE + videoId + ":" + userId;
+        long expireTime = Constants.REDIS_EXPIRE_TIME_ONE_MINUTE * Constants.REDIS_VIDEO_PLAY_EFFECTIVE_EXPIRE_MINUTES;
+        return redisUtils.setIfAbsent(key, videoId, expireTime);
+    }
+
+    public void addVideoPlayCountDelta(String videoId) {
+        redisUtils.hincr(Constants.REDIS_KEY_VIDEO_PLAY_COUNT_DELTA, videoId, 1);
+        redisUtils.expire(Constants.REDIS_KEY_VIDEO_PLAY_COUNT_DELTA, Constants.REDIS_EXPIRE_TIME_TWO_DAY);
+    }
+
+    public Map<String, Integer> getAllVideoPlayCountDelta() {
+        Map<Object, Object> valueMap = redisUtils.hmget(Constants.REDIS_KEY_VIDEO_PLAY_COUNT_DELTA);
+        if (valueMap == null || valueMap.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, Integer> resultMap = new HashMap<>(valueMap.size());
+        for (Map.Entry<Object, Object> entry : valueMap.entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null) {
+                continue;
+            }
+            resultMap.put(entry.getKey().toString(), Integer.parseInt(entry.getValue().toString()));
+        }
+        return resultMap;
+    }
+
+    public void clearVideoPlayCountDelta(List<String> videoIds) {
+        if (videoIds == null || videoIds.isEmpty()) {
+            return;
+        }
+        redisUtils.hdel(Constants.REDIS_KEY_VIDEO_PLAY_COUNT_DELTA, videoIds.toArray());
+    }
+
+    public Set<String> getDirtyHistoryUsers() {
+        return redisUtils.getSetMembers(Constants.REDIS_KEY_DIRTY_HISTORY_USER);
+    }
+
+    public List<String> getVideoHistoryList(String userId) {
+        return redisUtils.getZSetList(Constants.REDIS_KEY_VIDEO_PLAY_HISTORY + userId, -1);
+    }
+
 }

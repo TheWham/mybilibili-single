@@ -1,5 +1,6 @@
 package com.easylive.service.impl;
 
+import com.easylive.config.AdminConfig;
 import com.easylive.constants.Constants;
 import com.easylive.entity.po.VideoDanmu;
 import com.easylive.entity.po.VideoInfo;
@@ -9,17 +10,18 @@ import com.easylive.entity.query.VideoInfoQuery;
 import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.enums.PageSize;
 import com.easylive.enums.ResponseCodeEnum;
+import com.easylive.enums.SearchOrderTypeEnum;
 import com.easylive.enums.UserActionTypeEnum;
 import com.easylive.exception.BusinessException;
 import com.easylive.mappers.VideoDanmuMapper;
-import com.easylive.mappers.VideoInfoFileMapper;
 import com.easylive.mappers.VideoInfoMapper;
 import com.easylive.service.VideoDanmuService;
+import com.easylive.service.VideoEsService;
 import jakarta.annotation.Resource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,8 +39,10 @@ public class VideoDanmuServiceImpl implements VideoDanmuService {
 
 	@Resource
 	private VideoInfoMapper<VideoInfo, VideoInfoQuery> videoInfoMapper;
-    @Autowired
-    private VideoInfoFileMapper videoInfoFileMapper;
+    @Resource
+	private VideoEsService videoEsService;
+	@Resource
+	private AdminConfig adminConfig;
 
 	/**
 	 * 根据条件查询
@@ -161,7 +165,9 @@ public class VideoDanmuServiceImpl implements VideoDanmuService {
 		//借助原子更新解决弹幕发送高并发问题
 		videoInfoMapper.updateCount(videoDanmu.getVideoId(), UserActionTypeEnum.VIDEO_DNAMU.getField(), 1);
 		this.add(videoDanmu);
+		videoEsService.updateCount(adminConfig.getEsIndexVideoName(), videoInfo.getVideoId(), 1, SearchOrderTypeEnum.VIDEO_DANMU.getField());
 		//TODO 添加弹幕es
+
 	}
 
 	@Override
@@ -171,7 +177,7 @@ public class VideoDanmuServiceImpl implements VideoDanmuService {
 
 		// 用户是否开通弹幕
 		if (videoInfo == null || (videoInfo.getInteraction() != null && videoInfo.getInteraction().contains(Constants.ONE.toString())))
-			return List.of();
+			return Collections.emptyList();
 
 		VideoDanmuQuery danmuQuery = new VideoDanmuQuery();
 		danmuQuery.setFileId(fileId);

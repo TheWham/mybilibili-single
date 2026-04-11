@@ -1,9 +1,11 @@
 package com.easylive.service;
 
 import com.easylive.entity.dto.VideoCountDTO;
+import com.easylive.entity.dto.VideoCountUpdateDTO;
 import com.easylive.entity.po.VideoInfo;
 import com.easylive.entity.query.VideoInfoQuery;
 import com.easylive.entity.vo.PaginationResultVO;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -73,4 +75,12 @@ public interface VideoInfoService {
     List<VideoInfo> selectByIds(List<String> userCollectionIds);
 
 	List<VideoInfo> selectVideoListBySeriesIdAndUserId(Integer seriesId, String userId);
+
+	/**
+	 * 根据字段批量更新数量
+	 * @param field 需要更新字段
+	 * @param list  要更新的集合列表
+	 * @return 返回是否更新成功
+	 */
+	Integer updateCountBatch(@Param("field") String field, @Param("list") List<VideoCountUpdateDTO> list);
 }

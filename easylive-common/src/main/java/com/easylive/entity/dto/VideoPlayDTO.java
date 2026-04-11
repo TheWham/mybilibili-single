@@ -1,0 +1,44 @@
+package com.easylive.entity.dto;
+
+/**
+ * @author amani
+ * @since 2026.4.7
+ */
+public class VideoPlayDTO {
+    private String userId;
+    private String videoUserId;
+    private String videoId;
+    private Integer fileIndex;
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public String getVideoUserId() {
+        return videoUserId;
+    }
+
+    public void setVideoUserId(String videoUserId) {
+        this.videoUserId = videoUserId;
+    }
+
+    public String getVideoId() {
+        return videoId;
+    }
+
+    public void setVideoId(String videoId) {
+        this.videoId = videoId;
+    }
+
+    public Integer getFileIndex() {
+        return fileIndex;
+    }
+
+    public void setFileIndex(Integer fileIndex) {
+        this.fileIndex = fileIndex;
+    }
+}

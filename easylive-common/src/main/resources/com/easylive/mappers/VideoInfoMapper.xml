@@ -180,6 +180,9 @@
 		<if test="query.lastPlayTimeEnd != null and query.lastPlayTimeEnd != ''" >
 			<![CDATA[ and v.last_play_time <= DATE_SUB(str_to_date(#{query.lastPlayTimeEnd}, '%Y-%m-%d'), INTERVAL 1 DAY)]]>
 		</if>
+		<if test="query.lastPlayTimeEnd != null and query.lastPlayTimeEnd != ''" >
+			<![CDATA[ and v.last_play_time >= DATE_SUB(now(), interval #{query.lastPlayHour} hour)]]>
+		</if>
 	</sql>
 
 	<!--通用查询列表 -->

@@ -1,6 +1,7 @@
 package com.easylive.entity.query;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author amani
@@ -93,6 +94,15 @@ public class UserInfoQuery extends BaseQuery {
 	private Integer theme;
 	private String avatar;
 	private String avatarFuzzy;
+	private List<String> userIds;
+
+	public List<String> getUserIds() {
+		return userIds;
+	}
+
+	public void setUserIds(List<String> userIds) {
+		this.userIds = userIds;
+	}
 
 	public String getAvatarFuzzy() {
 		return avatarFuzzy;

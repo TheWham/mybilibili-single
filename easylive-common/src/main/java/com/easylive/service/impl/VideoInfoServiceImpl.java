@@ -6,6 +6,7 @@ import com.easylive.config.AdminConfig;
 import com.easylive.constants.Constants;
 import com.easylive.entity.dto.SysSettingDTO;
 import com.easylive.entity.dto.VideoCountDTO;
+import com.easylive.entity.dto.VideoCountUpdateDTO;
 import com.easylive.entity.po.VideoInfo;
 import com.easylive.entity.po.VideoInfoFile;
 import com.easylive.entity.po.VideoInfoFilePost;
@@ -225,6 +226,12 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 	@Override
 	public List<VideoInfo> selectVideoListBySeriesIdAndUserId(Integer seriesId, String userId) {
 		return videoInfoMapper.selectVideoListBySeriesIdAndUserId(seriesId, userId);
+	}
+
+	@Override
+	public Integer updateCountBatch(String field, List<VideoCountUpdateDTO> list) {
+		Integer count = this.videoInfoMapper.updateCountBatch(field, list);
+		return count;
 	}
 
 	/**
