@@ -1,7 +1,7 @@
 package com.easylive.web.controller;
 
 
-import com.easylive.annotaion.GlobalInterceptor;
+import com.easylive.annotation.LoginInterceptor;
 import com.easylive.component.RedisComponent;
 import com.easylive.component.VideoPlayerComponent;
 import com.easylive.config.AdminConfig;
@@ -58,7 +58,7 @@ public class FileController extends ABaseController{
     private VideoPlayerComponent videoPlayerComponent;
 
     @RequestMapping("/uploadImage")
-    @GlobalInterceptor(checkLogin = true)
+    @LoginInterceptor(checkLogin = true)
     public ResponseVO uploadFile(@NotNull MultipartFile file, @NotNull boolean createThumbnail) throws IOException {
 
         //创建上传文件保存路径
@@ -132,7 +132,7 @@ public class FileController extends ABaseController{
     }
 
     @RequestMapping("preUploadVideo")
-    @GlobalInterceptor(checkLogin = true)
+    @LoginInterceptor(checkLogin = true)
     public ResponseVO preUploadVideo(@NotEmpty String fileName, @NotNull Integer chunks) {
         TokenUserInfoDTO userInfo = getTokenUserInfo();
         String uploadingId = StringTools.generateRandomStr(Constants.LENGTH_15);
@@ -158,7 +158,7 @@ public class FileController extends ABaseController{
     }
 
     @RequestMapping("/uploadVideo")
-    @GlobalInterceptor(checkLogin = true)
+    @LoginInterceptor(checkLogin = true)
     public ResponseVO uploadVideo(@NotNull MultipartFile chunkFile, @NotNull Integer chunkIndex, @NotEmpty String uploadId) throws IOException {
 
         TokenUserInfoDTO tokenUserInfo = getTokenUserInfo();
@@ -190,7 +190,7 @@ public class FileController extends ABaseController{
     }
 
     @RequestMapping("/delUploadVideo")
-    @GlobalInterceptor(checkLogin = true)
+    @LoginInterceptor(checkLogin = true)
     public ResponseVO delUploadVideo(@NotEmpty String uploadId) throws IOException {
         TokenUserInfoDTO tokenUserInfo = getTokenUserInfo();
         String userId = tokenUserInfo.getUserId();

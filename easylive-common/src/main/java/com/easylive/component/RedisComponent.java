@@ -7,6 +7,7 @@ import com.easylive.entity.dto.TokenUserInfoDTO;
 import com.easylive.entity.dto.UploadingFileDTO;
 import com.easylive.entity.dto.UserActionSyncDTO;
 import com.easylive.entity.po.CategoryInfo;
+import com.easylive.entity.po.UserMessage;
 import com.easylive.entity.po.VideoInfoFilePost;
 import com.easylive.entity.vo.UserInfoVO;
 import com.easylive.exception.BusinessException;
@@ -268,6 +269,14 @@ public class RedisComponent {
 
     public UserActionSyncDTO getNextUserActionQueue(String queueKey) {
         return (UserActionSyncDTO) redisUtils.rpop(queueKey);
+    }
+
+    public void addUserMessageQueue(UserMessage userMessage) {
+        redisUtils.lpush(Constants.REDIS_WEB_USER_MESSAGE_QUEUE_KEY, userMessage, 0L);
+    }
+
+    public UserMessage getNextUserMessageQueue() {
+        return (UserMessage) redisUtils.rpop(Constants.REDIS_WEB_USER_MESSAGE_QUEUE_KEY);
     }
 
     public Long incrementUserStats(String userId, String field, long count) {

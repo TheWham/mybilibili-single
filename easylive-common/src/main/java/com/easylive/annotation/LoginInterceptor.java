@@ -1,4 +1,4 @@
-package com.easylive.annotaion;
+package com.easylive.annotation;
 
 
 import java.lang.annotation.ElementType;
@@ -13,6 +13,6 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface GlobalInterceptor {
+public @interface LoginInterceptor {
     boolean checkLogin() default false;
 }

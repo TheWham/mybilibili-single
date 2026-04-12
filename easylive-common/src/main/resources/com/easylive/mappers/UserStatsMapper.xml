@@ -324,7 +324,15 @@
 	<!--根据UserId查询 -->
 	<select id="selectByUserId" resultMap="base_result_map">
 		select <include refid="base_column_list"/>
-		from user_stats v where user_id=#{userId}
+		from user_stats v where v.user_id=#{userId}
+	</select>
+
+	<select id="selectLatestByUserId" resultMap="base_result_map">
+		select <include refid="base_column_list"/>
+		from user_stats v
+		where v.user_id=#{userId}
+		order by v.stats_day desc
+		limit 1
 	</select>
 
 	<!--根据UserId删除 -->

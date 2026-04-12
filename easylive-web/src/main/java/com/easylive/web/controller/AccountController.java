@@ -1,6 +1,6 @@
 package com.easylive.web.controller;
 
-import com.easylive.annotaion.GlobalInterceptor;
+import com.easylive.annotation.LoginInterceptor;
 import com.easylive.component.RedisComponent;
 import com.easylive.component.UserStatsCacheAsyncComponent;
 import com.easylive.constants.Constants;
@@ -150,7 +150,7 @@ public class AccountController extends ABaseController{
     }
 
     @RequestMapping("/getUserCountInfo")
-    @GlobalInterceptor(checkLogin = true)
+    @LoginInterceptor(checkLogin = true)
     public ResponseVO getUserCountInfo()
     {
         TokenUserInfoDTO tokenUserInfoDTO = getTokenUserInfo();

@@ -2,7 +2,7 @@ package com.easylive.web.controller;
 
 
 import cn.hutool.core.bean.BeanUtil;
-import com.easylive.annotaion.GlobalInterceptor;
+import com.easylive.annotation.LoginInterceptor;
 import com.easylive.component.RedisComponent;
 import com.easylive.entity.dto.TokenUserInfoDTO;
 import com.easylive.entity.dto.UserInfoDTO;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/uhome")
-@GlobalInterceptor(checkLogin = true)
+@LoginInterceptor(checkLogin = true)
 public class UHomeController extends ABaseController{
 
     @Resource

@@ -256,11 +256,26 @@ public class UserInfoServiceImpl implements UserInfoService {
 	@Override
 	public void setUserInHome(UserInfoVO userInfoVO) {
 		String userId = userInfoVO.getUserId();
-		UserStats userStats = userStatsMapper.selectByUserId(userId);
-		userInfoVO.setPlayCount(userStats.getPlayCount());
-		userInfoVO.setLikeCount(userStats.getLikeCount());
-		userInfoVO.setFansCount(userStats.getFansCount());
-		userInfoVO.setFocusCount(userStats.getFocusCount());
+		HashMap<String, Integer> realtimeStatsMap = redisComponent.getRealtimeUserStatsInfo(userId);
+		if (realtimeStatsMap != null && !realtimeStatsMap.isEmpty()) {
+			redisComponent.refreshRealtimeUserStatsExpire(userId);
+			fillUserInfoVOWithRealtimeStats(userInfoVO, realtimeStatsMap);
+			return;
+		}
+
+		// Redis 没命中时再退回最近一天的统计，避免 user_stats 多天数据直接查炸。
+		UserStats userStats = userStatsMapper.selectLatestByUserId(userId);
+		if (userStats == null) {
+			userInfoVO.setPlayCount(0);
+			userInfoVO.setLikeCount(0);
+			userInfoVO.setFansCount(0);
+			userInfoVO.setFocusCount(0);
+			return;
+		}
+		userInfoVO.setPlayCount(Optional.ofNullable(userStats.getPlayCount()).orElse(0));
+		userInfoVO.setLikeCount(Optional.ofNullable(userStats.getLikeCount()).orElse(0));
+		userInfoVO.setFansCount(Optional.ofNullable(userStats.getFansCount()).orElse(0));
+		userInfoVO.setFocusCount(Optional.ofNullable(userStats.getFocusCount()).orElse(0));
 
 	}
 
@@ -350,6 +365,13 @@ public class UserInfoServiceImpl implements UserInfoService {
 		userCountVO.setLikeCount(Optional.ofNullable(videoCountDTO.getTotalLikeCount()).orElse(0));
 		userCountVO.setPlayCount(Optional.ofNullable(videoCountDTO.getTotalPlayCount()).orElse(0));
 		return userCountVO;
+	}
+
+	private void fillUserInfoVOWithRealtimeStats(UserInfoVO userInfoVO, HashMap<String, Integer> userStatsMap) {
+		userInfoVO.setFocusCount(userStatsMap.getOrDefault(UserStatsRedisEnum.USER_FOCUS.getField(), 0));
+		userInfoVO.setFansCount(userStatsMap.getOrDefault(UserStatsRedisEnum.USER_FANS.getField(), 0));
+		userInfoVO.setLikeCount(userStatsMap.getOrDefault(UserStatsRedisEnum.VIDEO_LIKE.getField(), 0));
+		userInfoVO.setPlayCount(userStatsMap.getOrDefault(UserStatsRedisEnum.VIDEO_PLAY.getField(), 0));
 	}
 
 	@Override

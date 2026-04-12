@@ -15,6 +15,11 @@ public interface UserStatsMapper<T, R> extends BaseMapper {
 	T selectByUserId(@Param("userId") String userId);
 
 	/**
+	 * 取用户最近一天的统计，给首页这类兜底场景用。
+	 */
+	T selectLatestByUserId(@Param("userId") String userId);
+
+	/**
 	 * 根据 UserId更新
 	 */
 	Integer updateByUserId(@Param("bean") T t, @Param("userId") String userId);

@@ -1,6 +1,7 @@
 package com.easylive.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.easylive.annotation.MessageInterceptor;
 import com.easylive.component.RedisComponent;
 import com.easylive.config.AdminConfig;
 import com.easylive.constants.Constants;
@@ -57,6 +58,7 @@ public class UserActionServiceImpl implements UserActionService {
      */
 
     @Override
+    @MessageInterceptor(resolveByActionType = true)
     public void doAction(UserAction userAction)
     {
 

@@ -1,7 +1,7 @@
 package com.easylive.web.controller;
 
 import cn.hutool.core.bean.BeanUtil;
-import com.easylive.annotaion.GlobalInterceptor;
+import com.easylive.annotation.LoginInterceptor;
 import com.easylive.constants.Constants;
 import com.easylive.entity.dto.VideoCommentDTO;
 import com.easylive.entity.po.VideoComment;
@@ -53,7 +53,7 @@ public class VideoCommentController extends ABaseController {
 	 */
 
 	@RequestMapping("postComment")
-	@GlobalInterceptor(checkLogin = true)
+	@LoginInterceptor(checkLogin = true)
 	public ResponseVO postComment(@Validated VideoCommentDTO videoCommentDTO)
 	{
 		//获取发布视频信息
@@ -75,7 +75,7 @@ public class VideoCommentController extends ABaseController {
 	}
 
 	@RequestMapping("/userDelComment")
-	@GlobalInterceptor(checkLogin = true)
+	@LoginInterceptor(checkLogin = true)
 	public ResponseVO userDelComment(@NotNull Integer commentId)
 	{
 		 videoCommentService.deleteByCommentId(commentId, false, getTokenUserInfo().getUserId());

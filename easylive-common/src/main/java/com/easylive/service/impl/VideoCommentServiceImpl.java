@@ -1,5 +1,6 @@
 package com.easylive.service.impl;
 
+import com.easylive.annotation.MessageInterceptor;
 import com.easylive.constants.Constants;
 import com.easylive.entity.dto.TokenUserInfoDTO;
 import com.easylive.entity.po.UserCommentAction;
@@ -10,10 +11,7 @@ import com.easylive.entity.query.*;
 import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.entity.vo.UserActionVO;
 import com.easylive.entity.vo.VideoCommentVO;
-import com.easylive.enums.PageSize;
-import com.easylive.enums.ResponseCodeEnum;
-import com.easylive.enums.UserActionTypeEnum;
-import com.easylive.enums.VideoCommentTypeEnum;
+import com.easylive.enums.*;
 import com.easylive.exception.BusinessException;
 import com.easylive.mappers.UserCommentActionMapper;
 import com.easylive.mappers.UserInfoMapper;
@@ -127,6 +125,7 @@ public class VideoCommentServiceImpl implements VideoCommentService {
 	 */
 	@Override
 	@Transactional(rollbackFor = Exception.class)
+	@MessageInterceptor(messageType = MessageTypeEnum.COMMENT)
 	public void postComment(VideoComment videoComment) {
 
 		//表示回复评论 此时pCommentId表示要回复评论的id

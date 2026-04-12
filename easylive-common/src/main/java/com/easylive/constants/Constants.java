@@ -60,6 +60,7 @@ public class Constants {
     public static final String REDIS_WEB_ACTION_VIDEO_COIN_QUEUE_KEY = REDIS_PREFIX + "queue:action:video:coin:list:";
     public static final String REDIS_WEB_ACTION_VIDEO_COLLECT_QUEUE_KEY = REDIS_PREFIX + "queue:action:video:collect:list:";
     public static final String REDIS_WEB_ACTION_VIDEO_LIKE_QUEUE_KEY = REDIS_PREFIX + "queue:action:video:like:list:";
+    public static final String REDIS_WEB_USER_MESSAGE_QUEUE_KEY = REDIS_PREFIX + "queue:user:message:list:";
     public static final String REDIS_WEB_VIDEO_PLAY_QUEUE_KEY = REDIS_PREFIX + "queue:video:play:";
     public static final String REDIS_WEB_ACTION_VIDEO_STATUS_KEY = REDIS_PREFIX + "action:video:status:";
     public static final String REDIS_WEB_ACTION_COMMENT_STATUS_KEY = REDIS_PREFIX + "action:comment:status:";

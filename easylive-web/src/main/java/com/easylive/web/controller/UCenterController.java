@@ -1,6 +1,6 @@
 package com.easylive.web.controller;
 
-import com.easylive.annotaion.GlobalInterceptor;
+import com.easylive.annotation.LoginInterceptor;
 import com.easylive.entity.dto.TokenUserInfoDTO;
 import com.easylive.entity.dto.VideoInfoPostDTO;
 import com.easylive.entity.po.*;
@@ -25,7 +25,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/ucenter")
-@GlobalInterceptor(checkLogin = true)
+@LoginInterceptor(checkLogin = true)
 public class UCenterController extends ABaseController{
 
     @Resource

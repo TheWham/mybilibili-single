@@ -1,7 +1,7 @@
 package com.easylive.web.controller;
 
 import cn.hutool.core.bean.BeanUtil;
-import com.easylive.annotaion.GlobalInterceptor;
+import com.easylive.annotation.LoginInterceptor;
 import com.easylive.entity.po.UserVideoSeries;
 import com.easylive.entity.po.UserVideoSeriesVideo;
 import com.easylive.entity.po.VideoInfo;
@@ -27,7 +27,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/uhome/series")
-@GlobalInterceptor(checkLogin = true)
+@LoginInterceptor(checkLogin = true)
 public class UHomeVideoSeriesController extends ABaseController{
 
     @Resource
