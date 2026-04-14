@@ -48,7 +48,6 @@ public class UserMessageAspect extends GlobalOperationAspect{
 
     private void sendMessage(JoinPoint joinPoint, MessageInterceptor annotation)
     {
-        //TODO 需要修改extendJson逻辑
         Object[] args = joinPoint.getArgs();
         for (Object arg : args) {
             if (arg instanceof UserAction userAction) {
@@ -106,9 +105,10 @@ public class UserMessageAspect extends GlobalOperationAspect{
         if (videoComment == null) {
             return;
         }
-        //TODO 需要处理细节 回复接收人不同
-        String receiveUserId = StringUtils.isNotBlank(videoComment.getReplyUserId()) ? videoComment.getReplyUserId() : videoComment.getVideoUserId();
-        addMessage(receiveUserId, videoComment.getUserId(), videoComment.getVideoId(), messageTypeEnum, buildCommentExtendJson(videoComment));
+        //需要处理细节 回复接收人不同
+        Boolean isReply = StringUtils.isNotBlank(videoComment.getReplyUserId());
+        String receiveUserId =  isReply ? videoComment.getReplyUserId() : videoComment.getVideoUserId();
+        addMessage(receiveUserId, videoComment.getUserId(), videoComment.getVideoId(), messageTypeEnum, buildCommentExtendJson(videoComment, isReply));
     }
 
     private void addMessage(String receiveUserId, String sendUserId, String videoId, MessageTypeEnum messageTypeEnum, String extendJson) {
@@ -146,12 +146,13 @@ public class UserMessageAspect extends GlobalOperationAspect{
         return JsonUtils.convertObj2Json(extendInfo);
     }
 
-    private String buildCommentExtendJson(VideoComment videoComment) {
+    private String buildCommentExtendJson(VideoComment videoComment, Boolean isReply) {
         Map<String, Object> extendInfo = new HashMap<>();
         extendInfo.put("commentId", videoComment.getCommentId());
         extendInfo.put("replyCommentId", videoComment.getReplyCommentId());
         extendInfo.put("pCommentId", videoComment.getPCommentId());
-        extendInfo.put("content", videoComment.getContent());
+        String content = isReply ? "messageContent" : "messageContentReply";
+        extendInfo.put(content, videoComment.getContent());
         extendInfo.put("replyUserId", videoComment.getReplyUserId());
         return JsonUtils.convertObj2Json(extendInfo);
     }

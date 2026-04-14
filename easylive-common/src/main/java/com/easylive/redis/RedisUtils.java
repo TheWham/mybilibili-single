@@ -3,6 +3,7 @@ package com.easylive.redis;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.QueryTimeoutException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -156,6 +157,18 @@ public class RedisUtils<V> {
             return redisTemplate.opsForList().rightPop(key);
         } catch (Exception e) {
             e.printStackTrace();
+            return null;
+        }
+    }
+
+    public V brpop(String key, long timeout, TimeUnit timeUnit) {
+        try {
+            return redisTemplate.opsForList().rightPop(key, timeout, timeUnit);
+        } catch (QueryTimeoutException e) {
+            // 阻塞队列等待超过客户端超时时间时，外层只需要按“本轮没拿到数据”处理，不刷错误日志。
+            return null;
+        } catch (Exception e) {
+            logger.error("阻塞获取队列数据失败, key: {}", key, e);
             return null;
         }
     }

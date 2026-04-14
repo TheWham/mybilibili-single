@@ -1,0 +1,9 @@
+.git
+.idea
+.mvn
+**/target
+**/.flattened-pom.xml
+.m2-temp
+docker-data
+*.log
+

@@ -255,10 +255,17 @@ public class UserVideoSeriesServiceImpl implements UserVideoSeriesService {
 		userVideoSeriesVideoQuery.setUserId(userId);
 		userVideoSeriesVideoQuery.setOrderBy("v.sort asc");
 		List<UserVideoSeriesVideo> userVideoSeriesVideoList = userVideoSeriesVideoMapper.selectList(userVideoSeriesVideoQuery);
+
+		if (userVideoSeriesVideoList == null || userVideoSeriesVideoList.isEmpty())
+			return Collections.emptyList();
+
 		Map<Integer, List<UserVideoSeriesVideo>> map = userVideoSeriesVideoList.stream().collect(Collectors.groupingBy(UserVideoSeriesVideo::getSeriesId));
 
 		List<Integer> seriesList = userVideoSeriesVideoList.stream().map(UserVideoSeriesVideo::getSeriesId).collect(Collectors.toList());
 		List<UserVideoSeries> userVideoSeries = this.userVideoSeriesMapper.selectByIds(seriesList, userId);
+
+		if (userVideoSeries == null || userVideoSeries.isEmpty())
+			return Collections.emptyList();
 
 		//组装vo
 		return userVideoSeries.stream().map(series ->{

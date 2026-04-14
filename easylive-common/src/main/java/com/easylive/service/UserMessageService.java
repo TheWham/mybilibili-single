@@ -2,6 +2,7 @@ package com.easylive.service;
 
 import com.easylive.entity.po.UserMessage;
 import com.easylive.entity.query.UserMessageQuery;
+import com.easylive.entity.vo.MessageNoticeVO;
 import com.easylive.entity.vo.PaginationResultVO;
 
 import java.util.List;
@@ -60,4 +61,18 @@ public interface UserMessageService {
 	 */
 	Integer deleteUserMessageByMessageId(Integer messageId);
 
+	/**
+	 * @param list 信息列表
+	 * @param messageType 当前列表筛选的消息类型，首页混合流时可以为空
+	 * @return 附加额外显示信息列表
+	 */
+    List<MessageNoticeVO> fullCompleteInfo(List<UserMessage> list, Integer messageType);
+
+	/**
+	 * @param messageQuery count查询条件
+	 * @return 未读信息数量
+	 */
+	Integer getNoReadMessageCount(UserMessageQuery messageQuery);
+
+	Integer updateReadStatsBatch(UserMessageQuery userMessageQuery);
 }

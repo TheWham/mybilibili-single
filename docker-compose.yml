@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.3
+    container_name: easylive-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123456
+      MYSQL_DATABASE: easylive
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./docker-data/mysql:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+
+  redis:
+    image: redis:7.2
+    container_name: easylive-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./docker-data/redis:/data
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: easylive-es
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      TZ: Asia/Shanghai
+    ports:
+      - "9201:9200"
+    volumes:
+      - ./docker-data/elasticsearch:/usr/share/elasticsearch/data
+
+  easylive-web:
+    build:
+      context: .
+      dockerfile: easylive-web/Dockerfile
+    container_name: easylive-web
+    depends_on:
+      - mysql
+      - redis
+      - elasticsearch
+    ports:
+      - "7071:7071"
+    volumes:
+      - ./docker-data/app:/app/data
+
+  easylive-admin:
+    build:
+      context: .
+      dockerfile: easylive-admin/Dockerfile
+    container_name: easylive-admin
+    depends_on:
+      - mysql
+      - redis
+      - elasticsearch
+    ports:
+      - "7070:7070"
+    volumes:
+      - ./docker-data/app:/app/data

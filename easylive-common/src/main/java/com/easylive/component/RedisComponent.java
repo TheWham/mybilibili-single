@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static com.easylive.constants.Constants.REDIS_EXPIRE_TIME_DAY_COUNT;
 import static com.easylive.constants.Constants.REDIS_EXPIRE_TIME_MINUTE_COUNT;
@@ -169,6 +170,12 @@ public class RedisComponent {
     public VideoInfoFilePost getTransferVideoInfo4Queue() {
         String key = Constants.REDIS_WEB_ADD_TRANSFER_QUEUE_KEY;
         return (VideoInfoFilePost)redisUtils.rpop(key);
+    }
+
+    public VideoInfoFilePost getTransferVideoInfo4QueueBlock() {
+        String key = Constants.REDIS_WEB_ADD_TRANSFER_QUEUE_KEY;
+        // 转码队列空闲时直接阻塞等待，避免任务线程一直轮询 Redis。
+        return (VideoInfoFilePost) redisUtils.brpop(key, Constants.REDIS_QUEUE_BLOCK_SECONDS, TimeUnit.SECONDS);
     }
 
     public List<String> getDelFilePathsQueue(String videoId) {

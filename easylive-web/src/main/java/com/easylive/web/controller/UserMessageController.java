@@ -1,18 +1,23 @@
 package com.easylive.web.controller;
 
 import com.easylive.entity.po.UserMessage;
-import com.easylive.entity.query.SimplePage;
 import com.easylive.entity.query.UserMessageQuery;
+import com.easylive.entity.vo.MessageNoticeVO;
+import com.easylive.entity.vo.MessageTypeDataVO;
 import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.entity.vo.ResponseVO;
-import com.easylive.enums.PageSize;
+import com.easylive.enums.MessageReadTypeEnum;
 import com.easylive.service.UserMessageService;
 import jakarta.annotation.Resource;
-import org.springframework.web.bind.annotation.RequestBody;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author amani
@@ -21,7 +26,7 @@ import java.util.List;
  */
 
 @RestController
-@RequestMapping("userMessage")
+@RequestMapping("message")
 public class UserMessageController extends ABaseController {
 	@Resource
 	private UserMessageService userMessageService;
@@ -29,86 +34,77 @@ public class UserMessageController extends ABaseController {
 	/**
 	 * 根据条件分页查询
 	 */
-	@RequestMapping("loadDataList")
-	public ResponseVO loadDataList (UserMessageQuery query) {
-		return getSuccessResponseVO(userMessageService.findListByPage(query));
+	@RequestMapping("loadMessage")
+	public ResponseVO loadMessage (Integer pageNo, @NotNull Integer messageType)
+	{
+		UserMessageQuery userMessageQuery = new UserMessageQuery();
+		userMessageQuery.setPageNo(pageNo);
+		userMessageQuery.setMessageType(messageType);
+		userMessageQuery.setOrderBy("create_time desc");
+		// 收件箱只能查当前登录用户自己的消息。
+		userMessageQuery.setUserId(getTokenUserInfo().getUserId());
+		PaginationResultVO<UserMessage> page = userMessageService.findListByPage(userMessageQuery);
+
+		// 分页先拿 message 主表，再补发件人、封面和扩展字段这些展示信息。
+		// 同一类消息列表会把 messageType 一起透传下去，service 侧可以直接走批量组装逻辑。
+		List<MessageNoticeVO> messageNoticeVOList = userMessageService.fullCompleteInfo(page.getList(), messageType);
+		PaginationResultVO<MessageNoticeVO> result = new PaginationResultVO<>(page.getTotalCount(), page.getPageSize(), page.getPageNo(), page.getPageTotal(), messageNoticeVOList);
+		return getSuccessResponseVO(result);
 	}
 
 	/**
-	 * 根据条件查询数量
+	 * 查询未读信息数量
 	 */
-	@RequestMapping("findCountByParam")
-	public Integer findCountByParam(UserMessageQuery param) {
-		return this.userMessageService.findCountByParam(param);
+
+	@RequestMapping("getNoReadCount")
+	public ResponseVO getNoReadCount()
+	{
+		UserMessageQuery messageQuery = new UserMessageQuery();
+		messageQuery.setReadType(MessageReadTypeEnum.NO_READ.getType());
+		messageQuery.setUserId(getTokenUserInfo().getUserId());
+		return getSuccessResponseVO(userMessageService.getNoReadMessageCount(messageQuery));
 	}
 
-	/**
-	 * 分页查询
-	 */
-	@RequestMapping("findListByPage")
-	public PaginationResultVO<UserMessage> findListByPage(UserMessageQuery param) {
-		Integer count = this.userMessageService.findCountByParam(param);
-		int pageSize = param.getPageSize()==null?PageSize.SIZE15.getSize():param.getPageSize();
+	@RequestMapping("getNoReadCountGroup")
+	public ResponseVO getNoReadCountGroup()
+	{
+		UserMessageQuery messageQuery = new UserMessageQuery();
+		messageQuery.setReadType(MessageReadTypeEnum.NO_READ.getType());
+		messageQuery.setUserId(getTokenUserInfo().getUserId());
+		List<UserMessage> list = userMessageService.findListByParam(messageQuery);
 
-		SimplePage page = new SimplePage(param.getPageNo(), count, pageSize);
-		param.setSimplePage(page);
-		List<UserMessage> list = this.userMessageService.findListByParam(param);
-		PaginationResultVO<UserMessage> result = new PaginationResultVO(count, page.getPageSize(), page.getPageNo(), page.getPageTotal(), list);
-		return result;
+		if (list == null || list.isEmpty())
+			return getSuccessResponseVO(Collections.emptyMap());
+
+		Map<Integer, Integer> typeCountMap = list.stream()
+				.filter(item -> item.getReadType() == 0)
+				.collect(Collectors.toMap(
+						UserMessage::getMessageType,
+						item -> 1,
+						Integer::sum
+				));
+
+		List<MessageTypeDataVO> dataVOList = new ArrayList<>(typeCountMap.size());
+
+		for (UserMessage userMessage : list) {
+			MessageTypeDataVO messageTypeDataVO = new MessageTypeDataVO();
+			messageTypeDataVO.setMessageType(userMessage.getMessageType());
+			messageTypeDataVO.setMessageCount(typeCountMap.get(userMessage.getMessageType()));
+			dataVOList.add(messageTypeDataVO);
+		}
+
+		return getSuccessResponseVO(dataVOList);
 	}
 
-	/**
-	 * 新增
-	 */
-	@RequestMapping("add")
-	public ResponseVO add(UserMessage bean) {
-		userMessageService.add(bean);
-		return getSuccessResponseVO(null);
-	}
-
-	/**
-	 * 批量新增
-	 */
-	@RequestMapping("addBatch")
-	public ResponseVO addBatch(@RequestBody List<UserMessage> listBean) {
-		userMessageService.addBatch(listBean);
-		return getSuccessResponseVO(null);
-	}
-
-	/**
-	 * 批量新增/修改
-	 */
-	@RequestMapping("addOrUpdateBatch")
-	public ResponseVO addOrUpdateBatch(@RequestBody List<UserMessage> listBean) {
-		userMessageService.addOrUpdateBatch(listBean);
-		return getSuccessResponseVO(null);
-	}
-
-
-	/**
-	 * 根据 MessageId查询
-	 */
-	@RequestMapping("getUserMessageByMessageId")
-	public ResponseVO getUserMessageByMessageId(Integer messageId) {
-		return getSuccessResponseVO(this.userMessageService.getUserMessageByMessageId(messageId));
-	}
-
-	/**
-	 * 根据 MessageId更新
-	 */
-	@RequestMapping("updateUserMessageByMessageId")
-	public ResponseVO updateUserMessageByMessageId(UserMessage bean, Integer messageId) {
-		this.userMessageService.updateUserMessageByMessageId(bean, messageId);
-		return getSuccessResponseVO(null);
-	}
-
-	/**
-	 * 根据 MessageId删除
-	 */
-	@RequestMapping("deleteUserMessageByMessageId")
-	public ResponseVO deleteUserMessageByMessageId(Integer messageId) {
-		this.userMessageService.deleteUserMessageByMessageId(messageId);
-		return getSuccessResponseVO(null);
+	@RequestMapping("readAll")
+	public ResponseVO readAll(@NotNull Integer messageType)
+	{
+		UserMessageQuery userMessageQuery = new UserMessageQuery();
+		userMessageQuery.setUserId(getTokenUserInfo().getUserId());
+		userMessageQuery.setMessageType(messageType);
+		userMessageQuery.setReadType(MessageReadTypeEnum.NO_READ.getType());
+		Integer count = userMessageService.updateReadStatsBatch(userMessageQuery);
+		return getSuccessResponseVO(count);
 	}
 
 }

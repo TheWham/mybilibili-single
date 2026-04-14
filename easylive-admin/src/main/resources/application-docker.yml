@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    url: jdbc:mysql://mysql:3306/easylive?serverTimezone=Asia%2FShanghai&useUnicode=true&characterEncoding=utf8&autoReconnect=true&allowMultiQueries=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: root123456
+  data:
+    redis:
+      host: redis
+      port: 6379
+
+project:
+  folder: /app/data/
+
+admin:
+  account: admin
+  password: admin123
+
+es:
+  host:
+    port: elasticsearch:9200
+
+showFFmpegLog: false
+
+log:
+  root:
+    level: info
+

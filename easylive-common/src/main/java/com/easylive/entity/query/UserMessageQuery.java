@@ -49,6 +49,17 @@ public class UserMessageQuery extends BaseQuery {
 	 */
 	private String extendJson;
 	private String extendJsonFuzzy;
+
+	private Boolean isQuerySendUserInfo;
+
+	public Boolean getQuerySendUserInfo() {
+		return isQuerySendUserInfo;
+	}
+
+	public void setQuerySendUserInfo(Boolean querySendUserInfo) {
+		isQuerySendUserInfo = querySendUserInfo;
+	}
+
 	public void setMessageId(Integer messageId) {
 		this.messageId = messageId;
 	}

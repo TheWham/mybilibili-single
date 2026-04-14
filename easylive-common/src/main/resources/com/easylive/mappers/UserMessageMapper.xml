@@ -268,7 +268,6 @@
 		select <include refid="base_column_list"/>
 		from user_message v where message_id=#{messageId}
 	</select>
-
 	<!--根据MessageId删除 -->
 	<delete id="deleteByMessageId">
 		delete from user_message where message_id=#{messageId}
@@ -306,6 +305,11 @@
 		where message_id=#{messageId}
 	</update>
 
+	<update id="updateReadStatsBatch">
+		update user_message v
+		set v.read_type = 1
+		<include refid="query_condition"/>
+	</update>
 
 
 </mapper>
