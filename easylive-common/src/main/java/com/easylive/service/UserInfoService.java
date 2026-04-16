@@ -5,10 +5,8 @@ import com.easylive.entity.dto.TokenUserInfoDTO;
 import com.easylive.entity.dto.WebLoginDTO;
 import com.easylive.entity.po.UserInfo;
 import com.easylive.entity.query.UserInfoQuery;
-import com.easylive.entity.vo.PaginationResultVO;
-import com.easylive.entity.vo.UCenterVideoDateVO;
-import com.easylive.entity.vo.UserCountVO;
-import com.easylive.entity.vo.UserInfoVO;
+import com.easylive.entity.vo.*;
+import com.easylive.enums.UserStatsRedisEnum;
 import com.easylive.exception.BusinessException;
 
 import java.util.List;
@@ -125,4 +123,6 @@ public interface UserInfoService {
 	UserCountVO getUserCountInfo(String userId);
 
     UCenterVideoDateVO getActualTimeStatisticsInfo(String userId);
+
+    List<UCenterVideoWeekCountVO> getWeekStatisticsInfo(UserStatsRedisEnum anEnum, String userId);
 }

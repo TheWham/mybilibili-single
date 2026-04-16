@@ -64,7 +64,7 @@
             <artifactId>fastjson2</artifactId>
         </dependency>
 
-        <!-- commons（不锁版本，让 Boot 管更稳；你要锁也可以去父 pom 里加） -->
+        <!-- commons -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>

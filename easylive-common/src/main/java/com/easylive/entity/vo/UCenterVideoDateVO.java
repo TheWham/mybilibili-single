@@ -9,11 +9,10 @@ public class UCenterVideoDateVO {
      * 当前用户视频数据
      */
     private TotalCountInfoVO totalCountInfo;
-
     /**
-     * 昨天用户视频数据
+     * 当前用户昨天视频数据
      */
-    private TotalCountInfoVO preDayData;
+    private Integer[] preDayData;
 
     public TotalCountInfoVO getTotalCountInfo() {
         return totalCountInfo;
@@ -23,11 +22,11 @@ public class UCenterVideoDateVO {
         this.totalCountInfo = totalCountInfo;
     }
 
-    public TotalCountInfoVO getPreDayData() {
+    public Integer[] getPreDayData() {
         return preDayData;
     }
 
-    public void setPreDayData(TotalCountInfoVO preDayData) {
+    public void setPreDayData(Integer[] preDayData) {
         this.preDayData = preDayData;
     }
 }

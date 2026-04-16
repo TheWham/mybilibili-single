@@ -12,5 +12,7 @@ public class VideoPlaySyncTask {
     @Scheduled(fixedDelay = 20000)
     public void syncVideoPlayQueue() {
         videoPlayCountAndHistorySyncTask.syncStatsVideoPlayCount();
+        videoPlayCountAndHistorySyncTask.syncStatsVideoHistory();
+        videoPlayCountAndHistorySyncTask.syncDeletedVideoHistory();
     }
 }

@@ -188,6 +188,16 @@
 		delete from video_play_history where user_id=#{userId} and video_id=#{videoId}
 	</delete>
 
+	<!--根据 userId 删除当前用户全部历史 -->
+	<delete id="deleteByUserId">
+		delete from video_play_history where user_id=#{userId}
+	</delete>
+
+	<!--删除早于指定时间的历史 -->
+	<delete id="deleteByLastUpdateTimeBefore">
+		delete from video_play_history where last_update_time <![CDATA[ < ]]> #{lastUpdateTime}
+	</delete>
+
 	<!--根据UserIdAndVideoIdAnd更新 -->
 	<update id="updateByUserIdAndVideoId" parameterType="com.easylive.entity.po.VideoPlayHistory">
 		update video_play_history

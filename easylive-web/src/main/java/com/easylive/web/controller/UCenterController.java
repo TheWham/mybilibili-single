@@ -5,11 +5,9 @@ import com.easylive.entity.dto.TokenUserInfoDTO;
 import com.easylive.entity.dto.VideoInfoPostDTO;
 import com.easylive.entity.po.*;
 import com.easylive.entity.query.*;
-import com.easylive.entity.vo.PaginationResultVO;
-import com.easylive.entity.vo.ResponseVO;
-import com.easylive.entity.vo.VideoAuditCountVO;
-import com.easylive.entity.vo.VideoInfoPostEditVO;
+import com.easylive.entity.vo.*;
 import com.easylive.enums.ResponseCodeEnum;
+import com.easylive.enums.UserStatsRedisEnum;
 import com.easylive.enums.VideoStatusEnum;
 import com.easylive.exception.BusinessException;
 import com.easylive.service.*;
@@ -180,10 +178,16 @@ public class UCenterController extends ABaseController{
     @RequestMapping("/getActualTimeStatisticsInfo")
     public ResponseVO getActualTimeStatisticsInfo()
     {
-        userInfoService.getActualTimeStatisticsInfo(getTokenUserInfo().getUserId());
-        return getSuccessResponseVO(null);
+        UCenterVideoDateVO actualTimeStatisticsInfo = userInfoService.getActualTimeStatisticsInfo(getTokenUserInfo().getUserId());
+        return getSuccessResponseVO(actualTimeStatisticsInfo);
     }
 
+    @RequestMapping("/getWeekStatisticsInfo")
+    public ResponseVO getWeekStatisticsInfo(@NotNull Integer dataType)
+    {
+        List<UCenterVideoWeekCountVO> uCenterVideoDateVOList = userInfoService.getWeekStatisticsInfo(UserStatsRedisEnum.getEnum(dataType), getTokenUserInfo().getUserId());
+        return getSuccessResponseVO(uCenterVideoDateVOList);
+    }
 
 }
 

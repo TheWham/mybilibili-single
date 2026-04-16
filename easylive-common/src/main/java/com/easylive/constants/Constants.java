@@ -21,6 +21,7 @@ public class Constants {
     public static final Integer LENGTH_15 = 15;
     public static final Integer LENGTH_20 = 20;
     public static final Integer LENGTH_30 = 30;
+    public static final Integer LENGTH_90 = 90;
     public static final Integer LENGTH_1000 = 1000;
     public static final Integer HOUR_24 = 24;
     public static final Integer USER_ID_LENGTH = 10;
@@ -97,6 +98,7 @@ public class Constants {
     public static final String REDIS_WEB_ACTION_VIDEO_COLLECT_QUEUE_KEY = REDIS_PREFIX + "queue:action:video:collect:list:";
     public static final String REDIS_WEB_ACTION_VIDEO_LIKE_QUEUE_KEY = REDIS_PREFIX + "queue:action:video:like:list:";
     public static final String REDIS_WEB_USER_MESSAGE_QUEUE_KEY = REDIS_PREFIX + "queue:user:message:list:";
+    public static final String REDIS_WEB_VIDEO_HISTORY_DELETE_QUEUE_KEY = REDIS_PREFIX + "queue:video:history:delete:list:";
 
     /**
      * 用户动作状态缓存，用来做幂等和取消判断。
@@ -113,6 +115,7 @@ public class Constants {
     public static final String REDIS_KEY_VIDEO_PLAY_COUNT_USER_PREFIX = "user:";
     public static final String REDIS_KEY_VIDEO_PLAY_COUNT_USER = REDIS_KEY_VIDEO_PLAY_COUNT_ONLINE_PREIFX + REDIS_KEY_VIDEO_PLAY_COUNT_USER_PREFIX + "%s:%s";
     public static final String REDIS_KEY_VIDEO_PLAY_HISTORY = REDIS_PREFIX + "video:history:play:";
+    public static final String REDIS_KEY_VIDEO_PLAY_HISTORY_FILE_INDEX = REDIS_PREFIX + "video:history:fileIndex:";
     public static final String REDIS_KEY_DIRTY_HISTORY_USER = REDIS_PREFIX + "video:history:user:";
     public static final String REDIS_KEY_VIDEO_PLAY_COUNT = REDIS_PREFIX + "video:play:uv:";
     public static final String REDIS_KEY_VIDEO_PLAY_EFFECTIVE = REDIS_PREFIX + "video:play:effective:";
@@ -130,4 +133,3 @@ public class Constants {
      */
     public static final String REDIS_KEY_VIDEO_SEARCH_COUNT = REDIS_PREFIX + "video:search:";
 }
-

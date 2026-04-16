@@ -27,12 +27,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -276,7 +276,6 @@ public class UserInfoServiceImpl implements UserInfoService {
 		userInfoVO.setLikeCount(Optional.ofNullable(userStats.getLikeCount()).orElse(0));
 		userInfoVO.setFansCount(Optional.ofNullable(userStats.getFansCount()).orElse(0));
 		userInfoVO.setFocusCount(Optional.ofNullable(userStats.getFocusCount()).orElse(0));
-
 	}
 
 	@Override
@@ -376,19 +375,22 @@ public class UserInfoServiceImpl implements UserInfoService {
 
 	@Override
 	public UCenterVideoDateVO getActualTimeStatisticsInfo(String userId) {
-		//TODO 设计定时任务
 		UserInfo userInfo = userInfoMapper.selectByUserId(userId);
 		Optional.ofNullable(userInfo).orElseThrow(() -> new BusinessException(ResponseCodeEnum.CODE_600));
 		String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		HashMap<String, Integer> userStatsInfoMap = redisComponent.getUserStatsInfo(userId, date);
 		UCenterVideoDateVO uCenterVideoDateVO = new UCenterVideoDateVO();
 		TotalCountInfoVO totalCountInfoVO = new TotalCountInfoVO();
+        uCenterVideoDateVO.setTotalCountInfo(totalCountInfoVO);
+		uCenterVideoDateVO.setPreDayData(buildPreDayData(userId));
 		if (userStatsInfoMap != null && !userStatsInfoMap.isEmpty())
 		{
 			fillTotalCountInfo(totalCountInfoVO, userStatsInfoMap);
-
+			return uCenterVideoDateVO;
 		}
-		return null;
+		//redis没有走mysql
+		uCenterVideoDateVO.setTotalCountInfo(fillTotalCountInfoInDB(userId));
+		return uCenterVideoDateVO;
 	}
 
 	private void fillTotalCountInfo(TotalCountInfoVO totalCountInfoVO, HashMap<String, Integer> userStatsInfoMap)
@@ -401,4 +403,91 @@ public class UserInfoServiceImpl implements UserInfoService {
 		totalCountInfoVO.setPlayCount(userStatsInfoMap.getOrDefault(UserStatsRedisEnum.VIDEO_PLAY.getField(), 0));
 		totalCountInfoVO.setFansCount(userStatsInfoMap.getOrDefault(UserStatsRedisEnum.USER_FANS.getField(), 0));
 	}
+
+	private TotalCountInfoVO fillTotalCountInfoInDB(String userId)
+	{
+		TotalCountInfoVO totalCountInfoVO = new TotalCountInfoVO(0, 0, 0, 0, 0, 0, 0);
+        UserStats userStats = userStatsMapper.selectLatestByUserId(userId);
+		if (userStats != null) {
+			totalCountInfoVO = BeanUtil.toBean(userStats, TotalCountInfoVO.class);
+		}
+		return totalCountInfoVO;
+	}
+
+	private Integer[] buildPreDayData(String userId) {
+		int dataTypeLength = UserStatsRedisEnum.values().length;
+		Integer[] preDayData = new Integer[dataTypeLength];
+		for (int i = 0; i < dataTypeLength; i++) {
+			preDayData[i] = 0;
+		}
+
+		LocalDate preDay = LocalDate.now().minusDays(1);
+		UserStatsQuery userStatsQuery = new UserStatsQuery();
+		userStatsQuery.setUserId(userId);
+		userStatsQuery.setStatsDay(Date.from(preDay.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+
+		// 这里只取昨天那一天的统计快照。
+		// 前端拿到的 preDayData 会按 dataType 下标取值，所以这里直接一次性整理成数组。
+		List<UserStats> userStatsList = userStatsMapper.selectList(userStatsQuery);
+		if (userStatsList == null || userStatsList.isEmpty()) {
+			return preDayData;
+		}
+		UserStats userStats = userStatsList.get(0);
+		for (UserStatsRedisEnum statsEnum : UserStatsRedisEnum.values()) {
+			preDayData[statsEnum.getType()] = getStatsCountByType(userStats, statsEnum);
+		}
+		return preDayData;
+	}
+
+	@Override
+	public List<UCenterVideoWeekCountVO> getWeekStatisticsInfo(UserStatsRedisEnum anEnum, String userId) {
+		UserInfo userInfo = userInfoMapper.selectByUserId(userId);
+		Optional.ofNullable(userInfo).orElseThrow(() -> new BusinessException(ResponseCodeEnum.CODE_600));
+
+		UserStatsQuery userStatsQuery = new UserStatsQuery();
+		userStatsQuery.setUserId(userId);
+		userStatsQuery.setPageNo(1);
+		userStatsQuery.setPageSize(7);
+		userStatsQuery.setOrderBy("v.stats_day desc");
+		List<UserStats> userStatsList = userStatsMapper.selectList(userStatsQuery);
+
+		// user_stats 里未必每天都有一条数据。
+		// 这里先把库里查出来的结果按日期收成 Map，后面再把最近 7 天补齐，前端画折线图时就不会缺点位。
+		Map<LocalDate, Integer> countMap = userStatsList.stream()
+				.filter(userStats -> userStats.getStatsDay() != null)
+				.collect(Collectors.toMap(userStats -> userStats.getStatsDay().toInstant().atZone(ZoneId.systemDefault()).toLocalDate(),
+						userStats -> getStatsCountByType(userStats, anEnum),
+						(oldValue, newValue) -> newValue));
+
+		List<UCenterVideoWeekCountVO> result = new ArrayList<>(7);
+		LocalDate today = LocalDate.now();
+		for (int i = 6; i >= 0; i--) {
+			LocalDate statisticsDate = today.minusDays(i);
+			UCenterVideoWeekCountVO weekCountVO = new UCenterVideoWeekCountVO();
+			weekCountVO.setStatisticsDate(Date.from(statisticsDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+			weekCountVO.setStatisticsCount(countMap.getOrDefault(statisticsDate, 0));
+			result.add(weekCountVO);
+		}
+		return result;
+	}
+
+	private Integer getStatsCountByType(UserStats userStats, UserStatsRedisEnum statsType) {
+		if (userStats == null || statsType == null) {
+			return 0;
+		}
+		// 这里直接按枚举映射 user_stats 的字段，周趋势只关心某一种统计项的每日数量。
+		return switch (statsType) {
+			case VIDEO_LIKE -> Optional.ofNullable(userStats.getLikeCount()).orElse(0);
+			case VIDEO_PLAY -> Optional.ofNullable(userStats.getPlayCount()).orElse(0);
+			case VIDEO_DANMU -> Optional.ofNullable(userStats.getDanmuCount()).orElse(0);
+			case VIDEO_COIN -> Optional.ofNullable(userStats.getCoinCount()).orElse(0);
+			case USER_FOCUS -> Optional.ofNullable(userStats.getFocusCount()).orElse(0);
+			case USER_FANS -> Optional.ofNullable(userStats.getFansCount()).orElse(0);
+			case USER_COIN -> Optional.ofNullable(userStats.getCurrentCoinCount()).orElse(0);
+			case USER_COMMENT_COUNT -> Optional.ofNullable(userStats.getCommentCount()).orElse(0);
+			case USER_COLLECT_COUNT -> Optional.ofNullable(userStats.getCollectCount()).orElse(0);
+		};
+	}
+
+
 }

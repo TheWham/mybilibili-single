@@ -62,8 +62,8 @@
 		<if test="query.coinCount != null" >
 			and v.coin_count = #{query.coinCount}
 		</if>
-		<if test="query.statsDay != null and query.statsDay != ''" >
-			<![CDATA[ and v.stats_day=str_to_date(#{query.statsDay}, '%Y-%m-%d') ]]>
+		<if test="query.statsDay != null" >
+			and v.stats_day = #{query.statsDay}
 		</if>
 		<if test="query.danmuCount!= null" >
 			and v.danmu_count = #{query.danmuCount}

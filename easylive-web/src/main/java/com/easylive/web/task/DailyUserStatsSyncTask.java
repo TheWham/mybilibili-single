@@ -34,6 +34,8 @@ public class DailyUserStatsSyncTask {
     private UserInfoMapper<UserInfo, UserInfoQuery> userInfoMapper;
     @Resource
     private UserStatsMapper<UserStats, UserStatsQuery> userStatsMapper;
+    @Resource
+    private VideoPlayCountAndHistorySyncTask videoPlayCountAndHistorySyncTask;
 
     @Scheduled(cron = "0 0 0 * * *")
     public void freezeYesterdayUserStatsSnapshot() {
@@ -78,6 +80,15 @@ public class DailyUserStatsSyncTask {
             log.info("syncYesterdayUserStats finished, statsDay={}, count={}", statsDay, syncCount);
         }
     }
+
+    /**
+     * 清除过期历史记录
+     */
+    @Scheduled(cron = "0 10 0 * * *")
+    public void cleanExpiredVideoHistory() {
+        videoPlayCountAndHistorySyncTask.cleanExpiredVideoHistory();
+    }
+
     private int freezeUserStatsSnapshot(String statsDay) {
         Integer totalCount = userInfoMapper.selectCount(new UserInfoQuery());
         if (totalCount == null || totalCount == 0) {

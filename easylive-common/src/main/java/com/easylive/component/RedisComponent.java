@@ -2,10 +2,7 @@ package com.easylive.component;
 
 import com.alibaba.fastjson2.JSON;
 import com.easylive.constants.Constants;
-import com.easylive.entity.dto.SysSettingDTO;
-import com.easylive.entity.dto.TokenUserInfoDTO;
-import com.easylive.entity.dto.UploadingFileDTO;
-import com.easylive.entity.dto.UserActionSyncDTO;
+import com.easylive.entity.dto.*;
 import com.easylive.entity.po.CategoryInfo;
 import com.easylive.entity.po.UserMessage;
 import com.easylive.entity.po.VideoInfoFilePost;
@@ -14,6 +11,7 @@ import com.easylive.exception.BusinessException;
 import com.easylive.redis.RedisUtils;
 import jakarta.annotation.Resource;
 import jakarta.validation.constraints.NotEmpty;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -286,6 +284,16 @@ public class RedisComponent {
         return (UserMessage) redisUtils.rpop(Constants.REDIS_WEB_USER_MESSAGE_QUEUE_KEY);
     }
 
+    public void addVideoHistoryDeleteQueue(VideoHistoryDeleteDTO deleteDTO) {
+        redisUtils.lpush(Constants.REDIS_WEB_VIDEO_HISTORY_DELETE_QUEUE_KEY, deleteDTO, 0L);
+    }
+
+    public VideoHistoryDeleteDTO getNextVideoHistoryDeleteQueue() {
+        // 这里只是从“已产生的删除队列”里取下一条待删记录。
+        // 真正把视频放进删除队列的时机，是 saveVideoHistory() 里发现用户历史超过 1000 条并发生裁剪的时候。
+        return (VideoHistoryDeleteDTO) redisUtils.rpop(Constants.REDIS_WEB_VIDEO_HISTORY_DELETE_QUEUE_KEY);
+    }
+
     public Long incrementUserStats(String userId, String field, long count) {
         String key = Constants.REDIS_WEB_USER_STATS_KEY + userId;
         Long value = redisUtils.hincr(key, field, count);
@@ -357,26 +365,37 @@ public class RedisComponent {
      * @param fileIndex 视频批号
      */
     public void saveVideoHistory(String videoId, String userId, Integer fileIndex) {
-        //  获取绝对时间戳 保证排序正确
+        // ZSet 只保存视频本身和最后观看时间，用来做“最近观看”排序。
+        // fileIndex 这类附加信息单独放 Hash，这样重复观看同一视频时就可以直接更新，不会新增脏数据。
         long timestamp = System.currentTimeMillis();
+        String historyKey = Constants.REDIS_KEY_VIDEO_PLAY_HISTORY + userId;
+        String fileIndexKey = Constants.REDIS_KEY_VIDEO_PLAY_HISTORY_FILE_INDEX + userId;
 
+        // member 直接用 videoId，重复看同一个视频时 Redis 会更新 score，而不是再插一条新历史。
+        redisUtils.zaddCount4VideoHistory(historyKey, videoId, (double) timestamp);
 
-        String key = Constants.REDIS_KEY_VIDEO_PLAY_HISTORY + userId;
+        Map<String, Object> fileIndexMap = new HashMap<>(1);
+        fileIndexMap.put(videoId, fileIndex == null ? 1 : fileIndex);
+        redisUtils.hmset(fileIndexKey, fileIndexMap, Constants.REDIS_EXPIRE_TIME_ONE_DAY * Constants.LENGTH_90);
 
+        // Redis 以最近观看时间倒序保留前 1000 条，多余的视频从排序结构和 fileIndex 明细里一起删掉。
+        List<String> historyList = redisUtils.getZSetList(historyKey, -1);
+        if (historyList.size() > Constants.LENGTH_1000) {
+            List<String> expiredVideoIds = new ArrayList<>(historyList.subList(Constants.LENGTH_1000, historyList.size()));
+            redisUtils.zremove(historyKey, expiredVideoIds.toArray());
+            redisUtils.hdel(fileIndexKey, expiredVideoIds.toArray());
 
-        String member = videoId + ":" + (fileIndex == null ? 1 : fileIndex);
+            // 这里淘汰掉的就是 Redis 已经不再保留的旧历史，后面再异步删数据库即可。
+            for (String expiredVideoId : expiredVideoIds) {
+                VideoHistoryDeleteDTO deleteDTO = new VideoHistoryDeleteDTO();
+                deleteDTO.setUserId(userId);
+                deleteDTO.setVideoId(expiredVideoId);
+                addVideoHistoryDeleteQueue(deleteDTO);
+            }
+        }
 
-        // --- 开始 Redis 原子操作 (建议封装进 redisUtils) ---
-
-        // 写入ZSet（Score 是时间戳，保证了最新看的永远最大）
-        redisUtils.zaddCount4VideoHistory(key, member, (double) timestamp);
-
-        //只保留最新的 1000 条，删掉排名靠后的旧数据
-        // 索引 0 到 -1001 之间的全部删掉（即保留最后 1000 个）
-    //    redisUtils.zremRangeByRank(key, 0, -1001);
-
-        //设置 30 天过期（TTL）
-        redisUtils.expire(key, Constants.REDIS_EXPIRE_TIME_ONE_DAY * Constants.LENGTH_30);
+        // 两份结构共用同一份保留周期，过期后这批历史会整体淘汰。
+        redisUtils.expire(historyKey, Constants.REDIS_EXPIRE_TIME_ONE_DAY * Constants.LENGTH_90);
 
         // 把该 userId 放入一个待同步 Set 集合中
         redisUtils.zaddUserId(Constants.REDIS_KEY_DIRTY_HISTORY_USER, userId);
@@ -432,8 +451,39 @@ public class RedisComponent {
         return redisUtils.getSetMembers(Constants.REDIS_KEY_DIRTY_HISTORY_USER);
     }
 
+    public void clearDirtyHistoryUser(String userId) {
+        redisUtils.removeSetMember(Constants.REDIS_KEY_DIRTY_HISTORY_USER, userId);
+    }
+
     public List<String> getVideoHistoryList(String userId) {
         return redisUtils.getZSetList(Constants.REDIS_KEY_VIDEO_PLAY_HISTORY + userId, -1);
+    }
+
+    public Set<ZSetOperations.TypedTuple<String>> getVideoHistoryWithScores(String userId) {
+        return redisUtils.getZSetWithScores(Constants.REDIS_KEY_VIDEO_PLAY_HISTORY + userId, -1);
+    }
+
+    public Set<ZSetOperations.TypedTuple<String>> getVideoHistoryWithScoresByPage(String userId, long start, long end) {
+        return redisUtils.getZSetWithScoresByRange(Constants.REDIS_KEY_VIDEO_PLAY_HISTORY + userId, start, end);
+    }
+
+    public Long getVideoHistoryCount(String userId) {
+        return redisUtils.getZSetSize(Constants.REDIS_KEY_VIDEO_PLAY_HISTORY + userId);
+    }
+
+    public Map<String, Integer> getVideoHistoryFileIndexMap(String userId) {
+        Map<Object, Object> valueMap = redisUtils.hmget(Constants.REDIS_KEY_VIDEO_PLAY_HISTORY_FILE_INDEX + userId);
+        if (valueMap == null || valueMap.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, Integer> resultMap = new HashMap<>(valueMap.size());
+        for (Map.Entry<Object, Object> entry : valueMap.entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null) {
+                continue;
+            }
+            resultMap.put(entry.getKey().toString(), Integer.parseInt(entry.getValue().toString()));
+        }
+        return resultMap;
     }
 
 }

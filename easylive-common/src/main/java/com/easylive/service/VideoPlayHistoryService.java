@@ -3,7 +3,9 @@ package com.easylive.service;
 import com.easylive.entity.po.VideoPlayHistory;
 import com.easylive.entity.query.VideoPlayHistoryQuery;
 import com.easylive.entity.vo.PaginationResultVO;
+import com.easylive.entity.vo.VideoHistoryVO;
 
+import java.util.Date;
 import java.util.List;
 
 
@@ -28,6 +30,11 @@ public interface VideoPlayHistoryService {
 	 * 分页查询
 	 */
 	PaginationResultVO<VideoPlayHistory> findListByPage(VideoPlayHistoryQuery param);
+
+	/**
+	 * 加载用户播放历史页。
+	 */
+	PaginationResultVO<VideoHistoryVO> loadHistoryByPage(String userId, Integer pageNo);
 
 	/**
 	 * 新增
@@ -59,5 +66,15 @@ public interface VideoPlayHistoryService {
 	 * 根据 UserIdAndVideoId删除
 	 */
 	Integer deleteVideoPlayHistoryByUserIdAndVideoId(String userId, String videoId);
+
+	/**
+	 * 根据 userId 删除当前用户全部播放历史
+	 */
+	Integer deleteVideoPlayHistoryByUserId(String userId);
+
+	/**
+	 * 删除早于指定时间的历史记录
+	 */
+	Integer deleteVideoPlayHistoryBefore(Date lastUpdateTime);
 
 }

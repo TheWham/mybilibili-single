@@ -1,16 +1,25 @@
 package com.easylive.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import com.easylive.component.RedisComponent;
+import com.easylive.entity.po.VideoInfo;
 import com.easylive.entity.po.VideoPlayHistory;
 import com.easylive.entity.query.SimplePage;
+import com.easylive.entity.query.VideoInfoQuery;
 import com.easylive.entity.query.VideoPlayHistoryQuery;
 import com.easylive.entity.vo.PaginationResultVO;
+import com.easylive.entity.vo.VideoHistoryVO;
 import com.easylive.enums.PageSize;
+import com.easylive.mappers.VideoInfoMapper;
 import com.easylive.mappers.VideoPlayHistoryMapper;
 import com.easylive.service.VideoPlayHistoryService;
 import jakarta.annotation.Resource;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 /**
@@ -23,6 +32,11 @@ import java.util.List;
 public class VideoPlayHistoryServiceImpl implements VideoPlayHistoryService {
 	@Resource
 	private VideoPlayHistoryMapper<VideoPlayHistory, VideoPlayHistoryQuery> videoPlayHistoryMapper;
+	@Resource
+	private VideoInfoMapper<VideoInfo, VideoInfoQuery> videoInfoMapper;
+	@Resource
+	private RedisComponent redisComponent;
+
 
 	/**
 	 * 根据条件查询
@@ -53,6 +67,103 @@ public class VideoPlayHistoryServiceImpl implements VideoPlayHistoryService {
 		List<VideoPlayHistory> list = this.findListByParam(param);
 		PaginationResultVO<VideoPlayHistory> result = new PaginationResultVO(count, page.getPageSize(), page.getPageNo(), page.getPageTotal(), list);
 		return result;
+	}
+
+
+	@Override
+	public PaginationResultVO<VideoHistoryVO> loadHistoryByPage(String userId, Integer pageNo) {
+		int currentPageNo = pageNo == null || pageNo < 1 ? 1 : pageNo;
+		int pageSize = PageSize.SIZE30.getSize();
+
+		// 历史页优先查 Redis。
+		// Redis 里保存的是用户当前最新历史，能保证用户刚退出播放器时页面就能看到最新记录。
+		Long totalCount = redisComponent.getVideoHistoryCount(userId);
+		if (totalCount != null && totalCount > 0) {
+			int pageTotal = (int) Math.ceil((double) totalCount / pageSize);
+			long start = (long) (currentPageNo - 1) * pageSize;
+
+			if (start >= totalCount) {
+				return new PaginationResultVO<>(totalCount.intValue(), pageSize, currentPageNo, pageTotal, new ArrayList<>());
+			}
+			long end = Math.min(start + pageSize - 1, totalCount - 1);
+			//每次获取30条历史记录
+			Set<ZSetOperations.TypedTuple<String>> historyTupleSet = redisComponent.getVideoHistoryWithScoresByPage(userId, start, end);
+
+			if (historyTupleSet == null || historyTupleSet.isEmpty()) {
+				return new PaginationResultVO<>(totalCount.intValue(), pageSize, currentPageNo, pageTotal, new ArrayList<>());
+			}
+
+			Map<String, Date> lastUpdateTimeMap = new LinkedHashMap<>(historyTupleSet.size());
+			List<String> videoHistoryIds = new ArrayList<>(historyTupleSet.size());
+
+			for (ZSetOperations.TypedTuple<String> historyTuple : historyTupleSet) {
+				if (historyTuple == null || historyTuple.getValue() == null) {
+					continue;
+				}
+				String videoId = historyTuple.getValue();
+				videoHistoryIds.add(videoId);
+				if (historyTuple.getScore() != null) {
+					lastUpdateTimeMap.put(videoId, new Date(historyTuple.getScore().longValue()));
+				}
+			}
+			List<VideoHistoryVO> list = this.loadHistory(videoHistoryIds, lastUpdateTimeMap);
+			return new PaginationResultVO<>(totalCount.intValue(), pageSize, currentPageNo, pageTotal, list);
+		}
+
+		// Redis 没命中时再走数据库兜底，避免历史页因为缓存失效直接空掉。
+		return getHistoryListInDB(userId, currentPageNo, pageSize);
+	}
+
+	private List<VideoHistoryVO> loadHistory(List<String> videoHistoryIds, Map<String, Date> lastUpdateTimeMap) {
+		if (videoHistoryIds == null || videoHistoryIds.isEmpty())
+			return Collections.emptyList();
+
+		List<VideoInfo> videoInfos = videoInfoMapper.selectByIds(videoHistoryIds);
+		if (videoInfos == null || videoInfos.isEmpty())
+			return Collections.emptyList();
+
+		Map<String, VideoInfo> map = videoInfos.stream().collect(Collectors.toMap(VideoInfo::getVideoId, Function.identity(), (data1, data2)->data2));
+		List<VideoHistoryVO> ans = new ArrayList<>(videoHistoryIds.size());
+		for (String id : videoHistoryIds)
+		{
+			VideoInfo videoInfo = map.get(id);
+			if (videoInfo != null)
+			{
+				VideoHistoryVO vo = BeanUtil.toBean(videoInfo, VideoHistoryVO.class);
+				// 历史页展示的观看时间要跟 Redis/数据库里的最后观看时间保持一致，
+				// 不能直接复用视频表自己的更新时间。
+				if (lastUpdateTimeMap != null) {
+					vo.setLastUpdateTime(lastUpdateTimeMap.get(id));
+				}
+				ans.add(vo);
+			}
+		}
+		return ans;
+	}
+
+	private PaginationResultVO<VideoHistoryVO> getHistoryListInDB(String userId, Integer currentPageNo, Integer pageSize){
+		VideoPlayHistoryQuery videoPlayHistoryQuery = new VideoPlayHistoryQuery();
+		videoPlayHistoryQuery.setUserId(userId);
+		videoPlayHistoryQuery.setPageNo(currentPageNo);
+		videoPlayHistoryQuery.setPageSize(pageSize);
+		videoPlayHistoryQuery.setOrderBy("v.last_update_time desc");
+		PaginationResultVO<VideoPlayHistory> pageResult = this.findListByPage(videoPlayHistoryQuery);
+		List<VideoPlayHistory> historyList = pageResult.getList();
+		if (historyList == null || historyList.isEmpty()) {
+			return new PaginationResultVO<>(pageResult.getTotalCount(), pageResult.getPageSize(), pageResult.getPageNo(), pageResult.getPageTotal(), new ArrayList<>());
+		}
+
+		List<String> videoHistoryIds = new ArrayList<>(historyList.size());
+		Map<String, Date> lastUpdateTimeMap = new LinkedHashMap<>(historyList.size());
+		for (VideoPlayHistory history : historyList) {
+			if (history == null || history.getVideoId() == null) {
+				continue;
+			}
+			videoHistoryIds.add(history.getVideoId());
+			lastUpdateTimeMap.put(history.getVideoId(), history.getLastUpdateTime());
+		}
+		List<VideoHistoryVO> list = this.loadHistory(videoHistoryIds, lastUpdateTimeMap);
+		return new PaginationResultVO<>(pageResult.getTotalCount(), pageResult.getPageSize(), pageResult.getPageNo(), pageResult.getPageTotal(), list);
 	}
 
 	/**
@@ -109,5 +220,23 @@ public class VideoPlayHistoryServiceImpl implements VideoPlayHistoryService {
 	public Integer deleteVideoPlayHistoryByUserIdAndVideoId(String userId, String videoId) {
 		return this.videoPlayHistoryMapper.deleteByUserIdAndVideoId(userId, videoId);
 	}
+
+	/**
+	 * 根据 userId 删除当前用户全部播放历史
+	 */
+	@Override
+	public Integer deleteVideoPlayHistoryByUserId(String userId) {
+		return this.videoPlayHistoryMapper.deleteByUserId(userId);
+	}
+
+	/**
+	 * 删除早于指定时间的历史记录
+	 */
+	@Override
+	public Integer deleteVideoPlayHistoryBefore(Date lastUpdateTime) {
+		return this.videoPlayHistoryMapper.deleteByLastUpdateTimeBefore(lastUpdateTime);
+	}
+
+
 
 }

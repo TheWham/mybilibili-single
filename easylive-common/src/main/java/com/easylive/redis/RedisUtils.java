@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.QueryTimeoutException;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -221,6 +222,24 @@ public class RedisUtils<V> {
         redisTemplate.opsForZSet().add(key, v, score);
     }
 
+    public Long zremove(String key, Object... values) {
+        try {
+            return redisTemplate.opsForZSet().remove(key, values);
+        } catch (Exception e) {
+            logger.error("删除 ZSet 成员失败, key: {}", key, e);
+            return 0L;
+        }
+    }
+
+    public Long zremRangeByRank(String key, long start, long end) {
+        try {
+            return redisTemplate.opsForZSet().removeRange(key, start, end);
+        } catch (Exception e) {
+            logger.error("按排名删除 ZSet 失败, key: {}", key, e);
+            return 0L;
+        }
+    }
+
 
     public List<V> getZSetList(String key, Integer count) {
         Set<V> topElements = redisTemplate.opsForZSet().reverseRange(key, 0, count);
@@ -229,6 +248,22 @@ public class RedisUtils<V> {
         }
         List<V> list = new ArrayList<>(topElements);
         return list;
+    }
+
+    public Set<ZSetOperations.TypedTuple<V>> getZSetWithScores(String key, Integer count) {
+        Set<ZSetOperations.TypedTuple<V>> tupleSet = redisTemplate.opsForZSet().reverseRangeWithScores(key, 0, count);
+        return tupleSet == null ? Collections.emptySet() : tupleSet;
+    }
+
+    public Set<ZSetOperations.TypedTuple<V>> getZSetWithScoresByRange(String key, long start, long end) {
+        // 历史记录分页直接按 ZSet 排名取当前页，避免把整份数据拉回应用层后再手动切片。
+        Set<ZSetOperations.TypedTuple<V>> tupleSet = redisTemplate.opsForZSet().reverseRangeWithScores(key, start, end);
+        return tupleSet == null ? Collections.emptySet() : tupleSet;
+    }
+
+    public Long getZSetSize(String key) {
+        Long size = redisTemplate.opsForZSet().zCard(key);
+        return size == null ? 0L : size;
     }
 
     public Set<V> getSetMembers(String key) {

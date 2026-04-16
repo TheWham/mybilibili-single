@@ -1,5 +1,7 @@
 package com.easylive.entity.dto;
 
+import java.util.Date;
+
 /**
  * @author amani
  * @since 2026.4.7
@@ -9,6 +11,15 @@ public class VideoPlayDTO {
     private String videoUserId;
     private String videoId;
     private Integer fileIndex;
+    private Date lastUpdateTime;
+
+    public Date getLastUpdateTime() {
+        return lastUpdateTime;
+    }
+
+    public void setLastUpdateTime(Date lastUpdateTime) {
+        this.lastUpdateTime = lastUpdateTime;
+    }
 
     public String getUserId() {
         return userId;

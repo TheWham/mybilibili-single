@@ -9,3 +9,5 @@ logs/
 file/
 AGENTS.md
 .m2-temp/
+
+./docker/*
