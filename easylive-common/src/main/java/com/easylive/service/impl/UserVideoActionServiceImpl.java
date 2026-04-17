@@ -1,17 +1,24 @@
 package com.easylive.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import com.easylive.component.RedisComponent;
 import com.easylive.entity.po.UserVideoAction;
+import com.easylive.entity.po.VideoInfo;
 import com.easylive.entity.query.SimplePage;
 import com.easylive.entity.query.UserActionQuery;
 import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.entity.vo.UserActionVO;
+import com.easylive.entity.vo.UserCollectionVO;
 import com.easylive.enums.PageSize;
+import com.easylive.enums.UserActionTypeEnum;
 import com.easylive.mappers.UserVideoActionMapper;
 import com.easylive.service.UserVideoActionService;
+import com.easylive.service.VideoInfoService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -25,6 +32,10 @@ public class UserVideoActionServiceImpl implements UserVideoActionService {
 
 	@Resource
 	private UserVideoActionMapper<UserVideoAction, UserActionQuery> userVideoActionMapper;
+	@Resource
+	private VideoInfoService videoInfoService;
+	@Resource
+	private RedisComponent redisComponent;
 
 
 
@@ -134,12 +145,98 @@ public class UserVideoActionServiceImpl implements UserVideoActionService {
 
 	@Override
 	public List<UserActionVO> getUserActionTypeList(UserActionQuery actionQuery) {
-		return userVideoActionMapper.selectActionTypeList(actionQuery);
+		if (actionQuery == null
+				|| actionQuery.getVideoId() == null
+				|| actionQuery.getUserId() == null
+				|| actionQuery.getUserActionTypeList() == null
+				|| actionQuery.getUserActionTypeList().length == 0) {
+			return userVideoActionMapper.selectActionTypeList(actionQuery);
+		}
+
+		List<UserActionVO> result = new ArrayList<>();
+		List<Integer> dbMissTypeList = new ArrayList<>();
+		for (Integer actionType : actionQuery.getUserActionTypeList()) {
+			if (actionType == null) {
+				continue;
+			}
+			// 视频详情页刷新后要马上看到点赞/收藏/投币高亮，
+			// 这里优先读 Redis 里的动作状态，避免等异步同步 MySQL 后才有结果。
+			// Redis 状态值 > 0 代表当前高亮，= 0 代表最近一次操作是取消，此时不能再回源 DB 把旧高亮补回来。
+			Integer actionStatus = redisComponent.getVideoActionStatus(actionQuery.getUserId(), actionQuery.getVideoId(), actionType);
+			if (actionStatus != null && actionStatus > 0) {
+				UserActionVO userActionVO = new UserActionVO();
+				userActionVO.setActionType(actionType);
+				result.add(userActionVO);
+				continue;
+			}
+			if (actionStatus != null && actionStatus == 0) {
+				continue;
+			}
+			dbMissTypeList.add(actionType);
+		}
+
+		if (dbMissTypeList.isEmpty()) {
+			return result;
+		}
+
+		UserActionQuery dbQuery = new UserActionQuery();
+		dbQuery.setUserId(actionQuery.getUserId());
+		dbQuery.setVideoId(actionQuery.getVideoId());
+		dbQuery.setUserActionTypeList(dbMissTypeList.toArray(new Integer[0]));
+		List<UserActionVO> dbActionList = userVideoActionMapper.selectActionTypeList(dbQuery);
+		if (dbActionList == null || dbActionList.isEmpty()) {
+			return result;
+		}
+
+		// Redis 没命中的历史数据，回源一次数据库后顺手把状态补回缓存。
+		for (UserActionVO userActionVO : dbActionList) {
+			redisComponent.saveVideoActionStatus(actionQuery.getUserId(), actionQuery.getVideoId(), userActionVO.getActionType(), 1);
+		}
+		result.addAll(dbActionList);
+		return result;
 	}
 
 	@Override
 	public Integer sumCoinCount(String userId) {
 		return userVideoActionMapper.sumCoinCount(userId);
+	}
+
+	@Override
+	public PaginationResultVO<UserCollectionVO> loadUserCollection(Integer pageNo, String userId) {
+		UserActionQuery actionQuery = new UserActionQuery();
+		actionQuery.setUserId(userId);
+		actionQuery.setPageNo(pageNo);
+		actionQuery.setActionType(UserActionTypeEnum.VIDEO_COLLECT.getType());
+		actionQuery.setOrderBy("v.action_time desc");
+		PaginationResultVO<UserVideoAction> userCollectionVideoPage = this.findListByPage(actionQuery);
+
+		if (userCollectionVideoPage == null || userCollectionVideoPage.getList() == null || userCollectionVideoPage.getList().isEmpty()) {
+			return new PaginationResultVO<>(0, PageSize.SIZE15.getSize(), pageNo == null ? 1 : pageNo, 0, Collections.emptyList());
+		}
+
+		List<UserVideoAction> userCollectionVideoList = userCollectionVideoPage.getList();
+		Map<String, Date> videoIdTimeMap = userCollectionVideoList.stream()
+				.collect(Collectors.toMap(UserVideoAction::getVideoId, UserVideoAction::getActionTime, (left, right) -> left));
+		List<String> userCollectionIds = userCollectionVideoList.stream().map(UserVideoAction::getVideoId).collect(Collectors.toList());
+
+		// 收藏页要保持“收藏时间倒序”的展示顺序，不能直接按数据库 in 查询结果返回。
+		List<VideoInfo> unOrderVideoInfos = videoInfoService.selectByIds(userCollectionIds);
+		Map<String, VideoInfo> videoCollectMap = unOrderVideoInfos.stream().collect(Collectors.toMap(VideoInfo::getVideoId, videoInfo -> videoInfo));
+		List<VideoInfo> finalOrderVideoList = userCollectionIds.stream()
+				.map(videoCollectMap::get)
+				.filter(Objects::nonNull)
+				.collect(Collectors.toList());
+
+		List<UserCollectionVO> userCollectionVOList = BeanUtil.copyToList(finalOrderVideoList, UserCollectionVO.class);
+		userCollectionVOList.forEach(userCollectionVO -> userCollectionVO.setActionTime(videoIdTimeMap.get(userCollectionVO.getVideoId())));
+
+		PaginationResultVO<UserCollectionVO> userCollectionPage = new PaginationResultVO<>();
+		userCollectionPage.setTotalCount(userCollectionVideoPage.getTotalCount());
+		userCollectionPage.setPageTotal(userCollectionVideoPage.getPageTotal());
+		userCollectionPage.setPageSize(userCollectionVideoPage.getPageSize());
+		userCollectionPage.setPageNo(userCollectionVideoPage.getPageNo());
+		userCollectionPage.setList(userCollectionVOList);
+		return userCollectionPage;
 	}
 
 }

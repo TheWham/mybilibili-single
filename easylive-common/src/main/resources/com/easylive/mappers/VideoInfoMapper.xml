@@ -770,7 +770,7 @@
 
 	<!--更新弹幕数量-->
 	<update id="updateCount">
-		update video_info set ${field} = ${field} + #{count}
+		update video_info set ${field} = greatest(${field} + #{count}, 0)
 		<if test="field=='play_count'">
 			,last_play_time = now()
 		</if>
@@ -782,7 +782,7 @@
 		set ${field} =
 		case video_id
 			<foreach collection="list" item="item">
-				when #{item.videoId} then ${field} + #{item.count}
+				when #{item.videoId} then greatest(${field} + #{item.count}, 0)
 			</foreach>
 		end
 		<if test="field=='play_count'">

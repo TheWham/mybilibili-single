@@ -4,6 +4,7 @@ import com.easylive.entity.po.UserVideoAction;
 import com.easylive.entity.query.UserActionQuery;
 import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.entity.vo.UserActionVO;
+import com.easylive.entity.vo.UserCollectionVO;
 
 import java.util.List;
 
@@ -79,4 +80,6 @@ public interface UserVideoActionService {
 	List<UserActionVO> getUserActionTypeList(UserActionQuery actionQuery);
 
     Integer sumCoinCount(String userId);
+
+	PaginationResultVO<UserCollectionVO> loadUserCollection(Integer pageNo, String userId);
 }

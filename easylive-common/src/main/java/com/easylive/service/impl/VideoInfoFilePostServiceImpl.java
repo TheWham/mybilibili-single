@@ -313,7 +313,6 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 
 
 		videoEsService.deleteDoc(adminConfig.getEsIndexVideoName(),videoId);
-		//TODO 清理任务持久化
 
 		// 2. 注册一个事务同步回调：只有当事务成功提交（COMMIT）后，才触发异步逻辑
 		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {

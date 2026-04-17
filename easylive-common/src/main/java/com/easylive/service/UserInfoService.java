@@ -112,7 +112,13 @@ public interface UserInfoService {
 
 	void setUserInHome(UserInfoVO userInfoVO);
 
+	PaginationResultVO<VideoInfoUHomeVO> loadUHomeVideoList(String userId, Integer type, Integer pageNo, String videoName, Integer orderType);
+
+	UserInfoVO getUHomeUserInfo(String userId, TokenUserInfoDTO currentUser);
+
 	void updateUserInfoUHome(TokenUserInfoDTO tokenUserInfoDTO, UserInfo userInfo);
+
+	void saveTheme(String userId, Integer theme);
 
 	/**
 	 * 查询硬币数量

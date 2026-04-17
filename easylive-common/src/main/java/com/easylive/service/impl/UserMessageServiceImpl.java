@@ -1,6 +1,7 @@
 package com.easylive.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.easylive.constants.Constants;
 import com.easylive.entity.dto.UserMessageExtendDTO;
 import com.easylive.entity.po.UserInfo;
 import com.easylive.entity.po.UserMessage;
@@ -24,6 +25,7 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -88,7 +90,7 @@ public class UserMessageServiceImpl implements UserMessageService {
 		if (listBean == null || listBean.isEmpty()) {
 			return 0;
 		}
-		return this.userMessageMapper.insertBatch(listBean);
+		return saveMessageBatch(listBean);
 	}
 
 	/**
@@ -297,6 +299,70 @@ public class UserMessageServiceImpl implements UserMessageService {
 	private MessageNoticeVO handleActionMessage(UserMessage userMessage, Map<String, UserInfo> sendUserMap, Map<String, VideoInfo> videoInfoMap)
 	{
 		return buildBaseNoticeVO(userMessage, sendUserMap, videoInfoMap);
+	}
+
+	private Integer saveMessageBatch(List<UserMessage> messageList) {
+		List<UserMessage> insertList = new ArrayList<>();
+		int updateCount = 0;
+
+		// 点赞、收藏这类消息不按“每次点击一条流水”保存。
+		// 同一个发送人反复对同一个视频操作时，消息中心只保留一条，新的触发只刷新时间。
+		Map<String, UserMessage> dedupMessageMap = messageList.stream()
+				.filter(Objects::nonNull)
+				.collect(Collectors.toMap(this::buildMessageDedupKey, message -> message, this::pickLatestMessage, LinkedHashMap::new));
+
+		for (UserMessage userMessage : dedupMessageMap.values()) {
+			if (!needDedup(userMessage)) {
+				insertList.add(userMessage);
+				continue;
+			}
+
+			UserMessage existMessage = userMessageMapper.selectLatestByNoticeKey(
+					userMessage.getUserId(),
+					userMessage.getMessageType(),
+					userMessage.getSendUserId(),
+					userMessage.getVideoId()
+			);
+			if (existMessage == null) {
+				insertList.add(userMessage);
+				continue;
+			}
+
+			UserMessage updateBean = new UserMessage();
+			// 用户重新点过一次赞/收藏时，这条通知应该重新排到前面，同时恢复成未读。
+			updateBean.setCreateTime(userMessage.getCreateTime());
+			updateBean.setReadType(Constants.ZERO);
+			updateBean.setExtendJson(userMessage.getExtendJson());
+			updateCount += userMessageMapper.updateByMessageId(updateBean, existMessage.getMessageId());
+		}
+
+		int insertCount = 0;
+		if (!insertList.isEmpty()) {
+			insertCount = userMessageMapper.insertBatch(insertList);
+		}
+		return insertCount + updateCount;
+	}
+
+	private boolean needDedup(UserMessage userMessage) {
+		MessageTypeEnum messageTypeEnum = MessageTypeEnum.getEnum(userMessage.getMessageType());
+		return MessageTypeEnum.LIKE.equals(messageTypeEnum) || MessageTypeEnum.COLLECT.equals(messageTypeEnum);
+	}
+
+	private String buildMessageDedupKey(UserMessage userMessage) {
+		if (!needDedup(userMessage)) {
+			return UUID.randomUUID().toString();
+		}
+		return userMessage.getUserId() + ":" + userMessage.getMessageType() + ":" + userMessage.getSendUserId() + ":" + userMessage.getVideoId();
+	}
+
+	private UserMessage pickLatestMessage(UserMessage left, UserMessage right) {
+		if (left.getCreateTime() == null) {
+			return right;
+		}
+		if (right.getCreateTime() == null) {
+			return left;
+		}
+		return left.getCreateTime().after(right.getCreateTime()) ? left : right;
 	}
 
 

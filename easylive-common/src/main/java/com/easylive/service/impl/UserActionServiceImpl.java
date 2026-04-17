@@ -21,12 +21,20 @@ import com.easylive.mappers.VideoInfoMapper;
 import com.easylive.service.UserActionService;
 import com.easylive.service.VideoEsService;
 import jakarta.annotation.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
 
 @Service("UserActionService")
 public class UserActionServiceImpl implements UserActionService {
+    private static final Logger log = LoggerFactory.getLogger(UserActionServiceImpl.class);
+    private static final Long VIDEO_COIN_SUCCESS = 0L;
+    private static final Long VIDEO_COIN_ALREADY_DONE = 1L;
+    private static final Long VIDEO_COIN_NOT_ENOUGH = 2L;
+    private static final Long VIDEO_TOGGLE_ACTIVE = 1L;
+    private static final Long VIDEO_TOGGLE_CANCEL = -1L;
 
     @Resource
     private VideoInfoMapper<VideoInfo, VideoInfoQuery> videoInfoMapper;
@@ -70,7 +78,6 @@ public class UserActionServiceImpl implements UserActionService {
 
         userAction.setVideoUserId(videoInfo.getUserId());
         userAction.setActionTime(new Date());
-        //TODO 引入redis存储点赞数量异步放到MQ处理消息
 
         switch (actionTypeEnum) {
             case VIDEO_LIKE:
@@ -95,27 +102,55 @@ public class UserActionServiceImpl implements UserActionService {
 
     private void handleToggleAction(UserAction userAction, UserActionTypeEnum userActionTypeEnum)
     {
-        int actionCount = normalizeActionCount(userAction.getActionCount());
-        boolean isActive = !redisComponent.hasVideoActionStatus(userAction.getUserId(), userAction.getVideoId(), userAction.getActionType());
-
-        if (isActive) {
-            redisComponent.saveVideoActionStatus(userAction.getUserId(), userAction.getVideoId(), userAction.getActionType(), actionCount);
-        } else {
-            redisComponent.removeVideoActionStatus(userAction.getUserId(), userAction.getVideoId(), userAction.getActionType());
+        if (userAction.getUserId().equals(userAction.getVideoUserId())) {
+            String actionName = userActionTypeEnum.equals(UserActionTypeEnum.VIDEO_LIKE) ? "点赞" : "收藏";
+            throw new BusinessException("不能给自己的视频" + actionName);
         }
 
-        int delta = isActive ? actionCount : -actionCount;
+        int actionCount = normalizeActionCount(userAction.getActionCount());
         String statsField = userActionTypeEnum.equals(UserActionTypeEnum.VIDEO_LIKE)
                 ? UserStatsRedisEnum.VIDEO_LIKE.getField()
                 : UserStatsRedisEnum.USER_COLLECT_COUNT.getField();
-        redisComponent.incrementUserStats(userAction.getVideoUserId(), statsField, delta);
+        Long luaResult = redisComponent.executeVideoToggleAction(
+                userAction.getUserId(),
+                userAction.getVideoUserId(),
+                userAction.getVideoId(),
+                userAction.getActionType(),
+                actionCount,
+                statsField
+        );
+        if (luaResult == null) {
+            throw new BusinessException("操作失败,请稍后重试");
+        }
+        boolean isActive = VIDEO_TOGGLE_ACTIVE.equals(luaResult);
+        if (!isActive && !VIDEO_TOGGLE_CANCEL.equals(luaResult)) {
+            throw new BusinessException("操作失败,请稍后重试");
+        }
+        int delta = isActive ? actionCount : -actionCount;
 
         UserActionSyncDTO actionSyncDTO = buildBaseSyncDTO(userAction);
         actionSyncDTO.setActive(isActive);
         actionSyncDTO.setActionCount(delta);
         redisComponent.addUserActionQueue(getQueueKey(userActionTypeEnum), actionSyncDTO);
+        // 视频详情页刷新时还是先读 video_info，先把未落库的增量记到 Redis，读详情时再叠加这份 delta。
+        redisComponent.addVideoActionCountDelta(userAction.getVideoId(), userActionTypeEnum.getField(), delta);
+        log.info(
+                "handleToggleAction redis delta written, videoId={}, actionType={}, delta={}, userId={}, videoUserId={}",
+                userAction.getVideoId(),
+                userActionTypeEnum.getType(),
+                delta,
+                userAction.getUserId(),
+                userAction.getVideoUserId()
+        );
         //添加到es
-        videoEsService.updateCount(adminConfig.getEsIndexVideoName(), userAction.getVideoId(), delta, SearchOrderTypeEnum.VIDEO_COLLECT.getField());
+        if (userActionTypeEnum.equals(UserActionTypeEnum.VIDEO_COLLECT)) {
+            videoEsService.updateCount(
+                    adminConfig.getEsIndexVideoName(),
+                    userAction.getVideoId(),
+                    delta,
+                    SearchOrderTypeEnum.VIDEO_COLLECT.getField()
+            );
+        }
     }
 
     /**
@@ -130,27 +165,43 @@ public class UserActionServiceImpl implements UserActionService {
         if (userId.equals(videoUserId))
             throw new BusinessException("不能给自己投币");
 
-        if (redisComponent.hasVideoActionStatus(userId, userVideoAction.getVideoId(), userVideoAction.getActionType())) {
-            throw new BusinessException("已经投过币了");
-        }
-
         int actionCount = normalizeActionCount(userVideoAction.getActionCount());
         ensureCurrentCoinLoaded(userId);
         ensureCurrentCoinLoaded(videoUserId);
-        Long remainCoin = redisComponent.incrementUserStats(userId, UserStatsRedisEnum.USER_COIN.getField(), -actionCount);
-        if (remainCoin < 0) {
-            redisComponent.incrementUserStats(userId, UserStatsRedisEnum.USER_COIN.getField(), actionCount);
+
+        Long luaResult = redisComponent.executeVideoCoinAction(
+                userId,
+                videoUserId,
+                userVideoAction.getVideoId(),
+                userVideoAction.getActionType(),
+                actionCount
+        );
+        if (luaResult == null) {
+            throw new BusinessException("投币失败,请稍后重试");
+        }
+        if (VIDEO_COIN_ALREADY_DONE.equals(luaResult)) {
+            throw new BusinessException("已经投过币了");
+        }
+        if (VIDEO_COIN_NOT_ENOUGH.equals(luaResult)) {
             throw new BusinessException("投币失败,硬币不足");
         }
-
-        redisComponent.incrementUserStats(videoUserId, UserStatsRedisEnum.USER_COIN.getField(), actionCount);
-        redisComponent.incrementUserStats(videoUserId, UserStatsRedisEnum.VIDEO_COIN.getField(), actionCount);
-        redisComponent.saveVideoActionStatus(userId, userVideoAction.getVideoId(), userVideoAction.getActionType(), actionCount);
+        if (!VIDEO_COIN_SUCCESS.equals(luaResult)) {
+            throw new BusinessException("投币失败,请稍后重试");
+        }
 
         UserActionSyncDTO actionSyncDTO = buildBaseSyncDTO(userAction);
         actionSyncDTO.setActive(true);
         actionSyncDTO.setActionCount(actionCount);
         redisComponent.addUserActionQueue(getQueueKey(userActionTypeEnum), actionSyncDTO);
+        redisComponent.addVideoActionCountDelta(userAction.getVideoId(), userActionTypeEnum.getField(), actionCount);
+        log.info(
+                "handleCoinAction redis delta written, videoId={}, actionType={}, delta={}, userId={}, videoUserId={}",
+                userAction.getVideoId(),
+                userActionTypeEnum.getType(),
+                actionCount,
+                userAction.getUserId(),
+                userAction.getVideoUserId()
+        );
     }
 
     /**

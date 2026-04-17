@@ -25,4 +25,9 @@ public interface UserMessageMapper<T, R> extends BaseMapper {
 	Integer deleteByMessageId(@Param("messageId") Integer messageId);
 
 	Integer updateReadStatsBatch(@Param("query") R userMessageQuery);
+
+	T selectLatestByNoticeKey(@Param("userId") String userId,
+							  @Param("messageType") Integer messageType,
+							  @Param("sendUserId") String sendUserId,
+							  @Param("videoId") String videoId);
 }

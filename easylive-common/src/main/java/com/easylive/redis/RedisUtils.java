@@ -3,13 +3,19 @@ package com.easylive.redis;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.dao.QueryTimeoutException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.FileCopyUtils;
 
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -21,6 +27,7 @@ public class RedisUtils<V> {
     private RedisTemplate<String, V> redisTemplate;
 
     private static final Logger logger = LoggerFactory.getLogger(RedisUtils.class);
+    private static final Map<String, DefaultRedisScript<Long>> LUA_SCRIPT_CACHE = new ConcurrentHashMap<>();
 
     /**
      * 删除缓存
@@ -331,6 +338,30 @@ public class RedisUtils<V> {
         } catch (Exception e) {
             logger.error("删除 Hash 字段失败, key: {}", key, e);
             return 0L;
+        }
+    }
+
+    public Long executeLongScript(String scriptPath, List<String> keys, Object... args) {
+        try {
+            DefaultRedisScript<Long> redisScript = LUA_SCRIPT_CACHE.computeIfAbsent(scriptPath, this::buildLongRedisScript);
+            Long result = redisTemplate.execute(redisScript, keys, args);
+            return result == null ? 0L : result;
+        } catch (Exception e) {
+            logger.error("执行 Redis Lua 脚本失败, scriptPath: {}, keys: {}", scriptPath, keys, e);
+            return null;
+        }
+    }
+
+    private DefaultRedisScript<Long> buildLongRedisScript(String scriptPath) {
+        try {
+            ClassPathResource resource = new ClassPathResource(scriptPath);
+            String scriptText = FileCopyUtils.copyToString(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8));
+            DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>();
+            redisScript.setScriptText(scriptText);
+            redisScript.setResultType(Long.class);
+            return redisScript;
+        } catch (Exception e) {
+            throw new IllegalStateException("加载 Lua 脚本失败: " + scriptPath, e);
         }
     }
 

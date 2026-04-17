@@ -1,13 +1,10 @@
 package com.easylive.admin.controller;
 
 import com.easylive.component.RedisComponent;
-import com.easylive.config.AdminConfig;
 import com.easylive.constants.Constants;
-import com.easylive.entity.dto.AdminLoginDTO;
 import com.easylive.entity.vo.ResponseVO;
 import com.easylive.enums.ResponseCodeEnum;
 import com.easylive.exception.BusinessException;
-import com.easylive.utils.StringTools;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,9 +19,6 @@ public class ABaseController {
 
     @Resource
     private RedisComponent redisComponent;
-
-    @Resource
-    private AdminConfig adminConfig;
 
 
 
@@ -89,22 +83,5 @@ public class ABaseController {
                 break;
             }
         }
-    }
-
-    protected void validAdminInfo(HttpServletResponse response, AdminLoginDTO adminLoginDTO)
-    {
-        // 从 redis中获取存储的验证码
-        String redisCode = redisComponent.getCode(adminLoginDTO.getCheckCodeKey());
-        if (!adminLoginDTO.getCheckCode().equalsIgnoreCase(redisCode)) {
-            throw new BusinessException("图形验证码不正确");
-        }
-
-        if (!adminLoginDTO.getAccount().equals(adminConfig.getAccount()) || !adminLoginDTO.getPassword().equals(StringTools.md5Password(adminConfig.getPassword())))
-        {
-            throw new BusinessException("账号或密码错误");
-        }
-        String tokenId = redisComponent.saveToken4Admin(adminLoginDTO.getAccount());
-        //为了方便直接将token信息到session中, 正常来说只需要提供tokenID给前端即可, 然后每次请求带着tokenID从redis中取出数据
-        saveToken2Session(response, tokenId);
     }
 }

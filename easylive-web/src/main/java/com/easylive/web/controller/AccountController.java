@@ -111,7 +111,6 @@ public class AccountController extends ABaseController{
             TokenUserInfoDTO tokenInfo = userInfoService.login(webLoginDTO);
             //为了方便直接将token信息到session中, 正常来说只需要提供tokenID给前端即可, 然后每次请求带着tokenID从redis中取出数据
             saveToken2Session(response, tokenInfo.getTokenId());
-            //TODO 设置粉丝数, 关注数, 硬币数
             return getSuccessResponseVO(tokenInfo);
 
         }finally {
@@ -138,7 +137,6 @@ public class AccountController extends ABaseController{
         redisComponent.refreshRealtimeUserStatsExpire(tokenUserInfo.getUserId());
         userStatsCacheAsyncComponent.refreshRealtimeUserStatsCache(tokenUserInfo.getUserId());
         saveToken2Session(response, tokenUserInfo.getTokenId());
-        //TODO 设置粉丝数, 关注数, 硬币数
 
         return getSuccessResponseVO(tokenUserInfo);
     }

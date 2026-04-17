@@ -7,6 +7,7 @@ import com.easylive.entity.po.CategoryInfo;
 import com.easylive.entity.po.UserMessage;
 import com.easylive.entity.po.VideoInfoFilePost;
 import com.easylive.entity.vo.UserInfoVO;
+import com.easylive.enums.UserStatsRedisEnum;
 import com.easylive.exception.BusinessException;
 import com.easylive.redis.RedisUtils;
 import jakarta.annotation.Resource;
@@ -24,7 +25,6 @@ import static com.easylive.constants.Constants.REDIS_EXPIRE_TIME_MINUTE_COUNT;
 
 @Component("redisComponent")
 public class RedisComponent {
-
     @Resource
     public RedisUtils redisUtils;
 
@@ -241,11 +241,20 @@ public class RedisComponent {
     }
 
     public void saveVideoActionStatus(String userId, String videoId, Integer actionType, Integer actionCount) {
-        redisUtils.set(buildVideoActionStatusKey(userId, videoId, actionType), actionCount);
+        long ttl = (long) Constants.REDIS_EXPIRE_TIME_ONE_MINUTE * Constants.REDIS_ACTION_STATUS_CACHE_TTL_MINUTES;
+        redisUtils.setex(buildVideoActionStatusKey(userId, videoId, actionType), actionCount, ttl);
     }
 
     public boolean hasVideoActionStatus(String userId, String videoId, Integer actionType) {
         return redisUtils.keyExists(buildVideoActionStatusKey(userId, videoId, actionType));
+    }
+
+    public Integer getVideoActionStatus(String userId, String videoId, Integer actionType) {
+        Object value = redisUtils.get(buildVideoActionStatusKey(userId, videoId, actionType));
+        if (value == null) {
+            return null;
+        }
+        return Integer.parseInt(value.toString());
     }
 
     public void removeVideoActionStatus(String userId, String videoId, Integer actionType) {
@@ -254,6 +263,42 @@ public class RedisComponent {
 
     public void saveCommentActionStatus(String userId, Integer commentId, Integer actionType) {
         redisUtils.set(buildCommentActionStatusKey(userId, commentId), actionType);
+    }
+
+    public Long executeVideoToggleAction(String userId, String videoUserId, String videoId, Integer actionType, Integer actionCount, String statsField) {
+        String actionStatusKey = buildVideoActionStatusKey(userId, videoId, actionType);
+        String ownerStatsKey = Constants.REDIS_WEB_USER_STATS_KEY + videoUserId;
+        long statsTtl = (long) Constants.REDIS_EXPIRE_TIME_ONE_DAY * Constants.REDIS_USER_STATS_CACHE_TTL_DAYS;
+        long actionStatusTtl = (long) Constants.REDIS_EXPIRE_TIME_ONE_MINUTE * Constants.REDIS_ACTION_STATUS_CACHE_TTL_MINUTES;
+
+        // 点赞和收藏都是“存在则取消，不存在则新增”的切换型动作。
+        // 这里统一走一套 Lua，把状态切换和计数增减一次做完，避免并发下先查再改出现抖动。
+        return redisUtils.executeLongScript(
+                Constants.REDIS_LUA_VIDEO_TOGGLE_ACTION,
+                Arrays.asList(actionStatusKey, ownerStatsKey),
+                statsField,
+                actionCount,
+                statsTtl,
+                actionStatusTtl
+        );
+    }
+
+    public Long executeVideoCoinAction(String userId, String videoUserId, String videoId, Integer actionType, Integer actionCount) {
+        String actionStatusKey = buildVideoActionStatusKey(userId, videoId, actionType);
+        String senderStatsKey = Constants.REDIS_WEB_USER_STATS_KEY + userId;
+        String receiverStatsKey = Constants.REDIS_WEB_USER_STATS_KEY + videoUserId;
+        long statsTtl = (long) Constants.REDIS_EXPIRE_TIME_ONE_DAY * Constants.REDIS_USER_STATS_CACHE_TTL_DAYS;
+
+        // 投币是“查状态 + 扣自己硬币 + 加对方硬币 + 记视频投币数”的组合操作。
+        // 这几步拆开执行时最容易在高并发下出现重复投币或硬币扣错，所以这里用 Lua 一次做完。
+        return redisUtils.executeLongScript(
+                Constants.REDIS_LUA_VIDEO_COIN,
+                Arrays.asList(actionStatusKey, senderStatsKey, receiverStatsKey),
+                UserStatsRedisEnum.USER_COIN.getField(),
+                UserStatsRedisEnum.VIDEO_COIN.getField(),
+                actionCount,
+                statsTtl
+        );
     }
 
     public Integer getCommentActionStatus(String userId, Integer commentId) {
@@ -445,6 +490,28 @@ public class RedisComponent {
             return;
         }
         redisUtils.hdel(Constants.REDIS_KEY_VIDEO_PLAY_COUNT_DELTA, videoIds.toArray());
+    }
+
+    public Long addVideoActionCountDelta(String videoId, String field, long delta) {
+        String key = Constants.REDIS_KEY_VIDEO_ACTION_COUNT_DELTA + videoId;
+        Long value = redisUtils.hincr(key, field, delta);
+        redisUtils.expire(key, Constants.REDIS_EXPIRE_TIME_TWO_DAY);
+        return value;
+    }
+
+    public Map<String, Integer> getVideoActionCountDelta(String videoId) {
+        Map<Object, Object> valueMap = redisUtils.hmget(Constants.REDIS_KEY_VIDEO_ACTION_COUNT_DELTA + videoId);
+        if (valueMap == null || valueMap.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, Integer> resultMap = new HashMap<>(valueMap.size());
+        for (Map.Entry<Object, Object> entry : valueMap.entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null) {
+                continue;
+            }
+            resultMap.put(entry.getKey().toString(), Integer.parseInt(entry.getValue().toString()));
+        }
+        return resultMap;
     }
 
     public Set<String> getDirtyHistoryUsers() {

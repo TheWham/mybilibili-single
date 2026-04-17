@@ -184,6 +184,14 @@ public class UserActionSyncSupport {
         }
         if (!updateList.isEmpty()) {
             videoInfoMapper.updateCountBatch(field, updateList);
+            // 这份 delta 只表示“还没来得及刷进 MySQL 的增量”。
+            // 批量更新数据库成功后，把对应增量从 Redis 里扣掉，后续读取详情页时就不会重复叠加。
+            for (Map.Entry<String, Integer> entry : countMap.entrySet()) {
+                if (entry.getValue() == 0) {
+                    continue;
+                }
+                redisComponent.addVideoActionCountDelta(entry.getKey(), field, -entry.getValue());
+            }
         }
     }
 

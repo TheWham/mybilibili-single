@@ -13,10 +13,7 @@ import com.easylive.entity.po.VideoInfoFilePost;
 import com.easylive.entity.po.VideoInfoPost;
 import com.easylive.entity.query.*;
 import com.easylive.entity.vo.PaginationResultVO;
-import com.easylive.enums.PageSize;
-import com.easylive.enums.ResponseCodeEnum;
-import com.easylive.enums.VideoFileUpdateTypeEnum;
-import com.easylive.enums.VideoStatusEnum;
+import com.easylive.enums.*;
 import com.easylive.exception.BusinessException;
 import com.easylive.mappers.VideoInfoFileMapper;
 import com.easylive.mappers.VideoInfoFilePostMapper;
@@ -33,6 +30,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -65,7 +63,9 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 	 */
 	@Override
 	public List<VideoInfo> findListByParam(VideoInfoQuery param) {
-		return this.videoInfoMapper.selectList(param);
+		List<VideoInfo> list = this.videoInfoMapper.selectList(param);
+		mergeRedisActionDelta(list);
+		return list;
 	}
 
 	/**
@@ -220,12 +220,16 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 
 	@Override
 	public List<VideoInfo> selectByIds(List<String> userCollectionIds) {
-		return videoInfoMapper.selectByIds(userCollectionIds);
+		List<VideoInfo> videoInfoList = videoInfoMapper.selectByIds(userCollectionIds);
+		mergeRedisActionDelta(videoInfoList);
+		return videoInfoList;
 	}
 
 	@Override
 	public List<VideoInfo> selectVideoListBySeriesIdAndUserId(Integer seriesId, String userId) {
-		return videoInfoMapper.selectVideoListBySeriesIdAndUserId(seriesId, userId);
+		List<VideoInfo> videoInfoList = videoInfoMapper.selectVideoListBySeriesIdAndUserId(seriesId, userId);
+		mergeRedisActionDelta(videoInfoList);
+		return videoInfoList;
 	}
 
 	@Override
@@ -239,7 +243,26 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 	 */
 	@Override
 	public VideoInfo getVideoInfoByVideoId(String videoId) {
-		return this.videoInfoMapper.selectByVideoId(videoId);
+		VideoInfo videoInfo = this.videoInfoMapper.selectByVideoId(videoId);
+		if (videoInfo == null) {
+			return null;
+		}
+		log.info(
+				"getVideoInfoByVideoId db snapshot, videoId={}, likeCount={}, collectCount={}, coinCount={}",
+				videoId,
+				defaultValue(videoInfo.getLikeCount()),
+				defaultValue(videoInfo.getCollectCount()),
+				defaultValue(videoInfo.getCoinCount())
+		);
+		mergeRedisActionDelta(videoInfo);
+		log.info(
+				"getVideoInfoByVideoId merged snapshot, videoId={}, likeCount={}, collectCount={}, coinCount={}",
+				videoId,
+				defaultValue(videoInfo.getLikeCount()),
+				defaultValue(videoInfo.getCollectCount()),
+				defaultValue(videoInfo.getCoinCount())
+		);
+		return videoInfo;
 	}
 
 	/**
@@ -261,5 +284,48 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 	@Override
 	public Integer updateByCondition(VideoInfo videoInfo, VideoInfoQuery videoInfoQuery) {
 		return this.videoInfoMapper.updateByCondition(videoInfo, videoInfoQuery);
+	}
+
+	private void mergeRedisActionDelta(VideoInfo videoInfo) {
+		if (videoInfo == null) {
+			return;
+		}
+		Map<String, Integer> deltaMap = redisComponent.getVideoActionCountDelta(videoInfo.getVideoId());
+		if (deltaMap == null || deltaMap.isEmpty()) {
+			log.info("getVideoInfoByVideoId redis delta empty, videoId={}", videoInfo.getVideoId());
+			return;
+		}
+		log.info(
+				"getVideoInfoByVideoId redis delta, videoId={}, likeDelta={}, collectDelta={}, coinDelta={}",
+				videoInfo.getVideoId(),
+				deltaMap.getOrDefault(UserActionTypeEnum.VIDEO_LIKE.getField(), 0),
+				deltaMap.getOrDefault(UserActionTypeEnum.VIDEO_COLLECT.getField(), 0),
+				deltaMap.getOrDefault(UserActionTypeEnum.VIDEO_COIN.getField(), 0)
+		);
+
+		// 视频详情页要求用户操作后刷新立刻能看到结果。
+		// MySQL 里的计数是异步同步的，所以这里把 Redis 中尚未落库的增量补到返回值上。
+		videoInfo.setLikeCount(nonNegative(defaultValue(videoInfo.getLikeCount()) + deltaMap.getOrDefault(UserActionTypeEnum.VIDEO_LIKE.getField(), 0)));
+		videoInfo.setCollectCount(nonNegative(defaultValue(videoInfo.getCollectCount()) + deltaMap.getOrDefault(UserActionTypeEnum.VIDEO_COLLECT.getField(), 0)));
+		videoInfo.setCoinCount(nonNegative(defaultValue(videoInfo.getCoinCount()) + deltaMap.getOrDefault(UserActionTypeEnum.VIDEO_COIN.getField(), 0)));
+	}
+
+	private void mergeRedisActionDelta(List<VideoInfo> videoInfoList) {
+		if (videoInfoList == null || videoInfoList.isEmpty()) {
+			return;
+		}
+		// 前台列表、推荐列表和收藏列表之前都是直接查 MySQL。
+		// 详情页已经补了 Redis 增量，如果列表页不补，就会出现“详情页是新值，列表还是旧值”的割裂感。
+		for (VideoInfo videoInfo : videoInfoList) {
+			mergeRedisActionDelta(videoInfo);
+		}
+	}
+
+	private int defaultValue(Integer value) {
+		return value == null ? 0 : value;
+	}
+
+	private int nonNegative(int value) {
+		return Math.max(value, 0);
 	}
 }

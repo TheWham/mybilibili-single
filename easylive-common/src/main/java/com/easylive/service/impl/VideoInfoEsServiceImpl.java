@@ -7,6 +7,7 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
+import com.easylive.component.RedisComponent;
 import com.easylive.config.AdminConfig;
 import com.easylive.entity.dto.VideoInfoEsDTO;
 import com.easylive.entity.po.UserInfo;
@@ -15,6 +16,7 @@ import com.easylive.entity.query.SimplePage;
 import com.easylive.entity.query.UserInfoQuery;
 import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.enums.SearchOrderTypeEnum;
+import com.easylive.enums.UserActionTypeEnum;
 import com.easylive.exception.BusinessException;
 import com.easylive.mappers.UserInfoMapper;
 import com.easylive.service.VideoEsService;
@@ -47,6 +49,8 @@ public class VideoInfoEsServiceImpl implements VideoEsService {
     private AdminConfig adminConfig;
     @Resource
     private UserInfoMapper<UserInfo, UserInfoQuery> userInfoMapper;
+    @Resource
+    private RedisComponent redisComponent;
 
     @Override
     public void saveDoc(VideoInfo videoInfo) {
@@ -218,6 +222,7 @@ public class VideoInfoEsServiceImpl implements VideoEsService {
                 String nickName = userInfo == null ? "" : userInfo.getNickName();
                 videoInfo.setNickName(nickName);
             });
+            mergeRedisActionDelta(videoInfoList);
 
             // 获取总条数
             long totalCount = response.hits().total() != null ? response.hits().total().value() : 0;
@@ -239,5 +244,30 @@ public class VideoInfoEsServiceImpl implements VideoEsService {
                         .id(id),
                 VideoInfo.class
         ).found();
+    }
+
+    private void mergeRedisActionDelta(List<VideoInfo> videoInfoList) {
+        if (videoInfoList == null || videoInfoList.isEmpty()) {
+            return;
+        }
+        // 搜索结果来自 ES，刷新时比 MySQL 更容易出现“文档旧、Redis 新”的短暂不一致。
+        // 这里把尚未落库的 Redis 增量补进去，前台搜索页和详情页的展示口径就一致了。
+        for (VideoInfo videoInfo : videoInfoList) {
+            Map<String, Integer> deltaMap = redisComponent.getVideoActionCountDelta(videoInfo.getVideoId());
+            if (deltaMap == null || deltaMap.isEmpty()) {
+                continue;
+            }
+            videoInfo.setLikeCount(nonNegative(defaultValue(videoInfo.getLikeCount()) + deltaMap.getOrDefault(UserActionTypeEnum.VIDEO_LIKE.getField(), 0)));
+            videoInfo.setCollectCount(nonNegative(defaultValue(videoInfo.getCollectCount()) + deltaMap.getOrDefault(UserActionTypeEnum.VIDEO_COLLECT.getField(), 0)));
+            videoInfo.setCoinCount(nonNegative(defaultValue(videoInfo.getCoinCount()) + deltaMap.getOrDefault(UserActionTypeEnum.VIDEO_COIN.getField(), 0)));
+        }
+    }
+
+    private int defaultValue(Integer value) {
+        return value == null ? 0 : value;
+    }
+
+    private int nonNegative(int value) {
+        return Math.max(value, 0);
     }
 }

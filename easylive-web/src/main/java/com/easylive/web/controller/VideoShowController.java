@@ -46,7 +46,6 @@ public class VideoShowController extends ABaseController{
     @RequestMapping("/loadVideo")
     public ResponseVO loadVideo(Integer pageNo, Integer pCategoryId, Integer categoryId)
     {
-        //TODO 视频平台显示
         VideoInfoQuery videoInfoQuery = new VideoInfoQuery();
         videoInfoQuery.setPageNo(pageNo);
         videoInfoQuery.setPCategoryId(pCategoryId);

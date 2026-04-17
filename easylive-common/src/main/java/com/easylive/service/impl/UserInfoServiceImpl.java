@@ -20,7 +20,7 @@ import com.easylive.mappers.UserFocusMapper;
 import com.easylive.mappers.UserInfoMapper;
 import com.easylive.mappers.UserStatsMapper;
 import com.easylive.mappers.VideoInfoMapper;
-import com.easylive.service.UserInfoService;
+import com.easylive.service.*;
 import com.easylive.utils.StringTools;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -28,9 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -49,6 +47,8 @@ public class UserInfoServiceImpl implements UserInfoService {
 	@Resource
 	private VideoInfoMapper<VideoInfo, VideoInfoQuery> videoInfoMapper;
 	@Resource
+	private VideoInfoService videoInfoService;
+	@Resource
 	private UserFocusMapper<UserFocus, UserFocusQuery> userFocusMapper;
 	@Resource
 	private RedisComponent redisComponent;
@@ -56,6 +56,14 @@ public class UserInfoServiceImpl implements UserInfoService {
 	private UserStatsCacheAsyncComponent userStatsCacheAsyncComponent;
 	@Resource
 	private UserStatsMapper<UserStats, UserStatsQuery> userStatsMapper;
+	@Resource
+	private UserFocusService userFocusService;
+	@Resource
+	private UserVideoActionService userVideoActionService;
+	@Resource
+	private VideoCommentService videoCommentService;
+	@Resource
+	private VideoDanmuService videoDanmuService;
 	/**
 	 * @description 根据条件查询
 	 */
@@ -212,7 +220,6 @@ public class UserInfoServiceImpl implements UserInfoService {
 		aUserInfo.setStatus(StatusEnum.NORMAL.getType());
 		aUserInfo.setSex(SexEnum.UNKNOWN.getType());
 
-		//TODO 设置硬币数量
 		aUserInfo.setCurrentCoinCount(Constants.DEFAULT_COIN_COUNT);
 		aUserInfo.setTotalCoinCount(Constants.DEFAULT_COIN_COUNT);
 		this.userInfoMapper.insert(aUserInfo);
@@ -279,6 +286,48 @@ public class UserInfoServiceImpl implements UserInfoService {
 	}
 
 	@Override
+	public PaginationResultVO<VideoInfoUHomeVO> loadUHomeVideoList(String userId, Integer type, Integer pageNo, String videoName, Integer orderType) {
+		VideoInfoQuery videoInfoQuery = new VideoInfoQuery();
+		videoInfoQuery.setUserId(userId);
+		videoInfoQuery.setPageNo(pageNo);
+		videoInfoQuery.setVideoName(videoName);
+		if (type != null) {
+			videoInfoQuery.setPageSize(PageSize.SIZE10.getSize());
+		}
+
+		VideoOrderTypeEnum typeEnum = VideoOrderTypeEnum.getEnum(orderType);
+		if (typeEnum == null) {
+			typeEnum = VideoOrderTypeEnum.ORDER_POST_TIME;
+		}
+		videoInfoQuery.setOrderBy(typeEnum.getField() + " desc");
+
+		PaginationResultVO<VideoInfo> listVideo = videoInfoService.findListByPage(videoInfoQuery);
+		PaginationResultVO<VideoInfoUHomeVO> videoListVO = new PaginationResultVO<>();
+		videoListVO.setPageNo(listVideo.getPageNo());
+		videoListVO.setPageSize(listVideo.getPageSize());
+		videoListVO.setPageTotal(listVideo.getPageTotal());
+		videoListVO.setTotalCount(listVideo.getTotalCount());
+		videoListVO.setList(BeanUtil.copyToList(listVideo.getList(), VideoInfoUHomeVO.class));
+		return videoListVO;
+	}
+
+	@Override
+	public UserInfoVO getUHomeUserInfo(String userId, TokenUserInfoDTO currentUser) {
+		UserInfo userInfoDb = this.getUserInfoByUserId(userId);
+		if (userInfoDb == null) {
+			throw new BusinessException(ResponseCodeEnum.CODE_600);
+		}
+
+		UserInfoVO userInfoVO = BeanUtil.toBean(userInfoDb, UserInfoVO.class);
+		if (currentUser != null && !userId.equals(currentUser.getUserId())) {
+			Integer haveFocus = userFocusService.selectHaveFocus(currentUser.getUserId(), userId);
+			userInfoVO.setHaveFocus(haveFocus);
+		}
+		this.setUserInHome(userInfoVO);
+		return userInfoVO;
+	}
+
+	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public void updateUserInfoUHome(TokenUserInfoDTO tokenUserInfoDTO, UserInfo userInfo) {
 		String userId = tokenUserInfoDTO.getUserId();
@@ -309,6 +358,13 @@ public class UserInfoServiceImpl implements UserInfoService {
 			redisComponent.updateTokenUserInfo(tokenUserInfoDTO);
 		}
 
+	}
+
+	@Override
+	public void saveTheme(String userId, Integer theme) {
+		UserInfo userInfo = new UserInfo();
+		userInfo.setTheme(theme);
+		this.updateUserInfoByUserId(userInfo, userId);
 	}
 
 	@Override
@@ -377,14 +433,18 @@ public class UserInfoServiceImpl implements UserInfoService {
 	public UCenterVideoDateVO getActualTimeStatisticsInfo(String userId) {
 		UserInfo userInfo = userInfoMapper.selectByUserId(userId);
 		Optional.ofNullable(userInfo).orElseThrow(() -> new BusinessException(ResponseCodeEnum.CODE_600));
-		String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-		HashMap<String, Integer> userStatsInfoMap = redisComponent.getUserStatsInfo(userId, date);
+
+		// 这个接口前端是拿来展示“当前实时数据”的，点赞/投币后刷新页面也应该立刻看到变化。
+		// 所以这里优先读实时统计缓存，而不是读按天快照；按天数据更适合做昨日对比和周趋势。
+		HashMap<String, Integer> userStatsInfoMap = redisComponent.getRealtimeUserStatsInfo(userId);
 		UCenterVideoDateVO uCenterVideoDateVO = new UCenterVideoDateVO();
 		TotalCountInfoVO totalCountInfoVO = new TotalCountInfoVO();
         uCenterVideoDateVO.setTotalCountInfo(totalCountInfoVO);
 		uCenterVideoDateVO.setPreDayData(buildPreDayData(userId));
+
 		if (userStatsInfoMap != null && !userStatsInfoMap.isEmpty())
 		{
+			redisComponent.refreshRealtimeUserStatsExpire(userId);
 			fillTotalCountInfo(totalCountInfoVO, userStatsInfoMap);
 			return uCenterVideoDateVO;
 		}

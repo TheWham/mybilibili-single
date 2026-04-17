@@ -78,12 +78,16 @@ public class UserMessageAspect extends GlobalOperationAspect{
 
         switch (actionTypeEnum) {
             case VIDEO_LIKE:
-                if (redisComponent.hasVideoActionStatus(userAction.getUserId(), userAction.getVideoId(), userAction.getActionType())) {
+                // 这里不能只判断 key 是否存在。
+                // 取消点赞时 Redis 会把状态写成 0 并保留一小段时间，如果只看 key 存不存在，取消动作也会被误判成“还在点赞”，从而重复发消息。
+                Integer likeStatus = redisComponent.getVideoActionStatus(userAction.getUserId(), userAction.getVideoId(), userAction.getActionType());
+                if (likeStatus != null && likeStatus > 0) {
                     addMessage(userAction.getVideoUserId(), userAction.getUserId(), userAction.getVideoId(), MessageTypeEnum.LIKE, buildUserActionExtendJson(userAction));
                 }
                 break;  
             case VIDEO_COLLECT:
-                if (redisComponent.hasVideoActionStatus(userAction.getUserId(), userAction.getVideoId(), userAction.getActionType())) {
+                Integer collectStatus = redisComponent.getVideoActionStatus(userAction.getUserId(), userAction.getVideoId(), userAction.getActionType());
+                if (collectStatus != null && collectStatus > 0) {
                     addMessage(userAction.getVideoUserId(), userAction.getUserId(), userAction.getVideoId(), MessageTypeEnum.COLLECT, buildUserActionExtendJson(userAction));
                 }
                 break;
