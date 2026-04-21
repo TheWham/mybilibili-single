@@ -52,7 +52,7 @@ public class VideoCommentServiceImpl implements VideoCommentService {
 	public List<VideoComment> findListByParam(VideoCommentQuery param) {
 		List<VideoComment> list = null;
 
-		if (param.getQueryChildren())
+		if (Boolean.TRUE.equals(param.getQueryChildren()))
 			list = this.selectListWithChildren(param);
 		else
 			list = this.videoCommentMapper.selectList(param);
@@ -79,7 +79,7 @@ public class VideoCommentServiceImpl implements VideoCommentService {
 		param.setSimplePage(page);
 		List<VideoComment> list = null;
 
-		if (param.getQueryChildren())
+		if (Boolean.TRUE.equals(param.getQueryChildren()))
 			list = this.selectListWithChildren(param);
 		else
 			list = this.videoCommentMapper.selectList(param);

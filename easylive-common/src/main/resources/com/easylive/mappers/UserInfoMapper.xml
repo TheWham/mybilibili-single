@@ -181,6 +181,35 @@
 		<include refid="query_condition"/>
 	</select>
 
+	<select id="selectTotalUserCount" resultType="java.lang.Integer">
+		select count(1)
+		from user_info
+	</select>
+
+	<select id="selectRegisterCountUntilDate" resultType="java.lang.Integer">
+		select count(1)
+		from user_info
+		where join_time &lt; date_add(#{statsDay}, interval 1 day)
+	</select>
+
+	<select id="selectRegisterCountByDate" resultType="java.lang.Integer">
+		select count(1)
+		from user_info
+		where join_time &gt;= #{statsDay}
+		and join_time &lt; date_add(#{statsDay}, interval 1 day)
+	</select>
+
+	<select id="selectDailyRegisterCountByDateRange" resultType="java.util.HashMap">
+		select
+		date(join_time) as statsDay,
+		count(1) as userCount
+		from user_info
+		where join_time &gt;= #{startDay}
+		and join_time &lt; date_add(#{endDay}, interval 1 day)
+		group by date(join_time)
+		order by date(join_time) asc
+	</select>
+
 	<!--插入 -->
 	<insert id="insert" parameterType="com.easylive.entity.po.UserInfo">
 		INSERT INTO user_info

@@ -91,6 +91,16 @@ public class RedisComponent {
         redisUtils.delete(userTokenKey);
     }
 
+    public void cleanUserLoginToken(String userId) {
+        // 用户被后台禁用时，需要把 userId -> tokenId 的映射和真正的 token 都清掉，
+        // 否则旧 token 在过期前依然可以继续访问接口。
+        String tokenId = getTokenIdByUserId(userId);
+        if (tokenId != null) {
+            cleanWebToken(tokenId);
+        }
+        cleanExistToken(userId);
+    }
+
     public String getTokenIdByUserId(String userId)
     {
         String userTokenKey = Constants.REDIS_USER_TOKEN_KEY + userId;
@@ -553,4 +563,19 @@ public class RedisComponent {
         return resultMap;
     }
 
+    public Long delHistory(String userId, String videoId) {
+        String videoHistoryIndex = Constants.REDIS_KEY_VIDEO_PLAY_HISTORY_FILE_INDEX + userId;
+        String videoHistoryPlay = Constants.REDIS_KEY_VIDEO_PLAY_HISTORY + userId;
+        return redisUtils.hdel(videoHistoryIndex, videoId) + redisUtils.zremove(videoHistoryPlay, videoId);
+    }
+
+    public void cleanHistory(String userId) {
+        String videoHistoryIndex = Constants.REDIS_KEY_VIDEO_PLAY_HISTORY_FILE_INDEX + userId;
+        String videoHistoryPlay = Constants.REDIS_KEY_VIDEO_PLAY_HISTORY + userId;
+        redisUtils.delete(videoHistoryPlay, videoHistoryIndex);
+    }
+
+    public boolean setSysSetting(SysSettingDTO sysSettingDTO) {
+       return redisUtils.set(Constants.REDIS_SYS_SETTING_KEY, sysSettingDTO);
+    }
 }

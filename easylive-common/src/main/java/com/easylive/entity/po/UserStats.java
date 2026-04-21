@@ -64,6 +64,20 @@ public class UserStats implements Serializable {
 	 */
 	private Integer coinCount;
 
+	/**
+	 * 管理端统计时使用的用户数。
+	 * user_stats 明细表本身没有这个字段，这里只接收全站汇总 SQL 的别名结果。
+	 */
+	private Integer userCount;
+
+	public Integer getUserCount() {
+		return userCount;
+	}
+
+	public void setUserCount(Integer userCount) {
+		this.userCount = userCount;
+	}
+
 	public Integer getCoinCount() {
 		return coinCount;
 	}

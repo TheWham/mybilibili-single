@@ -77,4 +77,7 @@ public interface VideoPlayHistoryService {
 	 */
 	Integer deleteVideoPlayHistoryBefore(Date lastUpdateTime);
 
+    Integer delHistory(String videoId, String userId);
+
+	Integer cleanHistory(String userId);
 }

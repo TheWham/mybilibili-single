@@ -2,13 +2,11 @@ package com.easylive.entity.vo;
 
 /**
  * @author amani
- * @since 2026.3.31
- * 返回给前端用户中心首页视频数据
+ * @since 2026.4.22
+ * 管理端首页总计数信息
  */
-
-public class TotalCountInfoVO {
+public class AdminTotalCountInfoVO {
     private Integer userCount;
-    private Integer fansCount;
     private Integer playCount;
     private Integer commentCount;
     private Integer danmuCount;
@@ -16,11 +14,12 @@ public class TotalCountInfoVO {
     private Integer coinCount;
     private Integer collectCount;
 
-    public TotalCountInfoVO() {
+    public AdminTotalCountInfoVO() {
     }
 
-    public TotalCountInfoVO(Integer fansCount, Integer playCount, Integer commentCount, Integer danmuCount, Integer likeCount, Integer coinCount, Integer collectCount) {
-        this.fansCount = fansCount;
+    public AdminTotalCountInfoVO(Integer userCount, Integer playCount, Integer commentCount, Integer danmuCount,
+                                 Integer likeCount, Integer coinCount, Integer collectCount) {
+        this.userCount = userCount;
         this.playCount = playCount;
         this.commentCount = commentCount;
         this.danmuCount = danmuCount;
@@ -35,14 +34,6 @@ public class TotalCountInfoVO {
 
     public void setUserCount(Integer userCount) {
         this.userCount = userCount;
-    }
-
-    public Integer getFansCount() {
-        return fansCount;
-    }
-
-    public void setFansCount(Integer fansCount) {
-        this.fansCount = fansCount;
     }
 
     public Integer getPlayCount() {

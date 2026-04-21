@@ -28,6 +28,31 @@
 		<result column="stats_day" property="statsDay"/>
 	</resultMap>
 
+	<resultMap id="summary_result_map" type="com.easylive.entity.po.UserStats">
+		<!-- 统计日期-->
+		<id column="stats_day" property="statsDay"/>
+		<!-- 用户数-->
+		<result column="user_count" property="userCount"/>
+		<!-- 播放数量-->
+		<result column="play_count" property="playCount"/>
+		<!-- 点赞数量-->
+		<result column="like_count" property="likeCount"/>
+		<!-- 当前硬币数量-->
+		<result column="current_coin_count" property="currentCoinCount"/>
+		<!-- 关注数量-->
+		<result column="focus_count" property="focusCount"/>
+		<!-- 粉丝数量-->
+		<result column="fans_count" property="fansCount"/>
+		<!-- 弹幕数量-->
+		<result column="danmu_count" property="danmuCount"/>
+		<!-- 评论数量-->
+		<result column="comment_count" property="commentCount"/>
+		<!-- 收藏数量-->
+		<result column="collect_count" property="collectCount"/>
+		<!-- 用户投币数量-->
+		<result column="coin_count" property="coinCount"/>
+	</resultMap>
+
 	<!--通用查询结果列 -->
 	<sql id="base_column_list">
 		v.user_id,v.play_count,v.like_count,v.current_coin_count,v.focus_count,v.fans_count,v.collect_count,v.coin_count,v.stats_day,v.danmu_count,v.comment_count
@@ -333,6 +358,48 @@
 		where v.user_id=#{userId}
 		order by v.stats_day desc
 		limit 1
+	</select>
+
+	<select id="selectLatestStatsDay" resultType="java.util.Date">
+		select max(v.stats_day)
+		from user_stats v
+	</select>
+
+	<select id="selectSummaryByStatsDay" resultMap="summary_result_map">
+		select
+		v.stats_day,
+		count(1) as user_count,
+		ifnull(sum(v.play_count), 0) as play_count,
+		ifnull(sum(v.like_count), 0) as like_count,
+		ifnull(sum(v.current_coin_count), 0) as current_coin_count,
+		ifnull(sum(v.focus_count), 0) as focus_count,
+		ifnull(sum(v.fans_count), 0) as fans_count,
+		ifnull(sum(v.collect_count), 0) as collect_count,
+		ifnull(sum(v.comment_count), 0) as comment_count,
+		ifnull(sum(v.danmu_count), 0) as danmu_count,
+		ifnull(sum(v.coin_count), 0) as coin_count
+		from user_stats v
+		where v.stats_day = #{statsDay}
+		group by v.stats_day
+	</select>
+
+	<select id="selectSummaryListByDateRange" resultMap="summary_result_map">
+		select
+		v.stats_day,
+		count(1) as user_count,
+		ifnull(sum(v.play_count), 0) as play_count,
+		ifnull(sum(v.like_count), 0) as like_count,
+		ifnull(sum(v.current_coin_count), 0) as current_coin_count,
+		ifnull(sum(v.focus_count), 0) as focus_count,
+		ifnull(sum(v.fans_count), 0) as fans_count,
+		ifnull(sum(v.collect_count), 0) as collect_count,
+		ifnull(sum(v.comment_count), 0) as comment_count,
+		ifnull(sum(v.danmu_count), 0) as danmu_count,
+		ifnull(sum(v.coin_count), 0) as coin_count
+		from user_stats v
+		where v.stats_day between #{startDay} and #{endDay}
+		group by v.stats_day
+		order by v.stats_day asc
 	</select>
 
 	<!--根据UserId删除 -->

@@ -137,7 +137,6 @@ public class AccountController extends ABaseController{
         redisComponent.refreshRealtimeUserStatsExpire(tokenUserInfo.getUserId());
         userStatsCacheAsyncComponent.refreshRealtimeUserStatsCache(tokenUserInfo.getUserId());
         saveToken2Session(response, tokenUserInfo.getTokenId());
-
         return getSuccessResponseVO(tokenUserInfo);
     }
 
@@ -156,5 +155,6 @@ public class AccountController extends ABaseController{
         UserCountVO userCountVO = userInfoService.getUserCountInfo(userId);
         return getSuccessResponseVO(userCountVO);
     }
+
 
 }

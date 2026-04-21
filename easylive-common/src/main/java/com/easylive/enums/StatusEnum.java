@@ -18,6 +18,17 @@ public enum StatusEnum {
         this.status = status;
     }
 
+
+    public static StatusEnum getEnum(Integer type)
+    {
+        for (StatusEnum statusEnum : StatusEnum.values())
+        {
+            if (statusEnum.getType().equals(type))
+                return statusEnum;
+        }
+        return null;
+    }
+
     public Integer getType() {
         return type;
     }

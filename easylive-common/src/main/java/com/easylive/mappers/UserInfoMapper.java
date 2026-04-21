@@ -3,7 +3,9 @@ package com.easylive.mappers;
 import com.easylive.entity.dto.UserCoinCountUpdateDTO;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author amani
@@ -65,4 +67,12 @@ public interface UserInfoMapper<T, R> extends BaseMapper {
     Integer selectTotalCoinCount(@Param("userId") String userId);
 
     Integer updateCountBatch(@Param("list") List<UserCoinCountUpdateDTO> updateList);
+
+	Integer selectTotalUserCount();
+
+	Integer selectRegisterCountUntilDate(@Param("statsDay") Date statsDay);
+
+	Integer selectRegisterCountByDate(@Param("statsDay") Date statsDay);
+
+	List<Map<String, Object>> selectDailyRegisterCountByDateRange(@Param("startDay") Date startDay, @Param("endDay") Date endDay);
 }

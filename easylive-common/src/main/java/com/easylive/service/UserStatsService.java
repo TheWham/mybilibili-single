@@ -2,7 +2,10 @@ package com.easylive.service;
 
 import com.easylive.entity.po.UserStats;
 import com.easylive.entity.query.UserStatsQuery;
+import com.easylive.entity.vo.AdminIndexStatisticsVO;
+import com.easylive.entity.vo.AdminWeekCountVO;
 import com.easylive.entity.vo.PaginationResultVO;
+import com.easylive.enums.AdminStatsTypeEnum;
 
 import java.util.List;
 
@@ -59,5 +62,15 @@ public interface UserStatsService {
 	 * 根据 UserId删除
 	 */
 	Integer deleteUserStatsByUserId(String userId);
+
+	/**
+	 * 管理员首页获取全站最近一天统计总览。
+	 */
+	AdminIndexStatisticsVO getAdminActualTimeStatisticsInfo();
+
+	/**
+	 * 管理员首页获取近 7 天全站统计趋势。
+	 */
+	List<AdminWeekCountVO> getAdminWeekStatisticsInfo(AdminStatsTypeEnum statsType);
 
 }

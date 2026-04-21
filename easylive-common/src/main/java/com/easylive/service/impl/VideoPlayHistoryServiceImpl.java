@@ -10,10 +10,12 @@ import com.easylive.entity.query.VideoPlayHistoryQuery;
 import com.easylive.entity.vo.PaginationResultVO;
 import com.easylive.entity.vo.VideoHistoryVO;
 import com.easylive.enums.PageSize;
+import com.easylive.exception.BusinessException;
 import com.easylive.mappers.VideoInfoMapper;
 import com.easylive.mappers.VideoPlayHistoryMapper;
 import com.easylive.service.VideoPlayHistoryService;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +30,7 @@ import java.util.stream.Collectors;
  * 视频播放历史Service
  */
 
+@Slf4j
 @Service("VideoPlayHistoryService")
 public class VideoPlayHistoryServiceImpl implements VideoPlayHistoryService {
 	@Resource
@@ -237,6 +240,28 @@ public class VideoPlayHistoryServiceImpl implements VideoPlayHistoryService {
 		return this.videoPlayHistoryMapper.deleteByLastUpdateTimeBefore(lastUpdateTime);
 	}
 
+	@Override
+	public Integer delHistory(String videoId, String userId) {
+		VideoPlayHistoryQuery videoPlayHistoryQuery = new VideoPlayHistoryQuery();
+		videoPlayHistoryQuery.setUserId(userId);
+		videoPlayHistoryQuery.setVideoId(videoId);
+		Integer count = this.videoPlayHistoryMapper.selectCount(videoPlayHistoryQuery);
+		if (count == 0)
+			throw new BusinessException("历史记录不存在");
+
+		Integer deleteAns = this.videoPlayHistoryMapper.deleteByUserIdAndVideoId(userId, videoId);
+		Long ans = redisComponent.delHistory(userId, videoId);
+		if (ans == 0)
+			log.error("缓存删除失败");
+		return deleteAns;
+	}
+
+	@Override
+	public Integer cleanHistory(String userId) {
+		Integer count = this.videoPlayHistoryMapper.deleteByUserId(userId);
+		this.redisComponent.cleanHistory(userId);
+		return count;
+	}
 
 
 }

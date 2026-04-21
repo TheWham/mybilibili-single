@@ -131,4 +131,6 @@ public interface UserInfoService {
     UCenterVideoDateVO getActualTimeStatisticsInfo(String userId);
 
     List<UCenterVideoWeekCountVO> getWeekStatisticsInfo(UserStatsRedisEnum anEnum, String userId);
+
+	Integer changeStatus(String userId, Integer type);
 }

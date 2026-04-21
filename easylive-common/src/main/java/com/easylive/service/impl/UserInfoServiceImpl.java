@@ -531,6 +531,32 @@ public class UserInfoServiceImpl implements UserInfoService {
 		return result;
 	}
 
+	@Override
+	public Integer changeStatus(String userId, Integer type) {
+		UserInfo userInfo = this.userInfoMapper.selectByUserId(userId);
+		Optional.ofNullable(userInfo).orElseThrow(()-> new BusinessException(ResponseCodeEnum.CODE_600));
+		StatusEnum statusEnum = Optional.ofNullable(StatusEnum.getEnum(type)).orElseThrow(()-> new BusinessException(ResponseCodeEnum.CODE_600));
+
+		if (userInfo.getStatus().equals(type)){
+			throw new BusinessException("用户已经是" + statusEnum.getStatus() + "状态");
+		}
+
+		// 这里只更新状态字段，避免把整行用户数据重新走一次 upsert，
+		// 让“状态切换”这个动作的影响范围尽量保持在最小。
+		UserInfo updateInfo = new UserInfo();
+		updateInfo.setStatus(type);
+		Integer updateCount = this.userInfoMapper.updateByUserId(updateInfo, userId);
+		if (updateCount == null || updateCount == 0) {
+			throw new BusinessException("操作失败");
+		}
+
+		// 用户被禁用后要立即踢下线，避免旧 token 在 Redis 里还能继续使用。
+		if (StatusEnum.DISABLE.equals(statusEnum)) {
+			redisComponent.cleanUserLoginToken(userId);
+		}
+		return updateCount;
+	}
+
 	private Integer getStatsCountByType(UserStats userStats, UserStatsRedisEnum statsType) {
 		if (userStats == null || statsType == null) {
 			return 0;
