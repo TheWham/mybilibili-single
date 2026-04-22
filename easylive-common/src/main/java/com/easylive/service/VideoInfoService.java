@@ -83,4 +83,6 @@ public interface VideoInfoService {
 	 * @return 返回是否更新成功
 	 */
 	Integer updateCountBatch(@Param("field") String field, @Param("list") List<VideoCountUpdateDTO> list);
+
+	void recommendVideo(String videoId);
 }

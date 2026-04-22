@@ -1,6 +1,7 @@
 package com.easylive.service.impl;
 
 import com.easylive.annotation.MessageInterceptor;
+import com.easylive.component.UserDailyLimitComponent;
 import com.easylive.constants.Constants;
 import com.easylive.entity.dto.TokenUserInfoDTO;
 import com.easylive.entity.po.UserCommentAction;
@@ -44,6 +45,8 @@ public class VideoCommentServiceImpl implements VideoCommentService {
 	private UserInfoMapper<UserInfo, UserInfoQuery> userInfoMapper;
     @Resource
     private UserCommentActionMapper<UserCommentAction, UserActionQuery> userCommentActionMapper;
+	@Resource
+	private UserDailyLimitComponent userDailyLimitComponent;
 
 	/**
 	 * @description 根据条件查询
@@ -128,6 +131,9 @@ public class VideoCommentServiceImpl implements VideoCommentService {
 	@MessageInterceptor(messageType = MessageTypeEnum.COMMENT)
 	public void postComment(VideoComment videoComment) {
 
+		// 评论计数只统计成功请求，所以这里先做额度校验，真正加一放到方法末尾。
+		userDailyLimitComponent.checkDailyLimit(videoComment.getUserId(), UserDailyLimitTypeEnum.COMMENT);
+
 		//表示回复评论 此时pCommentId表示要回复评论的id
 		UserInfo replyUserInfo = userInfoMapper.selectByUserId(videoComment.getUserId());
 
@@ -162,6 +168,8 @@ public class VideoCommentServiceImpl implements VideoCommentService {
 		{
 			videoInfoMapper.updateCount(videoComment.getVideoId(), UserActionTypeEnum.VIDEO_COMMENT.getField(), 1);
 		}
+
+		userDailyLimitComponent.recordDailyAction(videoComment.getUserId(), UserDailyLimitTypeEnum.COMMENT);
 
 	}
 

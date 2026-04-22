@@ -90,6 +90,9 @@
 		<if test="query.duration != null" >
 			and v.duration = #{query.duration}
 		</if>
+		<if test="query.recommendType != null" >
+			and c.recommend_type = #{query.recommendType}
+		</if>
 	</sql>
 
 	<!--通用条件列 -->
@@ -157,7 +160,7 @@
 			,u.nick_name,u.avatar
 		</if>
 		FROM video_info_post v
-		<if test="query.queryCountInfo">
+		<if test="query.queryCountInfo or query.recommendType != null">
 		left join video_info c on c.video_id = v.video_id
 		</if>
 		<if test="query.queryUserInfo">
@@ -175,6 +178,9 @@
 	<!--查询数量 -->
 	<select id="selectCount" resultType="java.lang.Integer">
 		SELECT count(1) FROM video_info_post v
+		<if test="query.recommendType != null">
+			left join video_info c on c.video_id = v.video_id
+		</if>
 		<include refid="query_condition"/>
 	</select>
 

@@ -103,6 +103,16 @@ public class VideoInfoPostQuery extends BaseQuery {
 	 */
 	private Boolean isQueryUserInfo;
 
+	private Integer recommendType;
+
+	public Integer getRecommendType() {
+		return recommendType;
+	}
+
+	public void setRecommendType(Integer recommendType) {
+		this.recommendType = recommendType;
+	}
+
 	public Boolean getQueryUserInfo() {
 		return isQueryUserInfo;
 	}

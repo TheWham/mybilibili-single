@@ -7,6 +7,7 @@ package com.easylive.constants;
  */
 public class Constants {
 
+
     private Constants() {
     }
 
@@ -69,7 +70,8 @@ public class Constants {
      */
     public static final String REDIS_SYS_SETTING_KEY = REDIS_PREFIX + "sysSetting:";
     public static final String REDIS_ADMIN_CATEGORY_KEY = REDIS_PREFIX + "admin:category:list:";
-
+    public static final String REDIS_KEY_USER_DAILY_LIMIT = REDIS_PREFIX + "user:daily:limit:";
+    public static final String AUDIT_VIDEO_NAME = "auditVideo";
     /**
      * 文件和切片目录相关。
      */
@@ -96,6 +98,7 @@ public class Constants {
      */
     public static final String REDIS_WEB_ACTION_VIDEO_COMMENT_QUEUE_KEY = REDIS_PREFIX + "queue:action:video:comment:list:";
     public static final String REDIS_WEB_ACTION_VIDEO_COIN_QUEUE_KEY = REDIS_PREFIX + "queue:action:video:coin:list:";
+    public static final String REDIS_WEB_ACTION_VIDEO_AUDIT_REWARD_QUEUE_KEY = REDIS_PREFIX + "queue:action:video:audit:reward:list:";
     public static final String REDIS_WEB_ACTION_VIDEO_COLLECT_QUEUE_KEY = REDIS_PREFIX + "queue:action:video:collect:list:";
     public static final String REDIS_WEB_ACTION_VIDEO_LIKE_QUEUE_KEY = REDIS_PREFIX + "queue:action:video:like:list:";
     public static final String REDIS_WEB_USER_MESSAGE_QUEUE_KEY = REDIS_PREFIX + "queue:user:message:list:";
@@ -140,4 +143,5 @@ public class Constants {
      */
     public static final String REDIS_LUA_VIDEO_COIN = "lua/video_coin.lua";
     public static final String REDIS_LUA_VIDEO_TOGGLE_ACTION = "lua/video_toggle_action.lua";
+    public static final String REDIS_LUA_USER_DAILY_LIMIT = "lua/user_daily_limit.lua";
 }

@@ -110,6 +110,26 @@ public class UserActionSyncSupport {
     }
 
     @Transactional(rollbackFor = Exception.class)
+    public void syncAuditRewardQueue() {
+        List<UserActionSyncDTO> queueList = drainQueue(Constants.REDIS_WEB_ACTION_VIDEO_AUDIT_REWARD_QUEUE_KEY);
+        if (queueList.isEmpty()) {
+            return;
+        }
+
+        Map<String, Integer> userCurrentCoinDeltaMap = new HashMap<>();
+        Map<String, Integer> userTotalCoinDeltaMap = new HashMap<>();
+        for (UserActionSyncDTO actionSyncDTO : queueList) {
+            // 审核奖励是平台直接给作者加币，不存在“谁扣谁加”的双边关系，
+            // 所以这里只累计作者自己的 current/total 两个字段。
+            mergeUserCoinCount(userCurrentCoinDeltaMap, actionSyncDTO.getVideoUserId(), actionSyncDTO.getActionCount());
+            mergeUserCoinCount(userTotalCoinDeltaMap, actionSyncDTO.getVideoUserId(), actionSyncDTO.getActionCount());
+        }
+
+        flushUserCoinCount(userCurrentCoinDeltaMap, userTotalCoinDeltaMap);
+        log.info("syncAuditRewardQueue finished, count={}", queueList.size());
+    }
+
+    @Transactional(rollbackFor = Exception.class)
     public void syncCommentQueue() {
         List<UserActionSyncDTO> queueList = drainQueue(Constants.REDIS_WEB_ACTION_VIDEO_COMMENT_QUEUE_KEY);
         if (queueList.isEmpty()) {

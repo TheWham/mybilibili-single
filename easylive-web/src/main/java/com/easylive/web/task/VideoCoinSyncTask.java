@@ -13,5 +13,6 @@ public class VideoCoinSyncTask {
     @Scheduled(fixedDelay = 10000)
     public void syncVideoCoinQueue() {
         userActionSyncSupport.syncCoinQueue();
+        userActionSyncSupport.syncAuditRewardQueue();
     }
 }

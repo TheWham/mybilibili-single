@@ -6,10 +6,14 @@ import com.easylive.constants.Constants;
 import com.easylive.entity.po.UserAction;
 import com.easylive.entity.po.UserMessage;
 import com.easylive.entity.po.VideoComment;
+import com.easylive.entity.po.VideoInfoPost;
 import com.easylive.entity.query.VideoCommentQuery;
+import com.easylive.entity.query.VideoInfoPostQuery;
 import com.easylive.enums.MessageTypeEnum;
 import com.easylive.enums.UserActionTypeEnum;
+import com.easylive.enums.VideoStatusEnum;
 import com.easylive.mappers.VideoCommentMapper;
+import com.easylive.mappers.VideoInfoPostMapper;
 import com.easylive.utils.JsonUtils;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
@@ -23,6 +27,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.easylive.constants.Constants.AUDIT_VIDEO_NAME;
+
 
 @Aspect
 @Component
@@ -32,6 +38,8 @@ public class UserMessageAspect extends GlobalOperationAspect{
     private RedisComponent redisComponent;
     @Resource
     private VideoCommentMapper<VideoComment, VideoCommentQuery> videoCommentMapper;
+    @Resource
+    private VideoInfoPostMapper<VideoInfoPost, VideoInfoPostQuery> videoInfoPostMapper;
 
 
     @Around("@annotation(com.easylive.annotation.MessageInterceptor) || @within(com.easylive.annotation.MessageInterceptor)")
@@ -58,6 +66,10 @@ public class UserMessageAspect extends GlobalOperationAspect{
                 saveCommentMessage(videoComment, annotation.messageType());
                 return;
             }
+        }
+        // 视频审核这类后台动作没有统一的参数对象，只能按方法语义补一层识别。
+        if (AUDIT_VIDEO_NAME.equals(joinPoint.getSignature().getName())) {
+            saveAuditVideoMessage(args, annotation.messageType());
         }
     }
 
@@ -116,8 +128,12 @@ public class UserMessageAspect extends GlobalOperationAspect{
     }
 
     private void addMessage(String receiveUserId, String sendUserId, String videoId, MessageTypeEnum messageTypeEnum, String extendJson) {
-        // 自己给自己发的通知没必要入库，前面直接拦掉。
-        if (StringUtils.isAnyBlank(receiveUserId, sendUserId) || receiveUserId.equals(sendUserId)) {
+        // 系统消息本身没有发送人，因此这里只强制校验接收人，
+        // 普通互动消息再额外拦掉“自己给自己发通知”的场景。
+        if (StringUtils.isBlank(receiveUserId)) {
+            return;
+        }
+        if (StringUtils.isNotBlank(sendUserId) && receiveUserId.equals(sendUserId)) {
             return;
         }
 
@@ -131,6 +147,36 @@ public class UserMessageAspect extends GlobalOperationAspect{
         userMessage.setExtendJson(extendJson);
         // 通知不用卡在主业务事务里，先扔队列，后面批量落库。
         redisComponent.addUserMessageQueue(userMessage);
+    }
+
+    private void saveAuditVideoMessage(Object[] args, MessageTypeEnum messageTypeEnum) {
+        if (args == null || args.length < 2) {
+            return;
+        }
+
+        String videoId = args[0] instanceof String ? (String) args[0] : null;
+        Integer auditStatus = args[1] instanceof Integer ? (Integer) args[1] : null;
+        String reason = args.length > 2 && args[2] instanceof String ? (String) args[2] : null;
+        if (StringUtils.isBlank(videoId) || auditStatus == null) {
+            return;
+        }
+
+        if (auditStatus.equals(VideoStatusEnum.STATUS_3.getStatus()) && auditStatus.equals(VideoStatusEnum.STATUS_4.getStatus())) {
+            return;
+        }
+
+        VideoInfoPost videoInfoPost = videoInfoPostMapper.selectByVideoId(videoId);
+        if (videoInfoPost == null || StringUtils.isBlank(videoInfoPost.getUserId())) {
+            return;
+        }
+
+        addMessage(
+                videoInfoPost.getUserId(),
+                null,
+                videoId,
+                messageTypeEnum,
+                buildAuditVideoExtendJson(videoInfoPost, auditStatus, reason)
+        );
     }
 
     private String buildUserActionExtendJson(UserAction userAction) {
@@ -158,6 +204,17 @@ public class UserMessageAspect extends GlobalOperationAspect{
         String content = isReply ? "messageContent" : "messageContentReply";
         extendInfo.put(content, videoComment.getContent());
         extendInfo.put("replyUserId", videoComment.getReplyUserId());
+        return JsonUtils.convertObj2Json(extendInfo);
+    }
+
+    private String buildAuditVideoExtendJson(VideoInfoPost videoInfoPost, Integer auditStatus, String reason) {
+        Map<String, Object> extendInfo = new HashMap<>();
+        extendInfo.put("videoId", videoInfoPost.getVideoId());
+        extendInfo.put("videoName", videoInfoPost.getVideoName());
+        extendInfo.put("videoCover", videoInfoPost.getVideoCover());
+        extendInfo.put("auditStatus", auditStatus);
+        // 前端失败态直接读取 messageContent 展示失败原因，这里字段名和现有模板保持一致。
+        extendInfo.put("messageContent", StringUtils.defaultString(reason));
         return JsonUtils.convertObj2Json(extendInfo);
     }
 }

@@ -9,6 +9,8 @@ public class UserMessageExtendDTO {
     private Integer actionCount;
     private Integer actionType;
     private String videoId;
+    private String videoName;
+    private String videoCover;
     private Integer replyCommentId;
     private Integer pCommentId;
     private Integer commentId;
@@ -39,6 +41,22 @@ public class UserMessageExtendDTO {
 
     public void setVideoId(String videoId) {
         this.videoId = videoId;
+    }
+
+    public String getVideoName() {
+        return videoName;
+    }
+
+    public void setVideoName(String videoName) {
+        this.videoName = videoName;
+    }
+
+    public String getVideoCover() {
+        return videoCover;
+    }
+
+    public void setVideoCover(String videoCover) {
+        this.videoCover = videoCover;
     }
 
     public Integer getReplyCommentId() {

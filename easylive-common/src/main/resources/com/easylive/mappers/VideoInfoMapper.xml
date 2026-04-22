@@ -189,10 +189,16 @@
 	<select id="selectList" resultMap="base_result_map">
 		SELECT
 		<include refid="base_column_list"/>
+		<if test="query.queryCountInfo">
+			,c.play_count, c.like_count, c.coin_count, c.danmu_count, c.comment_count, c.collect_count,c.recommend_type
+		</if>
 		<if test="query.isQueryUserInfo">
 			,u.nick_name,u.avatar
 		</if>
 		FROM video_info v
+		<if test="query.queryCountInfo">
+			left join video_info c on c.video_id = v.video_id
+		</if>
 		<if test="query.isQueryUserInfo">
 			left join user_info u on v.user_id = u.user_id
 		</if>

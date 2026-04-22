@@ -1,5 +1,6 @@
 package com.easylive.service.impl;
 
+import com.easylive.component.UserDailyLimitComponent;
 import com.easylive.config.AdminConfig;
 import com.easylive.constants.Constants;
 import com.easylive.entity.po.VideoDanmu;
@@ -8,10 +9,7 @@ import com.easylive.entity.query.SimplePage;
 import com.easylive.entity.query.VideoDanmuQuery;
 import com.easylive.entity.query.VideoInfoQuery;
 import com.easylive.entity.vo.PaginationResultVO;
-import com.easylive.enums.PageSize;
-import com.easylive.enums.ResponseCodeEnum;
-import com.easylive.enums.SearchOrderTypeEnum;
-import com.easylive.enums.UserActionTypeEnum;
+import com.easylive.enums.*;
 import com.easylive.exception.BusinessException;
 import com.easylive.mappers.VideoDanmuMapper;
 import com.easylive.mappers.VideoInfoMapper;
@@ -43,6 +41,8 @@ public class VideoDanmuServiceImpl implements VideoDanmuService {
 	private VideoEsService videoEsService;
 	@Resource
 	private AdminConfig adminConfig;
+	@Resource
+	private UserDailyLimitComponent userDailyLimitComponent;
 
 	/**
 	 * 根据条件查询
@@ -154,6 +154,9 @@ public class VideoDanmuServiceImpl implements VideoDanmuService {
 	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public void postDanmu(VideoDanmu videoDanmu) {
+		// 弹幕发送成功后才算占用额度，因此先校验，最后再记录。
+		userDailyLimitComponent.checkDailyLimit(videoDanmu.getUserId(), UserDailyLimitTypeEnum.DANMU);
+
 		VideoInfo videoInfo = videoInfoMapper.selectByVideoId(videoDanmu.getVideoId());
 		if (videoInfo == null) {
 			throw new BusinessException(ResponseCodeEnum.CODE_600);
@@ -166,8 +169,7 @@ public class VideoDanmuServiceImpl implements VideoDanmuService {
 		videoInfoMapper.updateCount(videoDanmu.getVideoId(), UserActionTypeEnum.VIDEO_DNAMU.getField(), 1);
 		this.add(videoDanmu);
 		videoEsService.updateCount(adminConfig.getEsIndexVideoName(), videoInfo.getVideoId(), 1, SearchOrderTypeEnum.VIDEO_DANMU.getField());
-		//TODO 添加弹幕es
-
+		userDailyLimitComponent.recordDailyAction(videoDanmu.getUserId(), UserDailyLimitTypeEnum.DANMU);
 	}
 
 	@Override

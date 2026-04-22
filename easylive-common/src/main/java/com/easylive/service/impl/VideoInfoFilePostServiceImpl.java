@@ -302,16 +302,14 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
-    public void deleVideo(String videoId, String userId) {
+    public void deleVideo(String videoId, String userId, Boolean isAdmin) {
 		VideoInfoPost videoInfo = (VideoInfoPost)videoInfoPostMapper.selectByVideoId(videoId);
-		if (videoInfo == null || !videoInfo.getUserId().equals(userId))
+
+		if (videoInfo == null || !isAdmin && !videoInfo.getUserId().equals(userId))
 			throw new BusinessException(ResponseCodeEnum.CODE_404);
 
 		videoInfoMapper.deleteByVideoId(videoId);
 		videoInfoPostMapper.deleteByVideoId(videoId);
-		//TODO 进去用户加硬币
-
-
 		videoEsService.deleteDoc(adminConfig.getEsIndexVideoName(),videoId);
 
 		// 2. 注册一个事务同步回调：只有当事务成功提交（COMMIT）后，才触发异步逻辑
@@ -320,7 +318,8 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 			public void afterCommit() {
 				executorService.submit(()-> {
 					VideoInfoFileQuery fileQuery = new VideoInfoFileQuery();
-					fileQuery.setUserId(userId);
+					if (!isAdmin)
+						fileQuery.setUserId(userId);
 					fileQuery.setVideoId(videoId);
 					videoInfoFileMapper.deleteByCondition(fileQuery);
 					VideoInfoFilePostQuery videoInfoFilePostQuery = new VideoInfoFilePostQuery();

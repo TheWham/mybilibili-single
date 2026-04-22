@@ -42,6 +42,10 @@ public class MessageNoticeVO {
      */
     private String videoId;
     /**
+     * 视频名称
+     */
+    private String videoName;
+    /**
      * 视频缩放图
      */
     private String videoCover;

@@ -4,10 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import com.easylive.component.RedisComponent;
 import com.easylive.component.UserStatsCacheAsyncComponent;
 import com.easylive.constants.Constants;
-import com.easylive.entity.dto.RegisterDTO;
-import com.easylive.entity.dto.TokenUserInfoDTO;
-import com.easylive.entity.dto.VideoCountDTO;
-import com.easylive.entity.dto.WebLoginDTO;
+import com.easylive.entity.dto.*;
 import com.easylive.entity.po.UserFocus;
 import com.easylive.entity.po.UserInfo;
 import com.easylive.entity.po.UserStats;
@@ -219,9 +216,9 @@ public class UserInfoServiceImpl implements UserInfoService {
 		aUserInfo.setJoinTime(new Date());
 		aUserInfo.setStatus(StatusEnum.NORMAL.getType());
 		aUserInfo.setSex(SexEnum.UNKNOWN.getType());
-
-		aUserInfo.setCurrentCoinCount(Constants.DEFAULT_COIN_COUNT);
-		aUserInfo.setTotalCoinCount(Constants.DEFAULT_COIN_COUNT);
+		SysSettingDTO sysSetting = redisComponent.getSysSetting();
+		aUserInfo.setCurrentCoinCount(sysSetting.getRegisterCoinCount());
+		aUserInfo.setTotalCoinCount(sysSetting.getRegisterCoinCount());
 		this.userInfoMapper.insert(aUserInfo);
 
 	}

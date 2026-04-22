@@ -173,7 +173,6 @@ public class UserMessageServiceImpl implements UserMessageService {
 	}
 
 	private List<MessageNoticeVO> handleSysMessageList(List<UserMessage> list, Map<String, UserInfo> sendUserMap, Map<String, VideoInfo> videoInfoMap) {
-		//TODO 未完成系统通知
 		return buildBaseNoticeList(list, sendUserMap, videoInfoMap);
 	}
 
@@ -199,6 +198,8 @@ public class UserMessageServiceImpl implements UserMessageService {
 		// 某些消息 videoId 会直接落在主表，某些消息会放在 extendJson，这里统一兜底一次。
 		String videoId = extendDTO.getVideoId() == null ? userMessage.getVideoId() : extendDTO.getVideoId();
 		messageNoticeVO.setVideoId(videoId);
+		messageNoticeVO.setVideoName(extendDTO.getVideoName());
+		messageNoticeVO.setVideoCover(extendDTO.getVideoCover());
 
 		// 发送人信息优先从当前页批量查出来的 map 里取，少走数据库。
 		UserInfo sendUser = sendUserMap.get(userMessage.getSendUserId());
@@ -210,6 +211,7 @@ public class UserMessageServiceImpl implements UserMessageService {
 		// 消息列表这里只需要封面，不把整条视频详情都塞给前端。
 		VideoInfo videoInfo = videoInfoMap.get(videoId);
 		if (videoInfo != null) {
+			messageNoticeVO.setVideoName(videoInfo.getVideoName());
 			messageNoticeVO.setVideoCover(videoInfo.getVideoCover());
 		}
 		return messageNoticeVO;

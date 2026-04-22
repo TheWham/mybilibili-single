@@ -110,7 +110,7 @@ public class UCenterController extends ABaseController{
 
         TokenUserInfoDTO tokenUserInfo = getTokenUserInfo();
         String userId = tokenUserInfo.getUserId();
-        videoInfoFilePostService.deleVideo(videoId, userId);
+        videoInfoFilePostService.deleVideo(videoId, userId, false);
         return getSuccessResponseVO(null);
     }
 

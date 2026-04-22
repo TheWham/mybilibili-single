@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 
 /**
@@ -165,14 +166,8 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 
 		//同步信息到正式表
 		VideoInfo videoInfo = this.getVideoInfoByVideoId(videoId);
+		boolean firstAuditPass = videoInfo == null;
 
-		//如果是第一次同步需要先初始化硬币数等值
-		if (videoInfo == null)
-		{
-			SysSettingDTO sysSetting = redisComponent.getSysSetting();
-			//TODO设置初始值
-
-		}
 		videoInfo = BeanUtil.toBean(videoInfoPost, VideoInfo.class);
 		this.addOrUpdate(videoInfo);
 
@@ -185,6 +180,17 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 		List<VideoInfoFilePost> filePostList = videoInfoFilePostMapper.selectList(filePostQuery);
 		List<VideoInfoFile> videoInfoFiles = BeanUtil.copyToList(filePostList, VideoInfoFile.class);
 		videoInfoFileMapper.insertOrUpdateBatch(videoInfoFiles);
+
+
+		if (firstAuditPass) {
+			SysSettingDTO sysSetting = redisComponent.getSysSetting();
+			Integer rewardCoinCount = sysSetting.getPostVideoCoinCount();
+
+			// 首次审核通过才发发布奖励。
+			// 这里不直接改 MySQL，而是先补 Redis 实时值，再丢到异步队列里统一刷库，
+			// 这样和你项目里其他互动计数的落库方式保持一致，前台也能马上读到新硬币数。
+			redisComponent.addVideoAuditReward(videoInfoPost.getUserId(), videoId, rewardCoinCount);
+		}
 
 		//清楚更新时候被删除的文件
 		List<String> deleteFilePathList = redisComponent.getDelFilePathsQueue(videoId);
@@ -201,6 +207,8 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 				}
 			});
 		}
+
+
 		//清空缓存
 		redisComponent.cleanDelFilePaths(videoId);
 		//保存到es
@@ -236,6 +244,27 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 	public Integer updateCountBatch(String field, List<VideoCountUpdateDTO> list) {
 		Integer count = this.videoInfoMapper.updateCountBatch(field, list);
 		return count;
+	}
+
+	@Override
+	public void recommendVideo(String videoId) {
+		VideoInfo videoInfo = this.videoInfoMapper.selectByVideoId(videoId);
+		VideoInfoPost videoInfoPost = this.videoInfoPostMapper.selectByVideoId(videoId);
+
+		Optional.ofNullable(videoInfo).orElseThrow(() -> new BusinessException(ResponseCodeEnum.CODE_600));
+
+		if (!(videoInfoPost.getStatus().equals(VideoStatusEnum.STATUS_3.getStatus())))
+			throw new BusinessException(ResponseCodeEnum.CODE_600);
+
+		VideoInfo updateInfo = new VideoInfo();
+
+		if (videoInfo.getRecommendType().equals(VideoRecommendEnum.NO_RECOMMEND.getStatus()))
+			updateInfo.setRecommendType(VideoRecommendEnum.RECOMMEND.getStatus());
+
+		if (videoInfo.getRecommendType().equals(VideoRecommendEnum.RECOMMEND.getStatus()))
+			updateInfo.setRecommendType(VideoRecommendEnum.NO_RECOMMEND.getStatus());
+
+		this.videoInfoMapper.updateByVideoId(updateInfo, videoId);
 	}
 
 	/**

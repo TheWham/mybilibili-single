@@ -78,5 +78,5 @@ public interface VideoInfoFilePostService {
 
     void transferVideo(VideoInfoFilePost transferVideo);
 
-    void deleVideo(String videoId, String userId);
+    void deleVideo(String videoId, String userId, Boolean isAdmin);
 }

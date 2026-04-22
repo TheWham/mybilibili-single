@@ -2,6 +2,7 @@ package com.easylive.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.easylive.component.RedisComponent;
+import com.easylive.component.UserDailyLimitComponent;
 import com.easylive.constants.Constants;
 import com.easylive.entity.dto.VideoInfoPostDTO;
 import com.easylive.entity.po.VideoInfo;
@@ -53,6 +54,8 @@ public class VideoInfoPostServiceImpl implements VideoInfoPostService {
 
 	@Resource
 	private VideoInfoMapper<VideoInfo, VideoInfoQuery> videoInfoMapper;
+	@Resource
+	private UserDailyLimitComponent userDailyLimitComponent;
 	/**
 	 * @description 根据条件查询
 	 */
@@ -140,15 +143,28 @@ public class VideoInfoPostServiceImpl implements VideoInfoPostService {
 	}
 
 	@Override
+	@Transactional(rollbackFor = Exception.class)
 	public void savePostVideoInfo(VideoInfoPostDTO videoInfoPostDTO) {
 		VideoInfoPost videoInfoPost = BeanUtil.toBean(videoInfoPostDTO, VideoInfoPost.class);
 		String userId = videoInfoPost.getUserId();
 		String videoID = videoInfoPost.getVideoId();
 		String uploadFileList = videoInfoPostDTO.getUploadFileList();
-		List<VideoInfoFilePost> uploadFilesInfo = JsonUtils.convertJsonArray2List(uploadFileList, VideoInfoFilePost.class);
 
-		if (uploadFilesInfo == null || uploadFilesInfo.size() > redisComponent.getSysSetting().getVideoCount())
+
+
+		List<VideoInfoFilePost> uploadFilesInfo = JsonUtils.convertJsonArray2List(uploadFileList, VideoInfoFilePost.class);
+		boolean isNewPost = StringTools.isEmpty(videoInfoPostDTO.getVideoId());
+
+		if (uploadFilesInfo == null)
 			throw new BusinessException(ResponseCodeEnum.CODE_600);
+		Integer limitCount = redisComponent.getSysSetting().getVideoPCount();
+		if (uploadFilesInfo.size() > limitCount)
+			throw new BusinessException("视频分片数超过" + limitCount + "条");
+
+		if (isNewPost) {
+			// 只有新投稿才占用每日发布次数，编辑已有稿件不计入当日额度。
+			userDailyLimitComponent.checkDailyLimit(userId, UserDailyLimitTypeEnum.POST_VIDEO);
+		}
 
 		//删除列表
 		List<VideoInfoFilePost> deleteList = new ArrayList<>();
@@ -257,6 +273,10 @@ public class VideoInfoPostServiceImpl implements VideoInfoPostService {
 				addFile.setUserId(userId);
 			}
 			redisComponent.addFileList2TransferQueue(addList);
+		}
+
+		if (isNewPost) {
+			userDailyLimitComponent.recordDailyAction(userId, UserDailyLimitTypeEnum.POST_VIDEO);
 		}
 
 	}

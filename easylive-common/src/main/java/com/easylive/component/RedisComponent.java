@@ -4,12 +4,14 @@ import com.alibaba.fastjson2.JSON;
 import com.easylive.constants.Constants;
 import com.easylive.entity.dto.*;
 import com.easylive.entity.po.CategoryInfo;
+import com.easylive.entity.po.SysSetting;
 import com.easylive.entity.po.UserMessage;
 import com.easylive.entity.po.VideoInfoFilePost;
 import com.easylive.entity.vo.UserInfoVO;
 import com.easylive.enums.UserStatsRedisEnum;
 import com.easylive.exception.BusinessException;
 import com.easylive.redis.RedisUtils;
+import com.easylive.service.SysSettingService;
 import jakarta.annotation.Resource;
 import jakarta.validation.constraints.NotEmpty;
 import org.springframework.data.redis.core.ZSetOperations;
@@ -25,8 +27,12 @@ import static com.easylive.constants.Constants.REDIS_EXPIRE_TIME_MINUTE_COUNT;
 
 @Component("redisComponent")
 public class RedisComponent {
+    private static final long SYS_SETTING_ID = 1L;
+
     @Resource
     public RedisUtils redisUtils;
+    @Resource
+    private SysSettingService sysSettingService;
 
 
     public String saveCode(String code){
@@ -155,9 +161,25 @@ public class RedisComponent {
     public SysSettingDTO getSysSetting()
     {
         Object sysSetting = redisUtils.get(Constants.REDIS_SYS_SETTING_KEY);
-        if (sysSetting == null)
-            sysSetting = new SysSettingDTO();
-        return (SysSettingDTO) sysSetting;
+        if (sysSetting != null) {
+            if (sysSetting instanceof SysSettingDTO dto) {
+                return dto;
+            }
+            return JSON.parseObject(JSON.toJSONString(sysSetting), SysSettingDTO.class);
+        }
+
+        SysSetting sysSettingDb = sysSettingService.getSysSettingById(SYS_SETTING_ID);
+        if (sysSettingDb == null) {
+            // sys_setting 是全局单行配置表，空表时主动落一条默认记录，
+            // 后续所有读写都围绕 id=1 这条记录展开，避免每次读取都走兜底分支。
+            SysSetting initSetting = SysSettingDTO.createDefault().toSysSetting();
+            initSetting.setId(SYS_SETTING_ID);
+            sysSettingService.add(initSetting);
+            sysSettingDb = sysSettingService.getSysSettingById(SYS_SETTING_ID);
+        }
+        SysSettingDTO sysSettingDTO = SysSettingDTO.fromSysSetting(sysSettingDb);
+        redisUtils.set(Constants.REDIS_SYS_SETTING_KEY, sysSettingDTO);
+        return sysSettingDTO;
     }
 
     public void delUploadVideoInfo(String userId, @NotEmpty String uploadId) {
@@ -329,6 +351,23 @@ public class RedisComponent {
 
     public UserActionSyncDTO getNextUserActionQueue(String queueKey) {
         return (UserActionSyncDTO) redisUtils.rpop(queueKey);
+    }
+
+    public void addVideoAuditReward(String userId, String videoId, Integer rewardCoinCount) {
+        if (userId == null || rewardCoinCount == null || rewardCoinCount <= 0) {
+            return;
+        }
+
+        // 审核奖励属于“平台单边发币”，这里只加作者自己的当前硬币数，
+        // totalCoinCount 留给异步任务一起补进 MySQL，避免前台刚审核通过时页面还是旧值。
+        incrementUserStats(userId, UserStatsRedisEnum.USER_COIN.getField(), rewardCoinCount);
+
+        UserActionSyncDTO rewardDTO = new UserActionSyncDTO();
+        rewardDTO.setVideoId(videoId);
+        rewardDTO.setVideoUserId(userId);
+        rewardDTO.setActionCount(rewardCoinCount);
+        rewardDTO.setActionTime(new Date());
+        addUserActionQueue(Constants.REDIS_WEB_ACTION_VIDEO_AUDIT_REWARD_QUEUE_KEY, rewardDTO);
     }
 
     public void addUserMessageQueue(UserMessage userMessage) {
@@ -576,6 +615,19 @@ public class RedisComponent {
     }
 
     public boolean setSysSetting(SysSettingDTO sysSettingDTO) {
-       return redisUtils.set(Constants.REDIS_SYS_SETTING_KEY, sysSettingDTO);
+        SysSetting sysSetting = sysSettingDTO.toSysSetting();
+        sysSetting.setId(SYS_SETTING_ID);
+
+        SysSetting currentSetting = sysSettingService.getSysSettingById(SYS_SETTING_ID);
+        Integer effectRows;
+        if (currentSetting == null) {
+            effectRows = sysSettingService.add(sysSetting);
+        } else {
+            effectRows = sysSettingService.updateSysSettingById(sysSetting, SYS_SETTING_ID);
+        }
+        if (effectRows == null || effectRows == 0) {
+            return false;
+        }
+        return redisUtils.set(Constants.REDIS_SYS_SETTING_KEY, sysSettingDTO);
     }
 }

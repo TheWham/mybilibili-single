@@ -124,6 +124,27 @@ public class VideoInfoQuery extends BaseQuery {
 	private boolean isQueryUserInfo;
 	private String[] arrayIds;
 	private Integer lastPlayHour;
+	/**
+	 * @description 是否查询数量
+	 * @param isQueryCountInfo
+	 */
+	private Boolean isQueryCountInfo;
+
+	public Integer getpCategoryId() {
+		return pCategoryId;
+	}
+
+	public void setpCategoryId(Integer pCategoryId) {
+		this.pCategoryId = pCategoryId;
+	}
+
+	public Boolean getQueryCountInfo() {
+		return isQueryCountInfo;
+	}
+
+	public void setQueryCountInfo(Boolean queryCountInfo) {
+		isQueryCountInfo = queryCountInfo;
+	}
 
 	public void setVideoId(String videoId) {
 		this.videoId = videoId;

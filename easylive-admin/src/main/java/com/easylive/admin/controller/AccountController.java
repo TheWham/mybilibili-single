@@ -33,7 +33,6 @@ public class AccountController extends ABaseController{
         try {
             String tokenId = adminAccountService.login(adminLoginDTO);
             saveToken2Session(response, tokenId);
-            //TODO 设置粉丝数, 关注数, 硬币数
             return getSuccessResponseVO(adminLoginDTO.getAccount());
         }finally {
             redisComponent.cleanCheckCode(adminLoginDTO.getCheckCodeKey());

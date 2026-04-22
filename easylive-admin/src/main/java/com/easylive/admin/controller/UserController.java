@@ -33,6 +33,7 @@ public class UserController extends ABaseController{
         userInfoQuery.setPageSize(pageSize);
         userInfoQuery.setNickNameFuzzy(nickNameFuzzy);
         userInfoQuery.setStatus(status);
+        userInfoQuery.setOrderBy("join_time desc");
         PaginationResultVO<UserInfo> listByPage = userInfoService.findListByPage(userInfoQuery);
         return getSuccessResponseVO(listByPage);
     }
