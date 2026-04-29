@@ -27,6 +27,12 @@
             <version>1.0</version>
         </dependency>
 
+        <!-- Spring AI：web 端负责在线问答编排，admin 不需要加载本地模型客户端 -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-ollama</artifactId>
+        </dependency>
+
     </dependencies>
     <build>
         <plugins>

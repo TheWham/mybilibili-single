@@ -126,14 +126,12 @@ public class VideoInfoEsServiceImpl implements VideoEsService {
     @Override
     public void updateCount(String indexName, String videoId, Integer changeCount, String field) {
         try {
-            elasticsearchClient.update(u -> u
+                    elasticsearchClient.update(u -> u
                             .index(indexName)
                             .id(videoId)
                             .script(s -> s
-                                    .inline(i -> i
-                                            .source("ctx._source." + field + " += params.count")
-                                            .params("count", JsonData.of(changeCount))
-                                    )
+                                    .source("ctx._source." + field + " += params.count")
+                                    .params("count", JsonData.of(changeCount))
                             ),
                     Void.class
             );

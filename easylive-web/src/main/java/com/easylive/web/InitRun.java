@@ -1,5 +1,6 @@
 package com.easylive.web;
 
+import com.easylive.component.AiSubtitleVectorIndexInitializer;
 import com.easylive.component.EsVideoIndexInitializer;
 import jakarta.annotation.Resource;
 import org.springframework.boot.ApplicationArguments;
@@ -15,8 +16,11 @@ public class InitRun implements ApplicationRunner {
 
     @Resource
     private EsVideoIndexInitializer esVideoIndexInitializer;
+    @Resource
+    private AiSubtitleVectorIndexInitializer aiSubtitleVectorIndexInitializer;
     @Override
     public void run(ApplicationArguments args) throws Exception {
         esVideoIndexInitializer.create();
+        aiSubtitleVectorIndexInitializer.create();
     }
 }

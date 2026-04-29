@@ -22,6 +22,7 @@ import com.easylive.mappers.VideoInfoFileMapper;
 import com.easylive.mappers.VideoInfoFilePostMapper;
 import com.easylive.mappers.VideoInfoMapper;
 import com.easylive.mappers.VideoInfoPostMapper;
+import com.easylive.service.AiSubtitleVectorService;
 import com.easylive.service.VideoEsService;
 import com.easylive.service.VideoInfoFilePostService;
 import com.easylive.utils.FFmpegUtils;
@@ -68,6 +69,8 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
     private VideoInfoFileMapper<VideoInfoFile, VideoInfoFileQuery> videoInfoFileMapper;
 	@Resource
 	private VideoEsService videoEsService;
+	@Resource
+	private AiSubtitleVectorService aiSubtitleVectorService;
 
 	/**
 	 * @description 根据条件查询
@@ -255,7 +258,8 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 			new File(tempFileName).delete();
 		}
 		fFmpegUtils.convertVideo2Ts(tsFolder, completeFilePath);
-		videoFile.delete();
+		// temp.mp4 先保留下来，审核通过后的 Python Worker 要用它提取字幕。
+		// Worker 成功写入字幕向量后再删除，避免审核后找不到源视频。
 	}
 
 	private void union(String dirPath, String toFilePath, Boolean isDelSource)
@@ -311,6 +315,7 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 		videoInfoMapper.deleteByVideoId(videoId);
 		videoInfoPostMapper.deleteByVideoId(videoId);
 		videoEsService.deleteDoc(adminConfig.getEsIndexVideoName(),videoId);
+		deleteAiSubtitleVectorSilently(videoId);
 
 		// 2. 注册一个事务同步回调：只有当事务成功提交（COMMIT）后，才触发异步逻辑
 		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
@@ -341,5 +346,14 @@ public class VideoInfoFilePostServiceImpl implements VideoInfoFilePostService {
 			}
 		});
 
+	}
+
+	private void deleteAiSubtitleVectorSilently(String videoId) {
+		try {
+			aiSubtitleVectorService.deleteByVideoId(videoId);
+		} catch (Exception e) {
+			// 删除视频的主链路是 MySQL 和文件清理，字幕向量删除失败只记日志，后续可重跑清理。
+			log.error("删除视频字幕向量失败, videoId={}", videoId, e);
+		}
 	}
 }

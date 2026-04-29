@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import com.easylive.component.RedisComponent;
 import com.easylive.config.AdminConfig;
 import com.easylive.constants.Constants;
+import com.easylive.entity.dto.AiSubtitleIndexTaskDTO;
 import com.easylive.entity.dto.SysSettingDTO;
 import com.easylive.entity.dto.VideoCountDTO;
 import com.easylive.entity.dto.VideoCountUpdateDTO;
@@ -19,6 +20,7 @@ import com.easylive.mappers.VideoInfoFileMapper;
 import com.easylive.mappers.VideoInfoFilePostMapper;
 import com.easylive.mappers.VideoInfoMapper;
 import com.easylive.mappers.VideoInfoPostMapper;
+import com.easylive.service.AiSubtitleVectorService;
 import com.easylive.service.VideoEsService;
 import com.easylive.service.VideoInfoService;
 import jakarta.annotation.Resource;
@@ -58,6 +60,8 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 	private AdminConfig adminConfig;
 	@Resource
 	private VideoEsService videoEsService;
+	@Resource
+	private AiSubtitleVectorService aiSubtitleVectorService;
 
 	/**
 	 * @description 根据条件查询
@@ -213,6 +217,7 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 		redisComponent.cleanDelFilePaths(videoId);
 		//保存到es
 		videoEsService.saveDoc(videoInfo);
+		enqueueAiSubtitleIndexTasks(videoInfo, filePostList);
 	}
 
 	@Override
@@ -356,5 +361,43 @@ public class VideoInfoServiceImpl implements VideoInfoService {
 
 	private int nonNegative(int value) {
 		return Math.max(value, 0);
+	}
+
+	private void enqueueAiSubtitleIndexTasks(VideoInfo videoInfo, List<VideoInfoFilePost> filePostList) {
+		if (videoInfo == null || filePostList == null || filePostList.isEmpty()) {
+			return;
+		}
+		try {
+			aiSubtitleVectorService.deleteByVideoId(videoInfo.getVideoId());
+			int taskCount = 0;
+			for (VideoInfoFilePost filePost : filePostList) {
+				String sourceVideoPath = adminConfig.getProjectFolder()
+						+ Constants.FILE_PATH_FOLDER
+						+ filePost.getFilePath()
+						+ Constants.FILE_TEMP_MP4;
+				File sourceVideo = new File(sourceVideoPath);
+				if (!sourceVideo.exists()) {
+					log.warn("跳过字幕向量化任务，源视频不存在, videoId={}, fileId={}, path={}",
+							videoInfo.getVideoId(), filePost.getFileId(), sourceVideoPath);
+					continue;
+				}
+
+				AiSubtitleIndexTaskDTO task = new AiSubtitleIndexTaskDTO();
+				task.setVideoId(videoInfo.getVideoId());
+				task.setUserId(videoInfo.getUserId());
+				task.setVideoName(videoInfo.getVideoName());
+				task.setVideoCover(videoInfo.getVideoCover());
+				task.setTags(videoInfo.getTags());
+				task.setFileId(filePost.getFileId());
+				task.setFileIndex(filePost.getFileIndex());
+				task.setSourceVideoPath(sourceVideoPath);
+				redisComponent.addAiSubtitleIndexTask(task);
+				taskCount++;
+			}
+			log.info("视频字幕向量化任务投递完成, videoId={}, count={}", videoInfo.getVideoId(), taskCount);
+		} catch (Exception e) {
+			// 字幕向量化是审核后的增强链路，不能因为 AI 队列或 ES 异常影响审核主流程。
+			log.error("投递字幕向量化任务失败, videoId={}", videoInfo.getVideoId(), e);
+		}
 	}
 }

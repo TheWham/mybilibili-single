@@ -92,6 +92,7 @@ public class Constants {
     public static final String REDIS_WEB_UPLOADING_FILE_INFO_KEY = REDIS_PREFIX + "uploadFileInfo:";
     public static final String REDIS_WEB_ADD_DEL_QUEUE_KEY = REDIS_PREFIX + "queue:del:file:list:";
     public static final String REDIS_WEB_ADD_TRANSFER_QUEUE_KEY = REDIS_PREFIX + "queue:transfer:file:list:";
+    public static final String REDIS_AI_SUBTITLE_VECTOR_QUEUE_KEY = REDIS_PREFIX + "queue:ai:subtitle-vector";
 
     /**
      * 用户动作和通知异步队列。

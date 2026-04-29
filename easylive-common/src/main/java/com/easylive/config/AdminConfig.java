@@ -21,15 +21,43 @@ public class AdminConfig {
     @Value("${es.index.video.name:easylive_video}")
     private String esIndexVideoName;
 
+    @Value("${es.index.video.subtitle.vector.name:easylive_video_subtitle_vector}")
+    private String esIndexVideoSubtitleVectorName;
+
     @Value("${es.host.port:127.0.0.1:9201}")
     private String esHostPort;
+
+    @Value("${ai.rag.min-score:0.70}")
+    private Double aiRagMinScore;
+
+    @Value("${ai.rag.default-top-k:5}")
+    private Integer aiRagDefaultTopK;
+
+    @Value("${ai.rag.max-top-k:10}")
+    private Integer aiRagMaxTopK;
 
     public String getEsIndexVideoName() {
         return esIndexVideoName;
     }
 
+    public String getEsIndexVideoSubtitleVectorName() {
+        return esIndexVideoSubtitleVectorName;
+    }
+
     public String getEsHostPort() {
         return esHostPort;
+    }
+
+    public Double getAiRagMinScore() {
+        return aiRagMinScore;
+    }
+
+    public Integer getAiRagDefaultTopK() {
+        return aiRagDefaultTopK;
+    }
+
+    public Integer getAiRagMaxTopK() {
+        return aiRagMaxTopK;
     }
 
     public Boolean getShowFFmpegLog() {

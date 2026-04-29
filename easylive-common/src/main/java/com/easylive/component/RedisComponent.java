@@ -14,6 +14,7 @@ import com.easylive.redis.RedisUtils;
 import com.easylive.service.SysSettingService;
 import jakarta.annotation.Resource;
 import jakarta.validation.constraints.NotEmpty;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +32,8 @@ public class RedisComponent {
 
     @Resource
     public RedisUtils redisUtils;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
     @Resource
     private SysSettingService sysSettingService;
 
@@ -206,6 +209,15 @@ public class RedisComponent {
         String key = Constants.REDIS_WEB_ADD_TRANSFER_QUEUE_KEY;
         // 转码队列空闲时直接阻塞等待，避免任务线程一直轮询 Redis。
         return (VideoInfoFilePost) redisUtils.brpop(key, Constants.REDIS_QUEUE_BLOCK_SECONDS, TimeUnit.SECONDS);
+    }
+
+    public void addAiSubtitleIndexTask(AiSubtitleIndexTaskDTO task) {
+        if (task == null) {
+            return;
+        }
+        // 这个队列给 Python Worker 消费，必须写普通 JSON 字符串。
+        // 如果走默认 RedisTemplate，对象会被 JDK 序列化，Python 那边读出来就不是可解析的 JSON。
+        stringRedisTemplate.opsForList().leftPush(Constants.REDIS_AI_SUBTITLE_VECTOR_QUEUE_KEY, JSON.toJSONString(task));
     }
 
     public List<String> getDelFilePathsQueue(String videoId) {
