@@ -1,7 +1,5 @@
 package com.easylive.entity.dto;
 
-import jakarta.validation.constraints.NotBlank;
-
 import java.io.Serializable;
 
 /**
@@ -9,11 +7,11 @@ import java.io.Serializable;
  */
 public class AiChatRequestDTO implements Serializable {
 
-    /**
-     * 用户本次想查询的问题或关键词。
-     */
-    @NotBlank(message = "关键词不能为空")
     private String keyword;
+    private String message;
+    private String conversationId;
+    private String sourceSuggestionId;
+    private AiConversationContextDTO context;
 
     /**
      * 最多返回几个相关视频，不传时使用后端默认值。
@@ -26,6 +24,38 @@ public class AiChatRequestDTO implements Serializable {
 
     public void setKeyword(String keyword) {
         this.keyword = keyword;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public String getConversationId() {
+        return conversationId;
+    }
+
+    public void setConversationId(String conversationId) {
+        this.conversationId = conversationId;
+    }
+
+    public String getSourceSuggestionId() {
+        return sourceSuggestionId;
+    }
+
+    public void setSourceSuggestionId(String sourceSuggestionId) {
+        this.sourceSuggestionId = sourceSuggestionId;
+    }
+
+    public AiConversationContextDTO getContext() {
+        return context;
+    }
+
+    public void setContext(AiConversationContextDTO context) {
+        this.context = context;
     }
 
     public Integer getTopK() {

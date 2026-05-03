@@ -16,6 +16,7 @@ import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -25,6 +26,8 @@ import java.util.*;
 public class AiSubtitleVectorServiceImpl implements AiSubtitleVectorService {
 
     private static final double ES_COSINE_SCORE_OFFSET = 1.0D;
+    private static final String MATCH_TYPE_SUBTITLE = "subtitle";
+    private static final String MATCH_TYPE_TITLE = "title";
     private static final List<String> SOURCE_FIELDS = Arrays.asList(
             "videoId", "videoName", "videoCover", "content", "startTime", "endTime"
     );
@@ -38,10 +41,39 @@ public class AiSubtitleVectorServiceImpl implements AiSubtitleVectorService {
 
     @Override
     public List<AiMatchedVideoVO> search(List<Double> queryVector, Integer topK, Double minScore) {
+        return search(null, queryVector, topK, minScore);
+    }
+
+    @Override
+    public List<AiMatchedVideoVO> search(String keyword, List<Double> queryVector, Integer topK, Double minScore) {
+        int limit = topK == null || topK <= 0 ? adminConfig.getAiRagDefaultTopK() : topK;
+        List<AiMatchedVideoVO> vectorMatches = searchByVector(queryVector, limit, minScore);
+        if (!StringUtils.hasText(keyword)) {
+            return vectorMatches;
+        }
+
+        /*
+         * 短关键词（例如 ai、java）用向量检索很容易命中一些语义很散的字幕。
+         * 关键词精确命中的字幕更适合直接进入 RAG，标题命中只作为兜底展示。
+         */
+        List<AiMatchedVideoVO> subtitleKeywordMatches = searchBySubtitleKeyword(keyword, limit);
+        List<AiMatchedVideoVO> titleMatches = searchByTitleKeyword(keyword, limit);
+        if (subtitleKeywordMatches.isEmpty()) {
+            return mergeMatches(titleMatches, vectorMatches, limit);
+        }
+
+        List<AiMatchedVideoVO> mergedMatches = mergeMatches(subtitleKeywordMatches, vectorMatches, limit);
+        if (mergedMatches.size() >= limit) {
+            return mergedMatches;
+        }
+
+        return mergeMatches(mergedMatches, titleMatches, limit);
+    }
+
+    private List<AiMatchedVideoVO> searchByVector(List<Double> queryVector, int limit, Double minScore) {
         if (queryVector == null || queryVector.isEmpty()) {
             return new ArrayList<>();
         }
-        int limit = topK == null || topK <= 0 ? adminConfig.getAiRagDefaultTopK() : topK;
         int candidateSize = Math.max(limit * 3, limit);
 
         try {
@@ -59,6 +91,46 @@ public class AiSubtitleVectorServiceImpl implements AiSubtitleVectorService {
             throw new BusinessException("AI 检索服务异常，请稍后再试", e);
         } catch (Exception e) {
             log.error("字幕向量检索失败", e);
+            throw new BusinessException("AI 检索服务异常，请稍后再试", e);
+        }
+    }
+
+    private List<AiMatchedVideoVO> searchBySubtitleKeyword(String keyword, int limit) {
+        try {
+            Request request = new Request("POST", "/" + adminConfig.getEsIndexVideoSubtitleVectorName() + "/_search");
+            request.setEntity(new StringEntity(objectMapper.writeValueAsString(buildSubtitleKeywordSearchBody(keyword, Math.max(limit * 3, limit))), ContentType.APPLICATION_JSON));
+            Response response = restClient.performRequest(request);
+            String responseJson = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+            return parseKeywordSearchResponse(responseJson, limit);
+        } catch (ResponseException e) {
+            if (e.getResponse() != null && e.getResponse().getStatusLine().getStatusCode() == 404) {
+                log.warn("字幕向量索引不存在, index={}", adminConfig.getEsIndexVideoSubtitleVectorName());
+                return new ArrayList<>();
+            }
+            log.error("字幕关键词检索失败", e);
+            throw new BusinessException("AI 检索服务异常，请稍后再试", e);
+        } catch (Exception e) {
+            log.error("字幕关键词检索失败", e);
+            throw new BusinessException("AI 检索服务异常，请稍后再试", e);
+        }
+    }
+
+    private List<AiMatchedVideoVO> searchByTitleKeyword(String keyword, int limit) {
+        try {
+            Request request = new Request("POST", "/" + adminConfig.getEsIndexVideoSubtitleVectorName() + "/_search");
+            request.setEntity(new StringEntity(objectMapper.writeValueAsString(buildTitleKeywordSearchBody(keyword, Math.max(limit * 3, limit))), ContentType.APPLICATION_JSON));
+            Response response = restClient.performRequest(request);
+            String responseJson = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+            return parseTitleSearchResponse(responseJson, limit);
+        } catch (ResponseException e) {
+            if (e.getResponse() != null && e.getResponse().getStatusLine().getStatusCode() == 404) {
+                log.warn("字幕向量索引不存在, index={}", adminConfig.getEsIndexVideoSubtitleVectorName());
+                return new ArrayList<>();
+            }
+            log.error("视频标题关键词检索失败", e);
+            throw new BusinessException("AI 检索服务异常，请稍后再试", e);
+        } catch (Exception e) {
+            log.error("视频标题关键词检索失败", e);
             throw new BusinessException("AI 检索服务异常，请稍后再试", e);
         }
     }
@@ -103,6 +175,62 @@ public class AiSubtitleVectorServiceImpl implements AiSubtitleVectorService {
         return body;
     }
 
+    private Map<String, Object> buildSubtitleKeywordSearchBody(String keyword, int candidateSize) {
+        List<Map<String, Object>> shouldQueries = new ArrayList<>();
+        shouldQueries.add(Map.of(
+                "match_phrase", Map.of(
+                        "content", Map.of("query", keyword, "boost", 5)
+                )
+        ));
+        shouldQueries.add(Map.of(
+                "match", Map.of(
+                        "content", Map.of("query", keyword, "operator", "and", "boost", 2)
+                )
+        ));
+        shouldQueries.add(Map.of(
+                "match", Map.of(
+                        "content", Map.of("query", keyword, "operator", "or")
+                )
+        ));
+
+        Map<String, Object> bool = new LinkedHashMap<>();
+        bool.put("should", shouldQueries);
+        bool.put("minimum_should_match", 1);
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("size", candidateSize);
+        body.put("_source", SOURCE_FIELDS);
+        // 关键词兜底只查字幕正文。标题命中不能直接当成“命中字幕”，否则会出现标题相关、
+        // 但展示的字幕片段完全无关的问题；标题检索应交给普通搜索或单独的视频召回链路。
+        body.put("query", Map.of("bool", bool));
+        return body;
+    }
+
+    private Map<String, Object> buildTitleKeywordSearchBody(String keyword, int candidateSize) {
+        List<Map<String, Object>> shouldQueries = new ArrayList<>();
+        shouldQueries.add(Map.of(
+                "match_phrase", Map.of(
+                        "videoName", Map.of("query", keyword, "boost", 5)
+                )
+        ));
+        shouldQueries.add(Map.of(
+                "match", Map.of(
+                        "videoName", Map.of("query", keyword, "operator", "and", "boost", 2)
+                )
+        ));
+
+        Map<String, Object> bool = new LinkedHashMap<>();
+        bool.put("should", shouldQueries);
+        bool.put("minimum_should_match", 1);
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("size", candidateSize);
+        body.put("_source", SOURCE_FIELDS);
+        // 标题召回只用于展示相关视频，不能作为字幕证据喂给大模型回答。
+        body.put("query", Map.of("bool", bool));
+        return body;
+    }
+
     private Map<String, Object> buildDeleteBody(String videoId) {
         return Map.of(
                 "query", Map.of(
@@ -135,6 +263,7 @@ public class AiSubtitleVectorServiceImpl implements AiSubtitleVectorService {
             matchedVideo.setStartTime(source.path("startTime").asDouble(0D));
             matchedVideo.setEndTime(source.path("endTime").asDouble(0D));
             matchedVideo.setScore(roundScore(cosineScore));
+            matchedVideo.setMatchType(MATCH_TYPE_SUBTITLE);
             videoMap.put(videoId, matchedVideo);
 
             if (videoMap.size() >= limit) {
@@ -142,6 +271,98 @@ public class AiSubtitleVectorServiceImpl implements AiSubtitleVectorService {
             }
         }
         return new ArrayList<>(new LinkedHashSet<>(videoMap.values()));
+    }
+
+    private List<AiMatchedVideoVO> parseKeywordSearchResponse(String responseJson, int limit) throws Exception {
+        JsonNode hits = objectMapper.readTree(responseJson).path("hits").path("hits");
+        Map<String, AiMatchedVideoVO> videoMap = new LinkedHashMap<>();
+        for (JsonNode hit : hits) {
+            JsonNode source = hit.path("_source");
+            String videoId = source.path("videoId").asText("");
+            if (videoId.isEmpty() || videoMap.containsKey(videoId)) {
+                continue;
+            }
+
+            AiMatchedVideoVO matchedVideo = buildMatchedVideo(source);
+            matchedVideo.setScore(normalizeKeywordScore(hit.path("_score").asDouble(0D)));
+            matchedVideo.setMatchType(MATCH_TYPE_SUBTITLE);
+            videoMap.put(videoId, matchedVideo);
+
+            if (videoMap.size() >= limit) {
+                break;
+            }
+        }
+        return new ArrayList<>(new LinkedHashSet<>(videoMap.values()));
+    }
+
+    private List<AiMatchedVideoVO> parseTitleSearchResponse(String responseJson, int limit) throws Exception {
+        JsonNode hits = objectMapper.readTree(responseJson).path("hits").path("hits");
+        Map<String, AiMatchedVideoVO> videoMap = new LinkedHashMap<>();
+        double maxScore = 0D;
+        for (JsonNode hit : hits) {
+            maxScore = Math.max(maxScore, hit.path("_score").asDouble(0D));
+        }
+
+        for (JsonNode hit : hits) {
+            JsonNode source = hit.path("_source");
+            String videoId = source.path("videoId").asText("");
+            if (videoId.isEmpty() || videoMap.containsKey(videoId)) {
+                continue;
+            }
+
+            AiMatchedVideoVO matchedVideo = buildMatchedVideo(source);
+            matchedVideo.setMatchedText("标题匹配：" + matchedVideo.getVideoName());
+            matchedVideo.setStartTime(null);
+            matchedVideo.setEndTime(null);
+            matchedVideo.setScore(normalizeTitleScore(hit.path("_score").asDouble(0D), maxScore));
+            matchedVideo.setMatchType(MATCH_TYPE_TITLE);
+            videoMap.put(videoId, matchedVideo);
+
+            if (videoMap.size() >= limit) {
+                break;
+            }
+        }
+        return new ArrayList<>(new LinkedHashSet<>(videoMap.values()));
+    }
+
+    private List<AiMatchedVideoVO> mergeMatches(List<AiMatchedVideoVO> vectorMatches, List<AiMatchedVideoVO> keywordMatches, int limit) {
+        Map<String, AiMatchedVideoVO> merged = new LinkedHashMap<>();
+        for (AiMatchedVideoVO matchedVideo : vectorMatches) {
+            merged.put(matchedVideo.getVideoId(), matchedVideo);
+        }
+        for (AiMatchedVideoVO matchedVideo : keywordMatches) {
+            merged.putIfAbsent(matchedVideo.getVideoId(), matchedVideo);
+            if (merged.size() >= limit) {
+                break;
+            }
+        }
+        return new ArrayList<>(merged.values());
+    }
+
+    private AiMatchedVideoVO buildMatchedVideo(JsonNode source) {
+        AiMatchedVideoVO matchedVideo = new AiMatchedVideoVO();
+        matchedVideo.setVideoId(source.path("videoId").asText(""));
+        matchedVideo.setVideoName(source.path("videoName").asText(""));
+        matchedVideo.setVideoCover(source.path("videoCover").asText(""));
+        matchedVideo.setMatchedText(source.path("content").asText(""));
+        matchedVideo.setStartTime(source.path("startTime").asDouble(0D));
+        matchedVideo.setEndTime(source.path("endTime").asDouble(0D));
+        return matchedVideo;
+    }
+
+    private double normalizeKeywordScore(double score) {
+        if (score <= 0) {
+            return 0D;
+        }
+        return roundScore(Math.min(score / 10D, 1D));
+    }
+
+    private double normalizeTitleScore(double score, double maxScore) {
+        if (score <= 0 || maxScore <= 0) {
+            return 0D;
+        }
+        // 标题命中只是“相关视频”证据，分数不和字幕向量分数直接竞争，避免看起来像字幕高度匹配。
+        return roundScore(Math.min(0.7D, Math.max(0.4D, score / maxScore * 0.7D)));
     }
 
     private double roundScore(double score) {

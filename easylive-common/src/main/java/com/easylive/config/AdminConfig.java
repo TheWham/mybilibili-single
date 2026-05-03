@@ -27,7 +27,7 @@ public class AdminConfig {
     @Value("${es.host.port:127.0.0.1:9201}")
     private String esHostPort;
 
-    @Value("${ai.rag.min-score:0.70}")
+    @Value("${ai.rag.min-score:0.55}")
     private Double aiRagMinScore;
 
     @Value("${ai.rag.default-top-k:5}")

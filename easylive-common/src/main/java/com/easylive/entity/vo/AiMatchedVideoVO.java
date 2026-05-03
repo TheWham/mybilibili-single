@@ -14,6 +14,7 @@ public class AiMatchedVideoVO implements Serializable {
     private Double startTime;
     private Double endTime;
     private Double score;
+    private String matchType;
 
     public String getVideoId() {
         return videoId;
@@ -69,5 +70,13 @@ public class AiMatchedVideoVO implements Serializable {
 
     public void setScore(Double score) {
         this.score = score;
+    }
+
+    public String getMatchType() {
+        return matchType;
+    }
+
+    public void setMatchType(String matchType) {
+        this.matchType = matchType;
     }
 }

@@ -1,7 +1,7 @@
 server:
   port: 7071
-  servlet:
-    context-path: /web
+#  servlet:
+#    context-path: /web
 spring:
   servlet:
     multipart:
@@ -9,6 +9,19 @@ spring:
       max-request-size: 10MB
   application:
     name: easylive-web
+  ai:
+    ollama:
+      base-url: http://127.0.0.1:11434
+      chat:
+        options:
+          model: qwen2.5:3b
+          keep-alive: 10m
+      embedding:
+        options:
+          # 本机 4GB 显存不足以同时常驻 qwen2.5:3b 和 bge-m3:567m。
+          # 使用 CPU 专用别名，避免向量检索阶段把对话模型从显存中挤出去。
+          model: bge-m3-cpu:567m
+          keep-alive: 10m
   datasource:
     url: jdbc:mysql://127.0.0.1:3306/easylive?serverTimezone=GMT%2B8&useUnicode=true&characterEncoding=utf8&autoReconnect=true&allowMultiQueries=true&useSSL=false&allowPublicKeyRetrieval=true
     username: root
@@ -43,6 +56,22 @@ mybatis:
 
 project:
   folder: d:/springbootworkspace/easylive-java/
+es:
+  host:
+    port: 127.0.0.1:9201
+  index:
+    video:
+      name: easylive_video
+      subtitle:
+        vector:
+          name: easylive_video_subtitle_vector
+ai:
+  rag:
+    min-score: 0.55
+    default-top-k: 5
+    max-top-k: 10
+  warmup:
+    enabled: true
 log:
   root:
     level: debug

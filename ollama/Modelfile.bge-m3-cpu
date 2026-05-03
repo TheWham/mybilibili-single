@@ -1,0 +1,5 @@
+FROM bge-m3:567m
+
+# 4GB 显存无法同时放下 qwen2.5:3b 和 bge-m3:567m。
+# 这里把向量模型固定到 CPU，把显存优先留给对话模型，避免两者互相挤出常驻缓存。
+PARAMETER num_gpu 0
