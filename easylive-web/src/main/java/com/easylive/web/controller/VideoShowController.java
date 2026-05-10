@@ -62,6 +62,7 @@ public class VideoShowController extends ABaseController{
         VideoInfoQuery videoInfoQuery = new VideoInfoQuery();
         videoInfoQuery.setOrderBy("create_time desc");
         videoInfoQuery.setRecommendType(VideoRecommendEnum.RECOMMEND.getStatus());
+        videoInfoQuery.setQueryUserInfo(true);
         List<VideoInfo> recommendVideoList = videoInfoService.findListByParam(videoInfoQuery);
         return getSuccessResponseVO(recommendVideoList);
     }
